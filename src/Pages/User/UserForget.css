@@ -1,0 +1,263 @@
+/* ===== Overlay ===== */
+
+.fp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 999;
+}
+
+/* ===== Modal ===== */
+
+.fp-modal {
+  width: 430px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 35px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18);
+  animation: popup 0.3s ease;
+}
+
+@keyframes popup {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===== Close Button ===== */
+
+.fp-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #eef8f8;
+  color: #0b766f;
+  cursor: pointer;
+  font-size: 18px;
+  transition: .3s;
+}
+
+.fp-close:hover {
+  background: #0b766f;
+  color: white;
+  transform: rotate(90deg);
+}
+
+/* ===== Icon ===== */
+
+.fp-icon {
+  width: 90px;
+  height: 90px;
+  margin: auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d9fbfa, #ecffff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 42px;
+  color: #0d8b82;
+  box-shadow: 0 12px 25px rgba(13, 139, 130, .20);
+}
+
+/* ===== Heading ===== */
+
+.fp-modal h2 {
+  margin-top: 20px;
+  color: #075e59;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.fp-subtitle {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+/* ===== Divider ===== /*
+
+.fp-divider {
+  display: flex;
+  align-items: center;
+  margin: 28px 0;
+}
+
+.fp-divider span {
+  flex: 1;
+  height: 2px;
+  background: #1dc9c3;
+}
+
+.pulse {
+  width: 35px;
+  height: 2px;
+  background: #1dc9c3;
+  margin: 0 10px;
+  position: relative;
+}
+
+.pulse::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -8px;
+  width: 35px;
+  height: 18px;
+  border-left: 3px solid #1dc9c3;
+  border-bottom: 3px solid #1dc9c3;
+  transform: skew(-35deg);
+}
+
+/* ===== Form ===== */
+
+.fp-form {
+  text-align: left;
+}
+
+.fp-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* ===== Input ===== */
+
+
+.fp-input {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  border: 1.5px solid #d8d8d8;
+  border-radius: 14px;
+  /* left side icon ke liye extra space */
+  padding: 0 18px;
+  margin-bottom: 24px;
+  transition: .3s;
+}
+
+
+.fp-input:focus-within {
+  border-color: #0d8b82;
+  box-shadow: 0 0 0 4px rgba(13, 139, 130, .12);
+}
+
+.input-iconn {
+  color: #7b8794;
+  margin-right: 12px;
+  font-size: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  top:65%;
+
+  
+  
+}
+
+
+
+.fp-input input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  background: transparent;
+
+}
+
+/* ===== Send Button ===== */
+
+.fp-btn {
+  width: 100%;
+  height: 55px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #0d8b82, #0a6d67);
+  color: white;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: .3s;
+}
+
+.fp-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(13, 139, 130, .25);
+}
+
+/* ===== Cancel ===== */
+
+.fp-cancel {
+  width: 100%;
+  height: 50px;
+  margin-top: 15px;
+  border: 2px solid #0d8b82;
+  background: white;
+  color: #0d8b82;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .3s;
+}
+
+.fp-cancel:hover {
+  background: #0d8b82;
+  color: white;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 576px) {
+
+  .fp-modal {
+    width: 100%;
+    padding: 25px;
+  }
+
+  .fp-icon {
+    width: 75px;
+    height: 75px;
+    font-size: 36px;
+  }
+
+  .fp-modal h2 {
+    font-size: 26px;
+  }
+
+  .fp-subtitle {
+    font-size: 15px;
+    line-height: 22px;
+  }
+
+  .fp-btn,
+  .fp-cancel {
+    height: 50px;
+    font-size: 15px;
+  }
+}
