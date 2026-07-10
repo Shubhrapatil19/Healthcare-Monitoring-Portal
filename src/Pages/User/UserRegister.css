@@ -1,0 +1,442 @@
+/* ===== Root variables ===== */
+.hms-page {
+  --teal: #0d7377;
+  --teal-dark: #0a5c60;
+  --teal-light: #14b8b3;
+  --bg-blue: #dce9f5;
+  --text-dark: #1f2937;
+  --text-gray: #9ca3af;
+  --text-gray-mid: #6b7280;
+  --border-color: #e5e7eb;
+  --white: #ffffff;
+
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-blue);
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.hms-page *,
+.hms-page *::before,
+.hms-page *::after {
+  box-sizing: border-box;
+}
+
+/* ===== Header ===== */
+.hms-header {
+  background-color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 40px;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hms-logo-icon {
+  width: 90px;
+  height: 68px;
+  color: var(--teal-light);
+  flex-shrink: 0;
+}
+
+
+.hms-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1.2;
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-title-accent {
+  color: var(--teal);
+}
+
+.hms-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 12.5px;
+  color: var(--text-gray-mid);
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-header-right {
+  text-align: right;
+}
+
+.hms-tagline {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal);
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-tagline-sub {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-gray);
+  letter-spacing: 0.3px;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ===== Main ===== */
+.hms-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8vw;
+  padding: 60px 40px;
+  min-height: calc(100vh - 76px);
+  flex-wrap: wrap;
+}
+
+/* Decorative heart illustration */
+.hms-hero-icon {
+  position: relative;
+  width: 370px;
+  height: 290px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Use login-style heartbeat lines */
+.hms-heartbeat-line {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG line color + size */
+.hms-heartbeat-line svg {
+  width: 100%;
+  height: 100%;
+  color: var(--teal);
+  opacity: 1;
+}
+
+
+/* Remove old plus/cross visuals */
+.hms-heart-cross {
+  display: none;
+}
+
+/* Keep outline image hidden if present */
+.hms-heart-outline {
+  display: none;
+}
+
+.hms-heart-image {
+  width: 70%;
+  height: auto;
+  color: var(--teal);
+  display: block;
+}
+
+/* ===== Card ===== */
+
+.hms-card {
+  background-color: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  padding: 40px 48px 32px;
+  width: 100%;
+  max-width: 448px;
+}
+
+.hms-card-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/*.hms-card-icon {
+  width: 90px;
+  height: 50px;
+  color: var(--teal-light);
+  margin-bottom: 8px;
+}*/
+
+.hms-card-title {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--teal);
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-card-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-gray-mid);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ===== Form ===== */
+.hms-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hms-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hms-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Poppins', sans-serif;
+  text-align: left;
+}
+
+.hms-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hms-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-gray);
+  pointer-events: none;
+}
+
+.hms-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-dark);
+  outline: none;
+  background-color: var(--white);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-input::placeholder {
+  color: #b0b7c3;
+}
+
+.hms-input:focus {
+  border-color: var(--teal-light);
+  box-shadow: 0 0 0 3px rgba(20, 184, 179, 0.15);
+}
+
+.hms-input-password {
+  padding-right: 42px;
+}
+
+.hms-eye-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-gray-mid);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hms-eye-toggle:hover {
+  color: var(--text-dark);
+}
+
+/* ===== Submit button ===== */
+.hms-submit-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  background-color: var(--teal);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.15s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-submit-btn:hover {
+  background-color: var(--teal-dark);
+}
+
+.hms-submit-btn:active {
+  transform: translateY(1px);
+}
+
+/* ===== Login link ===== */
+.hms-login-text {
+  text-align: center;
+  margin: 4px 0 0 0;
+  font-size: 13.5px;
+  color: var(--text-gray-mid);
+  font-family: 'Poppins', sans-serif;
+}
+
+.hms-login-text a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hms-login-text a:hover {
+  text-decoration: underline;
+}
+
+/* ===== Help button ===== */
+.hms-help-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #374151;
+  color: var(--white);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hms-help-btn:hover {
+  background-color: #1f2937;
+}
+
+/* ===== Responsive breakpoints ===== */
+
+/* Tablets */
+@media (max-width: 1024px) {
+  .hms-main {
+    gap: 40px;
+    padding: 48px 32px;
+  }
+
+  .hms-hero-icon {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+/* Small tablets / large phones - stack hero icon above card */
+@media (max-width: 768px) {
+  .hms-header {
+    padding: 14px 20px;
+  }
+
+  .hms-header-right {
+    text-align: left;
+  }
+
+  .hms-title {
+    font-size: 18px;
+  }
+
+  .hms-main {
+    flex-direction: column;
+    padding: 40px 20px;
+    gap: 24px;
+  }
+
+  .hms-hero-icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  .hms-card {
+    padding: 32px 28px 28px;
+    max-width: 460px;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .hms-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+  }
+
+   .hms-header-right {
+    text-align: left;
+    padding-left: 130px;   /*fix this time */
+    
+  }
+
+  .hms-main {
+    padding: 28px 14px 60px;
+  }
+
+  .hms-hero-icon {
+    width: 100px;
+    height: 100px;
+  }
+
+  .hms-card {
+    padding: 28px 20px 24px;
+    border-radius: 12px;
+  }
+
+  .hms-card-title {
+    font-size: 21px;
+  }
+
+  .hms-input {
+    padding: 11px 12px 11px 38px;
+    font-size: 13.5px;
+  }
+
+  .hms-help-btn {
+    bottom: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .hms-card {
+    padding: 22px 16px 20px;
+  }
+
+  .hms-title {
+    font-size: 16px;
+  }
+
+  .hms-subtitle {
+    font-size: 11px;
+  }
+}
