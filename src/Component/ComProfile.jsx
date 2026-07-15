@@ -6,6 +6,7 @@ import {
   Users,
   Stethoscope,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import "./ComProfile.css";
 
@@ -133,70 +134,82 @@ const ComProfile = ({ onComplete }) => {
 
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="cp-form">
 
-            {/* Age */}
+            {/* Row 1: Age & Gender */}
 
-            <div className="cp-group">
+            <div className="cp-row">
 
-              <label>Age</label>
+              {/* Age */}
 
-              <input
-                type="number"
-                name="age"
-                placeholder="Enter your age"
-                value={formData.age}
-                onChange={handleChange}
-              />
+              <div className="cp-group">
 
-              {errors.age && (
-                <span className="cp-error">
-                  {errors.age}
-                </span>
-              )}
+                <label>Age</label>
 
-            </div>
+                <div className="cp-input">
 
-            {/* Gender */}
+                  <Calendar size={18} />
 
-            <div className="cp-group">
+                  <input
+                    type="number"
+                    name="age"
+                    placeholder="Enter your age"
+                    value={formData.age}
+                    onChange={handleChange}
+                  />
 
-              <label>Gender</label>
+                </div>
 
-              <div className="cp-select">
-
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                >
-                  <option value="">
-                    Select Gender
-                  </option>
-
-                  <option>Male</option>
-
-                  <option>Female</option>
-
-                  <option>Other</option>
-
-                </select>
-
-                <ChevronDown size={18} />
+                {errors.age && (
+                  <span className="cp-error">
+                    {errors.age}
+                  </span>
+                )}
 
               </div>
 
-              {errors.gender && (
-                <span className="cp-error">
-                  {errors.gender}
-                </span>
-              )}
+              {/* Gender */}
+
+              <div className="cp-group">
+
+                <label>Gender</label>
+
+                <div className="cp-select">
+
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                  >
+                    <option value="">
+                      Select Gender
+                    </option>
+
+                    <option>Male</option>
+
+                    <option>Female</option>
+
+                    <option>Other</option>
+
+                  </select>
+
+                  <ChevronDown size={18} />
+
+                </div>
+
+                {errors.gender && (
+                  <span className="cp-error">
+                    {errors.gender}
+                  </span>
+                )}
+
+              </div>
 
             </div>
 
             {/* Medical Condition */}
 
-            <div className="cp-group">
+            <div className="cp-group cp-full-width">
 
               <label>Disease / Medical Condition</label>
 
@@ -228,134 +241,141 @@ const ComProfile = ({ onComplete }) => {
               Emergency Contacts
             </h4>
 
-            {/* Contact 1 */}
+            {/* Row 2: Emergency Contacts */}
 
-            <div className="cp-contact-card">
+            <div className="cp-row">
 
-              <h5>Contact 1</h5>
+              {/* Contact 1 */}
 
-              <div className="cp-select">
+              <div className="cp-contact-card">
 
-                <Users size={18} />
+                <h5>Contact 1</h5>
 
-                <select
-                  name="relation1"
-                  value={formData.relation1}
-                  onChange={handleChange}
-                >
-                  <option value="">
-                    Select Relation
-                  </option>
+                <div className="cp-select">
 
-                  <option>Father</option>
+                  <Users size={18} />
 
-                  <option>Mother</option>
+                  <select
+                    name="relation1"
+                    value={formData.relation1}
+                    onChange={handleChange}
+                  >
+                    <option value="">
+                      Select Relation
+                    </option>
 
-                  <option>Brother</option>
+                    <option>Father</option>
 
-                  <option>Sister</option>
+                    <option>Mother</option>
 
-                  <option>Spouse</option>
+                    <option>Brother</option>
 
-                  <option>Friend</option>
+                    <option>Sister</option>
 
-                  <option>Guardian</option>
+                    <option>Spouse</option>
 
-                </select>
+                    <option>Friend</option>
 
-              </div>
+                    <option>Guardian</option>
 
-              {errors.relation1 && (
-                <span className="cp-error">
-                  {errors.relation1}
-                </span>
-              )}
+                  </select>
 
-              <div className="cp-input">
+                </div>
 
-                <Phone size={18} />
+                {errors.relation1 && (
+                  <span className="cp-error">
+                    {errors.relation1}
+                  </span>
+                )}
 
-                <input
-                  type="text"
-                  name="contact1"
-                  placeholder="Contact Number"
-                  value={formData.contact1}
-                  onChange={handleChange}
-                  maxLength={10}
-                />
+                <div className="cp-input">
 
-              </div>
+                  <Phone size={18} />
 
-              {errors.contact1 && (
-                <span className="cp-error">
-                  {errors.contact1}
-                </span>
-              )}
+                  <input
+                    type="text"
+                    name="contact1"
+                    placeholder="Contact Number"
+                    value={formData.contact1}
+                    onChange={handleChange}
+                    maxLength={10}
+                  />
 
-            </div>
-                        {/* Contact 2 */}
+                </div>
 
-            <div className="cp-contact-card">
-
-              <h5>Contact 2</h5>
-
-              <div className="cp-select">
-
-                <Users size={18} />
-
-                <select
-                  name="relation2"
-                  value={formData.relation2}
-                  onChange={handleChange}
-                >
-                  <option value="">
-                    Select Relation
-                  </option>
-
-                  <option>Father</option>
-
-                  <option>Mother</option>
-
-                  <option>Brother</option>
-
-                  <option>Sister</option>
-
-                  <option>Spouse</option>
-
-                  <option>Friend</option>
-
-                  <option>Guardian</option>
-
-                </select>
+                {errors.contact1 && (
+                  <span className="cp-error">
+                    {errors.contact1}
+                  </span>
+                )}
 
               </div>
 
-              {errors.relation2 && (
-                <span className="cp-error">
-                  {errors.relation2}
-                </span>
-              )}
+              {/* Contact 2 */}
 
-              <div className="cp-input">
+              <div className="cp-contact-card">
 
-                <Phone size={18} />
+                <h5>Contact 2</h5>
 
-                <input
-                  type="text"
-                  name="contact2"
-                  placeholder="Contact Number"
-                  value={formData.contact2}
-                  onChange={handleChange}
-                  maxLength={10}
-                />
+                <div className="cp-select">
+
+                  <Users size={18} />
+
+                  <select
+                    name="relation2"
+                    value={formData.relation2}
+                    onChange={handleChange}
+                  >
+                    <option value="">
+                      Select Relation
+                    </option>
+
+                    <option>Father</option>
+
+                    <option>Mother</option>
+
+                    <option>Brother</option>
+
+                    <option>Sister</option>
+
+                    <option>Spouse</option>
+
+                    <option>Friend</option>
+
+                    <option>Guardian</option>
+
+                  </select>
+
+                </div>
+
+                {errors.relation2 && (
+                  <span className="cp-error">
+                    {errors.relation2}
+                  </span>
+                )}
+
+                <div className="cp-input">
+
+                  <Phone size={18} />
+
+                  <input
+                    type="text"
+                    name="contact2"
+                    placeholder="Contact Number"
+                    value={formData.contact2}
+                    onChange={handleChange}
+                    maxLength={10}
+                  />
+
+                </div>
+
+                {errors.contact2 && (
+                  <span className="cp-error">
+                    {errors.contact2}
+                  </span>
+                )}
 
               </div>
-
-              {errors.contact2 && (
-                <span className="cp-error">
-                  {errors.contact2}
-                </span>
-              )}
 
             </div>
 
@@ -369,6 +389,12 @@ const ComProfile = ({ onComplete }) => {
             </button>
 
           </form>
+
+          {/* Footer Note */}
+          
+          <div className="cp-footer-note">
+            <p>Your information is secure and will be used only for emergency purposes.</p>
+          </div>
 
         </div>
 
