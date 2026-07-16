@@ -179,11 +179,11 @@ const UserViewRep = ({ onBack }) => {
             <tbody>
               {medicineData.map((medicine, index) => (
                 <tr key={index}>
-                  <td className="medicine-name-cell">{medicine.name}</td>
-                  <td>{medicine.totalScheduled}</td>
-                  <td>{medicine.taken}</td>
-                  <td>{medicine.missed}</td>
-                  <td>
+                  <td className="medicine-name-cell" data-label="Medicine">{medicine.name}</td>
+                  <td data-label="Total Scheduled">{medicine.totalScheduled}</td>
+                  <td data-label="Taken">{medicine.taken}</td>
+                  <td data-label="Missed">{medicine.missed}</td>
+                  <td data-label="Compliance">
                     <div className="compliance-cell">
                       <span className="compliance-text">{medicine.compliance}%</span>
                       <div className="progress-bar">
@@ -228,10 +228,10 @@ const UserViewRep = ({ onBack }) => {
               <tbody>
                 {inventoryData.map((item, index) => (
                   <tr key={index}>
-                    <td className="medicine-name-cell">{item.name}</td>
-                    <td>{item.currentStock}</td>
-                    <td>{item.minimumStock}</td>
-                    <td>
+                    <td className="medicine-name-cell" data-label="Medicine">{item.name}</td>
+                    <td data-label="Current Stock">{item.currentStock}</td>
+                    <td data-label="Minimum Stock">{item.minimumStock}</td>
+                    <td data-label="Status">
                       <span className={`status-badge ${item.status === 'In Stock' ? 'in-stock' : 'low-stock'}`}>
                         {item.status}
                       </span>

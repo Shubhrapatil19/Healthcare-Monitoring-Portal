@@ -649,12 +649,20 @@
     border-radius: 8px;
   }
 
+  .inventory-table,
+  .inventory-table tbody,
+  .inventory-table tr,
+  .inventory-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .inventory-table thead {
     display: none;
   }
 
   .inventory-table tbody tr {
-    display: block;
     margin-bottom: 15px;
     border: 1px solid #e8f0f0;
     border-radius: 8px;
@@ -670,10 +678,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
     padding: 10px 0;
     text-align: right;
     border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
+    flex-wrap: wrap;
   }
 
   .inventory-table td:last-child {
@@ -686,12 +696,20 @@
     color: #0d7377;
     text-align: left;
     margin-right: 10px;
+    flex: 0 0 90px;
   }
 
   .medicine-name {
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 10px;
     padding-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .medicine-name span {
+    flex: 1;
+    min-width: 0;
   }
 
   .medicine-icon {
@@ -704,6 +722,11 @@
     padding: 5px 14px;
     font-size: 12px;
     min-width: auto;
+  }
+
+  .edit-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .edit-btn {
@@ -725,9 +748,10 @@
   .chart-legend {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 10px 14px;
     padding-top: 0;
-    justify-content: center;
+    justify-content: flex-start;
+    min-width: 0;
   }
 
   .legend-item {
@@ -740,21 +764,22 @@
   }
 
   .bar-chart {
-    padding-left: 45px;
+    padding-left: 0;
     height: 250px;
+    overflow-x: auto;
   }
 
   .y-axis {
-    height: 210px;
-  }
-
-  .y-axis span {
-    font-size: 12px;
+    display: none;
   }
 
   .chart-bars {
     height: 210px;
-    padding-left: 45px;
+    padding-left: 0;
+    border-left: none;
+    border-bottom: 1px dashed #ccc;
+    min-width: 260px;
+    width: 100%;
   }
 
   .bar {
@@ -764,6 +789,7 @@
   .bar-label {
     font-size: 12px;
     margin-top: 10px;
+    white-space: normal;
   }
 
   .stock-status-section {
@@ -815,7 +841,7 @@
   }
 
   .inventory-table {
-    min-width: 600px;
+    min-width: 0;
     font-size: 12px;
   }
 
@@ -867,21 +893,13 @@
   }
 
   .bar-chart {
-    padding-left: 35px;
+    padding-left: 0;
     height: 220px;
-  }
-
-  .y-axis {
-    height: 180px;
-  }
-
-  .y-axis span {
-    font-size: 11px;
   }
 
   .chart-bars {
     height: 180px;
-    padding-left: 35px;
+    padding-left: 0;
   }
 
   .bar {
@@ -905,7 +923,7 @@
   }
 
   .inventory-table {
-    min-width: 550px;
+    min-width: 0;
   }
 
   .bar {

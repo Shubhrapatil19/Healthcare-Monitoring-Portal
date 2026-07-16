@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './UserRem.css';
 
-const UserRem = () => {
+const UserRem = ({ onAddMedicine }) => {
   const [reminders] = useState([]);
 
   return (
@@ -25,7 +25,7 @@ const UserRem = () => {
               You haven't set any medicine reminders.<br/>
               Add your medicines and schedule times to stay on track and never miss a dose.
             </p>
-            <button className="add-medicine-btn">
+            <button className="add-medicine-btn" onClick={onAddMedicine}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

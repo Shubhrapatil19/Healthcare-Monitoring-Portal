@@ -735,18 +735,13 @@ input{
 
 }
 
-.system-title{
-
-    font-size:15px;
-
+.hms-header-right,
+.header-right {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding-left: 0;
 }
-
-.header-subtitle{
-
-    font-size:11px;
-
-}
-
 .login-card{
 
     padding:25px 18px;

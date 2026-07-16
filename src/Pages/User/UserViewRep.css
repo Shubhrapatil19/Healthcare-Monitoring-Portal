@@ -607,7 +607,41 @@
 
   .report-table {
     font-size: 0.8125rem;
-    min-width: 450px;
+    min-width: 0;
+  }
+
+  .report-table thead {
+    display: none;
+  }
+
+  .report-table,
+  .report-table tbody,
+  .report-table tr,
+  .report-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .report-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .report-table td:last-child {
+    border-bottom: none;
+  }
+
+  .report-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #0f766e;
+    flex: 0 0 45%;
+    text-align: left;
+    margin-right: 0.75rem;
+    white-space: normal;
   }
 
   .report-table th,

@@ -1,0 +1,5 @@
+- [ ] Check how sidebar open state is implemented (UserDash.jsx + UserDash.css)
+- [ ] Improve smooth open/close animation of sidebar width + main-content shift
+- [ ] Ensure title/text opacity transitions when collapsing
+- [ ] Run build/dev lint (if available) to ensure no CSS/JS errors
+- [ ] Verify behavior in browser (sidebar toggle)

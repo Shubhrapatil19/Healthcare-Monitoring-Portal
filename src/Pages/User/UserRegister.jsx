@@ -135,18 +135,18 @@ const UserRegister = ({ onSuccess }) => {
         toast.success("✓ Account created successfully! Redirecting to login...", {
           duration: 4000,
           style: {
-            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
             color: "#fff",
             padding: "14px 20px",
             borderRadius: "10px",
-            boxShadow: "0 8px 20px rgba(16, 185, 129, 0.4)",
+            boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
             fontSize: "14px",
             fontWeight: "600",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
+            border: "1px solid rgba(255, 255, 255, 0.22)",
           },
           iconTheme: {
             primary: "#fff",
-            secondary: "#10b981",
+            secondary: "#2e8b57",
           },
         });
 
@@ -162,18 +162,18 @@ const UserRegister = ({ onSuccess }) => {
         toast.error(response.data.message || "Registration failed. Please try again.", {
           duration: 4000,
           style: {
-            background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+            background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
             color: "#fff",
             padding: "14px 20px",
             borderRadius: "10px",
-            boxShadow: "0 8px 20px rgba(239, 68, 68, 0.4)",
+            boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
             fontSize: "14px",
             fontWeight: "600",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
+            border: "1px solid rgba(255, 255, 255, 0.22)",
           },
           iconTheme: {
             primary: "#fff",
-            secondary: "#ef4444",
+            secondary: "#1f6f8b",
           },
         });
       }
@@ -189,18 +189,18 @@ const UserRegister = ({ onSuccess }) => {
           {
             duration: 4000,
             style: {
-              background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+              background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
               color: "#fff",
               padding: "14px 20px",
               borderRadius: "10px",
-              boxShadow: "0 8px 20px rgba(239, 68, 68, 0.4)",
+              boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
               fontSize: "14px",
               fontWeight: "600",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
+              border: "1px solid rgba(255, 255, 255, 0.22)",
             },
             iconTheme: {
               primary: "#fff",
-              secondary: "#ef4444",
+              secondary: "#1f6f8b",
             },
           }
         );
@@ -212,18 +212,18 @@ const UserRegister = ({ onSuccess }) => {
           {
             duration: 3000,
             style: {
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
               color: "#fff",
               padding: "14px 20px",
               borderRadius: "10px",
-              boxShadow: "0 8px 20px rgba(245, 158, 11, 0.4)",
+              boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
               fontSize: "14px",
               fontWeight: "600",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
+              border: "1px solid rgba(255, 255, 255, 0.22)",
             },
             iconTheme: {
               primary: "#fff",
-              secondary: "#f59e0b",
+              secondary: "#2e8b57",
             },
           }
         );
