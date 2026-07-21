@@ -11,12 +11,17 @@ import {
   EyeOff,
   UserPlus,
   HelpCircle,
+  Shield,
+  Bell,
+  LineChart,
 } from "lucide-react";
 import "./UserRegister.css";
 
 const UserRegister = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -26,7 +31,7 @@ const UserRegister = ({ onSuccess }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
+
 
   const validatePassword = (password) => {
     const requirements = {
@@ -56,7 +61,7 @@ const UserRegister = ({ onSuccess }) => {
     }
   };
 
-  const passwordRequirements = formData.password ? validatePassword(formData.password) : null;
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -122,15 +127,26 @@ const UserRegister = ({ onSuccess }) => {
     setLoading(true);
 
     try {
+      // ================= API CALL: REGISTER =================
+      // Endpoint: POST /auth/register
       const response = await api.post("/auth/register", {
         fullName: formData.fullName,
         email: formData.email,
+        mobile: formData.mobile,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        // Note: backend register API doesn't accept "mobile", so it's not sent
       });
+      // ========================================================
 
       if (response.data.success) {
+        // Only store user info locally after a REAL successful registration
+        const userName = (formData.fullName || "").trim() || "User";
+        localStorage.setItem(
+          "registeredUser",
+          JSON.stringify({ fullName: userName, email: formData.email })
+        );
+        localStorage.setItem("currentUserName", userName);
+
         // Show success toast notification
         toast.success("✓ Account created successfully! Redirecting to login...", {
           duration: 4000,
@@ -205,33 +221,29 @@ const UserRegister = ({ onSuccess }) => {
           }
         );
       } else {
-        // For demo purposes, still navigate to login even if API fails
-        console.log("API Error (demo mode):", error.message);
+        // Real API/network error (backend down, wrong URL, server error, etc.)
+        // NOTE: No demo/fallback success here anymore — genuine errors are shown as-is
+        console.log("API Error:", error.message);
         toast.error(
-          "Demo mode: Registration simulated. Redirecting to login...",
+          error.response?.data?.message || "Something went wrong. Please try again.",
           {
-            duration: 3000,
+            duration: 4000,
             style: {
-              background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
+              background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
               color: "#fff",
               padding: "14px 20px",
               borderRadius: "10px",
-              boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
+              boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
               fontSize: "14px",
               fontWeight: "600",
               border: "1px solid rgba(255, 255, 255, 0.22)",
             },
             iconTheme: {
               primary: "#fff",
-              secondary: "#2e8b57",
+              secondary: "#1f6f8b",
             },
           }
         );
-        
-        // Navigate to login after showing demo message
-        setTimeout(() => {
-          if (typeof onSuccess === "function") onSuccess();
-        }, 2000);
       }
     } finally {
       setLoading(false);
@@ -239,203 +251,254 @@ const UserRegister = ({ onSuccess }) => {
   };
 
   return (
-    <div className="hms-page">
+    <div className="register-page">
       {/* Header */}
-      <header className="hms-header">
-        <div className="hms-header-left">
-          <img
-            className="hms-logo-icon"
-            src="/ChatGPT Image Jun 22, 2026, 07_52_50 PM.png"
-            alt="Heart logo"
-          />
-          <div className="hms-header-text">
-            <h1 className="hms-title">
-              Healthcare <span className="hms-title-accent">Monitoring System</span>
-            </h1>
-            <p className="hms-subtitle">Care. Monitor. Remind. Stay Healthy.</p>
+      <header className="login-header">
+        <div className="header-left">
+          <div className="logo-box">
+            <img
+              className="hms-logo-icon"
+              src="/ChatGPT Image Jun 22, 2026, 07_52_50 PM.png"
+              alt="Heart logo"
+            />
+          </div>
+
+          <div>
+            <h2 className="system-title">
+              <span className="green-text">Healthcare Monitoring</span>{" "}
+              <span className="blue-text">System</span>
+            </h2>
+            <p className="header-subtitle">
+              Care. Monitor. Remind. Stay Healthy.
+            </p>
           </div>
         </div>
-        <div className="hms-header-right">
-          <p className="hms-tagline">Your Health, Our Priority</p>
-          <p className="hms-tagline-sub">Secure • Reliable • Care Focused</p>
+
+        <div className="header-right">
+          <h4>Your Health, Our Priority</h4>
+          <p>Secure • Reliable • Care Focused</p>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="hms-main">
-        <div className="hms-hero-icon">
-          {/* Heart beat only (replace heart image + plus) */}
-          <img
-            className="hms-heart-image"
-            src="/ChatGPT Image Jun 22, 2026, 07_52_50 PM.png"
-            alt="Heart"
-          />
-
-        </div>
-
-        <div className="hms-card">
-          <div className="hms-card-header">
-           
-            <h2 className="hms-card-title">Create Account</h2>
-            <p className="hms-card-subtitle">
-              Fill in the details below to get satrted
-            </p>
-          </div>
-
-          <form className="hms-form" onSubmit={handleSubmit}>
-            <div className="hms-field">
-              <label htmlFor="fullName" className="hms-label">
-                Full Name
-              </label>
-              <div className="hms-input-wrapper">
-                <User className="hms-input-icon" size={18} />
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  className="hms-input"
-                  placeholder="Enter full name"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="hms-field">
-              <label htmlFor="email" className="hms-label">
-                Email Address
-              </label>
-              <div className="hms-input-wrapper">
-                <Mail className="hms-input-icon" size={18} />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  className={`hms-input ${errors.email ? 'hms-input-error' : ''}`}
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-              {errors.email && <span className="hms-error-text">{errors.email}</span>}
-            </div>
-
-            <div className="hms-field">
-              <label htmlFor="mobile" className="hms-label">
-                Mobile Number
-              </label>
-              <div className="hms-input-wrapper">
-                <Phone className="hms-input-icon" size={18} />
-                <input
-                  id="mobile"
-                  name="mobile"
-                  type="tel"
-                  className="hms-input"
-                  placeholder="Enter mobile number"
-                  value={formData.mobile}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="hms-field">
-              <label htmlFor="password" className="hms-label">
-                Password
-              </label>
-              <div className="hms-input-wrapper">
-                <Lock className="hms-input-icon" size={18} />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  className={`hms-input hms-input-password ${errors.password ? 'hms-input-error' : ''}`}
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                />
-                <button
-                  type="button"
-                  className="hms-eye-toggle"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {errors.password && <span className="hms-error-text">{errors.password}</span>}
-
-              {/* Password Requirements */}
-              {(passwordFocused || formData.password) && (
-                <div className="hms-password-requirements">
-                  <p className="hms-requirements-title">Password must contain:</p>
-                  <ul className="hms-requirements-list">
-                    <li className={`hms-requirement-item ${passwordRequirements?.length ? 'hms-requirement-met' : ''}`}>
-                      <span className="hms-requirement-icon">{passwordRequirements?.length ? '✓' : '○'}</span>
-                      <span>At least 8 characters (max 20)</span>
-                    </li>
-                    <li className={`hms-requirement-item ${passwordRequirements?.uppercase ? 'hms-requirement-met' : ''}`}>
-                      <span className="hms-requirement-icon">{passwordRequirements?.uppercase ? '✓' : '○'}</span>
-                      <span>At least 1 uppercase letter</span>
-                    </li>
-                    <li className={`hms-requirement-item ${passwordRequirements?.lowercase ? 'hms-requirement-met' : ''}`}>
-                      <span className="hms-requirement-icon">{passwordRequirements?.lowercase ? '✓' : '○'}</span>
-                      <span>At least 1 lowercase letter</span>
-                    </li>
-                    <li className={`hms-requirement-item ${passwordRequirements?.number ? 'hms-requirement-met' : ''}`}>
-                      <span className="hms-requirement-icon">{passwordRequirements?.number ? '✓' : '○'}</span>
-                      <span>At least 1 number</span>
-                    </li>
-                    <li className={`hms-requirement-item ${passwordRequirements?.special ? 'hms-requirement-met' : ''}`}>
-                      <span className="hms-requirement-icon">{passwordRequirements?.special ? '✓' : '○'}</span>
-                      <span>At least 1 special character</span>
-                    </li>
-                  </ul>
+      {/* Main Content */}
+      <div className="register-container">
+        {/* LEFT SIDE - Promotional Section */}
+        <div className="register-left-section">
+          <div className="register-left-content">
+            {/* Hero Illustration */}
+            <div className="reg-hero-illustration">
+              <div className="reg-illustration-wrapper">
+                {/* Smartphone */}
+                <div className="reg-ill-phone">
+                  <div className="reg-ill-phone-screen">
+                    <img
+                      src="/ChatGPT Image Jun 22, 2026, 07_52_50 PM.png"
+                      alt="Healthcare logo"
+                      className="reg-ill-phone-logo"
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div className="hms-field">
-              <label htmlFor="confirmPassword" className="hms-label">
-                Confirm Password
-              </label>
-              <div className="hms-input-wrapper">
-                <Lock className="hms-input-icon" size={18} />
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  className={`hms-input hms-input-password ${errors.confirmPassword ? 'hms-input-error' : ''}`}
-                  placeholder="Enter confirm password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  className="hms-eye-toggle"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                {/* Shield */}
+                <div className="reg-ill-shield">
+                  <Shield size={28} />
+                </div>
+                {/* Stethoscope */}
+                <div className="reg-ill-stethoscope">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.3.3 0 1 0 .3.3"/>
+                    <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/>
+                    <circle cx="20" cy="10" r="2"/>
+                  </svg>
+                </div>
+                {/* Small decorative crosses */}
+                <div className="reg-ill-cross reg-ill-cross-1">+</div>
+                <div className="reg-ill-cross reg-ill-cross-2">+</div>
+                <div className="reg-ill-cross reg-ill-cross-3">+</div>
               </div>
-              {errors.confirmPassword && <span className="hms-error-text">{errors.confirmPassword}</span>}
             </div>
 
-            <button type="submit" className="hms-submit-btn" disabled={loading}>
-              <UserPlus size={18} />
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
+            {/* Heading */}
+            <h2 className="reg-heading">
+              Take Charge of
+              <br />
+              <span className="reg-heading-highlight">Your Health</span>
+            </h2>
 
-            <p className="hms-login-text">
-              Already have an account? <a href="#login">Login Now</a>
+            {/* Description */}
+            <p className="reg-description">
+              Create your account and get personalized access to monitor your
+              health, manage medications, and stay on track every day.
             </p>
-          </form>
-        </div>
-      </main>
 
-      <button className="hms-help-btn" aria-label="Help">
+            {/* Feature Highlights */}
+            <div className="reg-features">
+              <div className="reg-feature-card">
+                <div className="reg-feature-icon reg-feature-icon-shield">
+                  <Shield size={22} />
+                </div>
+                <div className="reg-feature-text">
+                  <h4>Secure & Private</h4>
+                  <p>User data is encrypted and protected.</p>
+                </div>
+              </div>
+
+              <div className="reg-feature-card">
+                <div className="reg-feature-icon reg-feature-icon-bell">
+                  <Bell size={22} />
+                </div>
+                <div className="reg-feature-text">
+                  <h4>Smart Reminders</h4>
+                  <p>Medicine reminder notifications.</p>
+                </div>
+              </div>
+
+              <div className="reg-feature-card">
+                <div className="reg-feature-icon reg-feature-icon-chart">
+                  <LineChart size={22} />
+                </div>
+                <div className="reg-feature-text">
+                  <h4>Track & Improve</h4>
+                  <p>Monitor health progress and reports.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE - Registration Form */}
+        <div className="register-right-section">
+          <div className="register-card">
+            <div className="register-card-header">
+              <h2 className="register-card-title">Create Account</h2>
+              <p className="register-card-subtitle">
+                Fill in the details below to get started
+              </p>
+            </div>
+
+            <form className="register-form" onSubmit={handleSubmit}>
+              <div className="register-field">
+                <label htmlFor="fullName" className="register-label">
+                  Full Name
+                </label>
+                <div className="register-input-wrapper">
+                  <User className="register-input-icon" size={18} />
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    className="register-input"
+                    placeholder="Enter full name"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="register-field">
+                <label htmlFor="email" className="register-label">
+                  Email Address
+                </label>
+                <div className="register-input-wrapper">
+                  <Mail className="register-input-icon" size={18} />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className={`register-input ${errors.email ? 'register-input-error' : ''}`}
+                    placeholder="Enter email address"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
+                </div>
+                {errors.email && <span className="register-error-text">{errors.email}</span>}
+              </div>
+
+              <div className="register-field">
+                <label htmlFor="mobile" className="register-label">
+                  Mobile Number
+                </label>
+                <div className="register-input-wrapper">
+                  <Phone className="register-input-icon" size={18} />
+                  <input
+                    id="mobile"
+                    name="mobile"
+                    type="tel"
+                    className="register-input"
+                    placeholder="Enter mobile number"
+                    value={formData.mobile}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="register-field">
+                <label htmlFor="password" className="register-label">
+                  Password
+                </label>
+                <div className="register-input-wrapper">
+                  <Lock className="register-input-icon" size={18} />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    className={`register-input register-input-password ${errors.password ? 'register-input-error' : ''}`}
+                    placeholder="Enter password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="register-eye-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {errors.password && <span className="register-error-text">{errors.password}</span>}
+              </div>
+
+              <div className="register-field">
+                <label htmlFor="confirmPassword" className="register-label">
+                  Confirm Password
+                </label>
+                <div className="register-input-wrapper">
+                  <Lock className="register-input-icon" size={18} />
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`register-input register-input-password ${errors.confirmPassword ? 'register-input-error' : ''}`}
+                    placeholder="Enter confirm password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="register-eye-toggle"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <span className="register-error-text">{errors.confirmPassword}</span>}
+              </div>
+
+              <button type="submit" className="register-submit-btn" disabled={loading}>
+                <UserPlus size={18} />
+                {loading ? "Creating Account..." : "Create Account"}
+              </button>
+
+              <p className="register-login-text">
+                Already have an account? <a href="#login">Login Now</a>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <button className="register-help-btn" aria-label="Help">
         <HelpCircle size={20} />
       </button>
     </div>

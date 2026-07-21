@@ -1,320 +1,562 @@
-/* ===== Root variables ===== */
-.hms-page {
-  --teal: #0d7377;
-  --teal-dark: #0a5c60;
-  --teal-light: #14b8b3;
-  --bg-blue: #dce9f5;
-  --text-dark: #1f2937;
-  --text-gray: #9ca3af;
-  --text-gray-mid: #6b7280;
-  --border-color: #e5e7eb;
-  --white: #ffffff;
+/* ==========================
+   GOOGLE FONT
+========================== */
 
-  min-height: 100vh;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* ==========================
+   PAGE
+========================== */
+
+.register-page {
   width: 100%;
-  background-color: var(--bg-blue);
-  font-family: 'Poppins', sans-serif;
-  box-sizing: border-box;
-  position: relative;
-  overflow-x: hidden;
-}
-
-.hms-page *,
-.hms-page *::before,
-.hms-page *::after {
-  box-sizing: border-box;
-}
-
-/* ===== Header ===== */
-.hms-header {
-  background-color: var(--white);
+  min-height: 100vh;
+  background: #ffffff;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ==========================
+   HEADER
+========================== */
+
+.login-header {
+  height: 78px;
+  display: flex;
   justify-content: space-between;
-  padding: 16px 40px;
-  flex-wrap: wrap;
-  gap: 12px;
-  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+  padding: 0 28px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #ffffff;
+  flex-shrink: 0;
 }
 
-.hms-header-left {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
+}
+
+.logo-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .hms-logo-icon {
   width: 90px;
   height: 68px;
-  color: var(--teal-light);
   flex-shrink: 0;
 }
 
-
-.hms-title {
+.system-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text-dark);
+  font-family: 'Poppins', sans-serif;
   line-height: 1.2;
-  font-family: 'Poppins', sans-serif;
 }
 
-.hms-title-accent {
-  color: var(--teal);
+.green-text {
+  color: #14c2b3;
 }
 
-.hms-subtitle {
+.blue-text {
+  color: #2f63e6;
+}
+
+.header-subtitle {
   margin: 2px 0 0 0;
-  font-size: 12.5px;
-  color: var(--text-gray-mid);
+  font-size: 14px;
+  color: #6f7580;
   font-family: 'Poppins', sans-serif;
 }
 
-.hms-header-right {
+.header-right {
   text-align: right;
 }
 
-.hms-tagline {
+.header-right h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #10c4a4;
+  font-family: 'Poppins', sans-serif;
+}
+
+.header-right p {
+  margin: 3px 0 0 0;
+  font-size: 15px;
+  color: #6d7381;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ==========================
+   MAIN CONTAINER (Two Columns)
+========================== */
+
+.register-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ==========================
+   LEFT PANEL - Promotional Section
+========================== */
+
+.register-left-section {
+  background: linear-gradient(135deg, #f5faff 0%, #eaf4ff 50%, #dcecff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 60px;
+}
+
+.register-left-content {
+  width: 100%;
+  max-width: 520px;
+}
+
+/* ==========================
+   HERO ILLUSTRATION
+========================== */
+
+.reg-hero-illustration {
+  margin-bottom: 30px;
+}
+
+.reg-illustration-wrapper {
+  position: relative;
+  width: 200px;
+  height: 170px;
+  margin: 0 auto;
+}
+
+/* Smartphone */
+.reg-ill-phone {
+  position: absolute;
+  left: 50%;
+  top: 15px;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 140px;
+  background: #0d7377;
+  border-radius: 18px;
+  border: 3px solid #0a5c60;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reg-ill-phone-screen {
+  width: 85px;
+  height: 120px;
+  background: #ffffff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.reg-ill-phone-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+/* Shield */
+.reg-ill-shield {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  width: 52px;
+  height: 52px;
+  background: #2f63e6;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(47, 99, 230, 0.3);
+  z-index: 3;
+}
+
+/* Stethoscope */
+.reg-ill-stethoscope {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  background: #14c2b3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(20, 194, 179, 0.3);
+  z-index: 3;
+}
+
+/* Decorative crosses */
+.reg-ill-cross {
+  position: absolute;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2f63e6;
+  opacity: 0.5;
+  font-family: 'Poppins', sans-serif;
+}
+
+.reg-ill-cross-1 {
+  top: -5px;
+  left: 20px;
+  font-size: 14px;
+  opacity: 0.3;
+}
+
+.reg-ill-cross-2 {
+  top: 50px;
+  right: -18px;
+  font-size: 16px;
+  opacity: 0.35;
+}
+
+.reg-ill-cross-3 {
+  bottom: 30px;
+  left: -15px;
+  font-size: 20px;
+  opacity: 0.25;
+}
+
+/* ==========================
+   HEADING
+========================== */
+
+.reg-heading {
+  font-size: 40px;
+  font-weight: 800;
+  color: #1f2937;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.2;
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+.reg-heading-highlight {
+  color: #0d7377;
+}
+
+/* ==========================
+   DESCRIPTION
+========================== */
+
+.reg-description {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #6b7280;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+  margin: 0 0 32px 0;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ==========================
+   FEATURES
+========================== */
+
+.reg-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reg-feature-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 13px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(13, 115, 119, 0.08);
+  transition: all 0.25s ease;
+  cursor: default;
+}
+
+.reg-feature-card:hover {
+  background: #ffffff;
+  border-color: rgba(13, 115, 119, 0.2);
+  box-shadow: 0 4px 16px rgba(13, 115, 119, 0.1);
+  transform: translateX(4px);
+}
+
+.reg-feature-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.reg-feature-icon-shield {
+  background: linear-gradient(135deg, #2f63e6, #4f7eff);
+}
+
+.reg-feature-icon-bell {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.reg-feature-icon-chart {
+  background: linear-gradient(135deg, #0d7377, #14b8b3);
+}
+
+.reg-feature-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.reg-feature-text h4 {
   margin: 0;
   font-size: 14px;
-  font-weight: 700;
-  color: var(--teal);
+  font-weight: 600;
+  color: #1e293b;
   font-family: 'Poppins', sans-serif;
+  line-height: 1.3;
 }
 
-.hms-tagline-sub {
-  margin: 2px 0 0 0;
+.reg-feature-text p {
+  margin: 1px 0 0 0;
   font-size: 12px;
-  color: var(--text-gray);
-  letter-spacing: 0.3px;
+  color: #94a3b8;
   font-family: 'Poppins', sans-serif;
+  line-height: 1.4;
 }
 
-/* ===== Main ===== */
-.hms-main {
+/* ==========================
+   RIGHT SIDE BACKGROUND
+========================== */
+
+.register-right-section {
+  background: #ffffff;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8vw;
-  padding: 60px 40px;
-  min-height: calc(100vh - 76px);
-  flex-wrap: wrap;
-}
-
-/* Decorative heart illustration */
-.hms-hero-icon {
-  position: relative;
-  width: 370px;
-  height: 290px;
-  flex-shrink: 0;
-  display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 50px;
 }
 
-/* Use login-style heartbeat lines */
-.hms-heartbeat-line {
-  position: absolute;
+/* ==========================
+   CARD
+========================== */
+
+.register-card {
   width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 500px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 35px 40px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
 }
 
-/* SVG line color + size */
-.hms-heartbeat-line svg {
-  width: 100%;
-  height: 100%;
-  color: var(--teal);
-  opacity: 1;
-}
-
-
-/* Remove old plus/cross visuals */
-.hms-heart-cross {
-  display: none;
-}
-
-/* Keep outline image hidden if present */
-.hms-heart-outline {
-  display: none;
-}
-
-.hms-heart-image {
-  width: 70%;
-  height: auto;
-  color: var(--teal);
-  display: block;
-}
-
-/* ===== Card ===== */
-
-.hms-card {
-  background-color: var(--white);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  padding: 40px 48px 32px;
-  width: 100%;
-  max-width: 448px;
-}
-
-.hms-card-header {
+.register-card-header {
   text-align: center;
   margin-bottom: 24px;
 }
 
-/*.hms-card-icon {
-  width: 90px;
-  height: 50px;
-  color: var(--teal-light);
-  margin-bottom: 8px;
-}*/
-
-.hms-card-title {
+.register-card-title {
   margin: 0 0 6px 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--teal);
+  font-size: 32px;
+  font-weight: 700;
+  color: #0d7377;
   font-family: 'Poppins', sans-serif;
 }
 
-.hms-card-subtitle {
+.register-card-subtitle {
   margin: 0;
-  font-size: 13.5px;
-  color: var(--text-gray-mid);
+  font-size: 14px;
+  color: #6b7280;
   font-family: 'Poppins', sans-serif;
 }
 
-/* ===== Form ===== */
-.hms-form {
+/* ==========================
+   FORM
+========================== */
+
+.register-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.hms-field {
+.register-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.hms-label {
+.register-label {
   font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-dark);
+  font-weight: 600;
+  color: #1f2937;
   font-family: 'Poppins', sans-serif;
   text-align: left;
 }
 
-.hms-input-wrapper {
+.register-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.hms-input-icon {
+.register-input-icon {
   position: absolute;
   left: 14px;
-  color: var(--text-gray);
+  color: #9ca3af;
   pointer-events: none;
 }
 
-.hms-input {
+.register-input {
   width: 100%;
   padding: 12px 14px 12px 42px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 14px;
-  color: var(--text-dark);
+  color: #1f2937;
   outline: none;
-  background-color: var(--white);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: #ffffff;
+  transition: 0.2s ease;
   font-family: 'Poppins', sans-serif;
 }
 
-.hms-input::placeholder {
+.register-input::placeholder {
   color: #b0b7c3;
 }
 
-.hms-input:focus {
-  border-color: var(--teal-light);
-  box-shadow: 0 0 0 3px rgba(20, 184, 179, 0.15);
+.register-input:focus {
+  border-color: #14b8b3;
+  box-shadow: 0 0 0 3px rgba(20, 184, 179, 0.12);
 }
 
-.hms-input-password {
+.register-input:hover {
+  border-color: #14b8b3;
+}
+
+.register-input-password {
   padding-right: 42px;
 }
 
-.hms-eye-toggle {
+.register-input-error {
+  border-color: #ef4444;
+}
+
+.register-input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.register-eye-toggle {
   position: absolute;
   right: 12px;
   background: none;
   border: none;
   padding: 4px;
-  color: var(--text-gray-mid);
+  color: #9ca3af;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: 0.2s ease;
 }
 
-.hms-eye-toggle:hover {
-  color: var(--text-dark);
+.register-eye-toggle:hover {
+  color: #1f2937;
 }
 
-/* ===== Submit button ===== */
-.hms-submit-btn {
+.register-error-text {
+  font-size: 12px;
+  color: #ef4444;
+  font-family: 'Poppins', sans-serif;
+  margin-top: 2px;
+}
+
+/* ==========================
+   SUBMIT BUTTON
+========================== */
+
+.register-submit-btn {
   margin-top: 8px;
   width: 100%;
   padding: 13px 16px;
-  background-color: var(--teal);
-  color: var(--white);
+  background: #0d7377;
+  color: #ffffff;
   border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background-color 0.15s ease;
+  transition: 0.2s ease;
   font-family: 'Poppins', sans-serif;
 }
 
-.hms-submit-btn:hover {
-  background-color: var(--teal-dark);
+.register-submit-btn:hover {
+  background: #0a5c60;
+  transform: translateY(-1px);
 }
 
-.hms-submit-btn:active {
-  transform: translateY(1px);
+.register-submit-btn:active {
+  transform: translateY(0);
 }
 
-/* ===== Login link ===== */
-.hms-login-text {
+.register-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==========================
+   LOGIN LINK
+========================== */
+
+.register-login-text {
   text-align: center;
-  margin: 4px 0 0 0;
-  font-size: 13.5px;
-  color: var(--text-gray-mid);
+  margin: 20px 0 0 0;
+  font-size: 14px;
+  color: #6b7280;
   font-family: 'Poppins', sans-serif;
 }
 
-.hms-login-text a {
+.register-login-text a {
   color: #2563eb;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
+  transition: 0.2s ease;
 }
 
-.hms-login-text a:hover {
+.register-login-text a:hover {
   text-decoration: underline;
 }
 
-/* ===== Help button ===== */
-.hms-help-btn {
+/* ==========================
+   HELP BUTTON
+========================== */
+
+.register-help-btn {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -322,121 +564,201 @@
   height: 44px;
   border-radius: 50%;
   background-color: #374151;
-  color: var(--white);
+  color: #ffffff;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: 0.2s ease;
 }
 
-.hms-help-btn:hover {
+.register-help-btn:hover {
   background-color: #1f2937;
 }
 
-/* ===== Responsive breakpoints ===== */
+/* ==========================
+   RESPONSIVE - LARGE DESKTOP
+========================== */
 
-/* Tablets */
-@media (max-width: 1024px) {
-  .hms-main {
-    gap: 40px;
-    padding: 48px 32px;
+@media (max-width: 1400px) {
+  .reg-heading {
+    font-size: 34px;
   }
 
-  .hms-hero-icon {
-    width: 130px;
-    height: 130px;
+  .register-left-section {
+    padding: 40px;
   }
 }
 
-/* Small tablets / large phones - stack hero icon above card */
-@media (max-width: 768px) {
-  .hms-header {
-    padding: 14px 20px;
+/* ==========================
+   RESPONSIVE - LAPTOP
+========================== */
+
+@media (max-width: 1200px) {
+  .login-header {
+    padding: 20px;
   }
 
-  .hms-header-right {
-    text-align: left;
+  .register-left-section {
+    padding: 35px 30px;
   }
 
-  .hms-title {
-    font-size: 18px;
+  .reg-heading {
+    font-size: 30px;
   }
 
-  .hms-main {
-    flex-direction: column;
+  .reg-description {
+    font-size: 14px;
+  }
+
+  .register-card {
+    padding: 30px;
+  }
+
+  .register-card-title {
+    font-size: 28px;
+  }
+}
+
+/* ==========================
+   RESPONSIVE - TABLET
+========================== */
+
+@media (max-width: 992px) {
+  .register-container {
+    grid-template-columns: 1fr;
+  }
+
+  .register-left-section {
+    display: none;
+  }
+
+  .register-right-section {
     padding: 40px 20px;
-    gap: 24px;
+    background: #f5faff;
   }
 
-  .hms-hero-icon {
-    width: 100px;
-    height: 100px;
+  .register-card {
+    max-width: 520px;
   }
 
-  .hms-card {
-    padding: 32px 28px 28px;
-    max-width: 460px;
+  .header-right {
+    display: none;
+  }
+
+  .system-title {
+    font-size: 17px;
   }
 }
 
-/* Mobile phones */
-@media (max-width: 480px) {
-  .hms-header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 14px 16px;
+/* ==========================
+   RESPONSIVE - MOBILE
+========================== */
+
+@media (max-width: 768px) {
+  .register-page {
+    width: 100%;
+    margin: 0;
+    min-height: 100vh;
+    border-radius: 0;
   }
 
-   .hms-header-right {
-    text-align: left;
-    padding-left: 130px;   /*fix this time */
-    
+  .login-header {
+    padding: 15px;
   }
 
-  .hms-main {
-    padding: 28px 14px 60px;
+  .system-title {
+    font-size: 16px;
   }
 
-  .hms-hero-icon {
-    width: 100px;
-    height: 100px;
+  .header-subtitle {
+    font-size: 12px;
   }
 
-  .hms-card {
-    padding: 28px 20px 24px;
-    border-radius: 12px;
+  .register-right-section {
+    padding: 30px 16px;
   }
 
-  .hms-card-title {
-    font-size: 21px;
+  .register-card {
+    padding: 28px 24px;
+    border-radius: 20px;
   }
 
-  .hms-input {
+  .register-card-title {
+    font-size: 26px;
+  }
+
+  .register-card-subtitle {
+    font-size: 13px;
+  }
+
+  .register-input {
     padding: 11px 12px 11px 38px;
     font-size: 13.5px;
   }
 
-  .hms-help-btn {
-    bottom: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
+  .register-submit-btn {
+    font-size: 15px;
+    padding: 12px 16px;
   }
 }
 
-/* Very small phones */
+/* ==========================
+   RESPONSIVE - SMALL MOBILE
+========================== */
+
+@media (max-width: 480px) {
+  .login-header {
+    padding: 12px 14px;
+  }
+
+  .header-right {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .register-card {
+    padding: 22px 16px;
+  }
+
+  .register-card-title {
+    font-size: 24px;
+  }
+
+  .register-submit-btn {
+    font-size: 14px;
+  }
+
+  .register-login-text {
+    font-size: 13px;
+  }
+}
+
+/* ==========================
+   RESPONSIVE - EXTRA SMALL
+========================== */
+
 @media (max-width: 360px) {
-  .hms-card {
-    padding: 22px 16px 20px;
+  .register-card {
+    padding: 18px 14px;
   }
 
-  .hms-title {
-    font-size: 16px;
+  .register-card-title {
+    font-size: 22px;
   }
 
-  .hms-subtitle {
-    font-size: 11px;
+  .register-input {
+    padding-left: 38px;
+  }
+
+  .register-input-icon {
+    left: 12px;
+  }
+
+  .register-submit-btn {
+    padding: 11px 14px;
   }
 }

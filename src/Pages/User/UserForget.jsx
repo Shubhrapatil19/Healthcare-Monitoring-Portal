@@ -1,5 +1,5 @@
-import React from "react";
 import "./UserForget.css";
+
 
 import {
   FaTimes,

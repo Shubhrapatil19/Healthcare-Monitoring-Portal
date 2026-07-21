@@ -1,6 +1,55 @@
+import { useEffect, useMemo, useState } from 'react';
 import './UserReport.css';
 
 const UserReport = ({ onViewReport }) => {
+  const [medicines, setMedicines] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('medicines') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const syncMedicines = () => {
+      try {
+        setMedicines(JSON.parse(localStorage.getItem('medicines') || '[]'));
+      } catch {
+        setMedicines([]);
+      }
+    };
+
+    syncMedicines();
+    window.addEventListener('storage', syncMedicines);
+    return () => window.removeEventListener('storage', syncMedicines);
+  }, []);
+
+  const reportStats = useMemo(() => {
+    const totalMedicines = medicines.length;
+
+    if (totalMedicines === 0) {
+      return {
+        compliance: '0%',
+        taken: 0,
+        missed: 0,
+        lowStock: 0,
+        outOfStock: 0,
+      };
+    }
+
+    const taken = medicines.filter((medicine) => medicine.status === 'taken').length;
+    const missed = medicines.filter((medicine) => medicine.status === 'missed').length;
+    const compliance = Math.round((taken / totalMedicines) * 100);
+
+    return {
+      compliance: `${compliance}%`,
+      taken,
+      missed,
+      lowStock: 0,
+      outOfStock: 0,
+    };
+  }, [medicines]);
+
   return (
     <div className="reports-container">
       <h1 className="reports-title">Reports</h1>
@@ -23,15 +72,15 @@ const UserReport = ({ onViewReport }) => {
           <div className="report-details">
             <div className="report-item">
               <span className="report-label">Compliance Percentage</span>
-              <span className="report-value">90%</span>
+              <span className="report-value">{reportStats.compliance}</span>
             </div>
             <div className="report-item">
               <span className="report-label">Taken Medicines</span>
-              <span className="report-value">45</span>
+              <span className="report-value">{reportStats.taken}</span>
             </div>
             <div className="report-item">
               <span className="report-label">Missed Medicines</span>
-              <span className="report-value">5</span>
+              <span className="report-value">{reportStats.missed}</span>
             </div>
           </div>
         </div>
@@ -52,11 +101,11 @@ const UserReport = ({ onViewReport }) => {
           <div className="report-details">
             <div className="report-item">
               <span className="report-label">Low Stock Medicines</span>
-              <span className="report-value">2</span>
+              <span className="report-value">{reportStats.lowStock}</span>
             </div>
             <div className="report-item">
               <span className="report-label">Out of Stock Medicines</span>
-              <span className="report-value">1</span>
+              <span className="report-value">{reportStats.outOfStock}</span>
             </div>
           </div>
         </div>

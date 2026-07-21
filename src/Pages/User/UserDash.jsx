@@ -28,10 +28,8 @@ import {
   CircleX,
   ArrowDownCircle,
   Plus,
-  BellRing,
   Menu,
   Clock,
-  Repeat
 } from "lucide-react";
 
 const UserDash = ({ onLogout }) => {
@@ -312,7 +310,7 @@ const UserDash = ({ onLogout }) => {
             ) : activeItem === "Reports" ? (
               <UserReport />
             ) : activeItem === "Reminders" ? (
-              <UserRem onAddMedicine={handleAddMedicine} />
+              <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} />
             ) : showLogoutModal ? (
               <UserLogout
                 onCancel={() => setShowLogoutModal(false)}
@@ -385,35 +383,31 @@ const UserDash = ({ onLogout }) => {
                           </button>
                         </div>
                       ) : (
-                        <div className="medicine-list">
+                        <div className="medicine-list medicine-list--today">
+                          <div className="medicine-table-header">
+                            <span className="medicine-col medicine-name-col">Medicine</span>
+                            <span className="medicine-col medicine-dosage-col">Dosage</span>
+                            <span className="medicine-col medicine-time-col">Timing</span>
+                            <span className="medicine-col medicine-frequency-col">Frequency</span>
+                            <span className="medicine-col medicine-status-col">Status</span>
+                          </div>
                           {medicines.map((medicine) => (
-                            <div
-                              key={medicine.id}
-                              className="medicine-item"
-                            >
+                            <div key={medicine.id} className="medicine-item">
                               <div className="medicine-info">
                                 <h5>{medicine.medicineName}</h5>
-                                <p className="medicine-dosage">{medicine.dosage}</p>
-                                <div className="medicine-details">
-                                  <span className="medicine-timing">
-                                    <Clock size={14} />
-                                    {medicine.timing}
-                                  </span>
-                                  <span className="medicine-frequency">
-                                    <Repeat size={14} />
-                                    {medicine.frequency}
-                                  </span>
-                                </div>
                               </div>
+                              <div className="medicine-dosage-value">{medicine.dosage}</div>
+                              <div className="medicine-time-value">
+                                <Clock size={14} />
+                                {medicine.timing}
+                              </div>
+                              <div className="medicine-frequency-value">{medicine.frequency}</div>
                               <div className="medicine-status">
                                 <span className="status-badge pending">Pending</span>
                               </div>
                             </div>
                           ))}
-                          <button
-                            className="add-more-btn"
-                            onClick={handleAddMedicine}
-                          >
+                          <button className="add-more-btn" onClick={handleAddMedicine}>
                             <Plus size={24} />
                             Add More Medicine
                           </button>
@@ -451,15 +445,47 @@ const UserDash = ({ onLogout }) => {
                       My Medicine
                     </div>
 
-                    <div className="empty-card">
-                      <Pill size={60} />
-                      <h4>No medicine added yet</h4>
-                      <p>Add your medicine to see your medicine list</p>
-                      <button onClick={handleAddMedicine}>
-                        <Plus size={24} />
-                        Add Your First Medicine
-                      </button>
-                    </div>
+                    {medicines.length === 0 ? (
+                      <div className="empty-card">
+                        <Pill size={60} />
+                        <h4>No medicine added yet</h4>
+                        <p>Add your medicine to see your medicine list</p>
+                        <button onClick={handleAddMedicine}>
+                          <Plus size={24} />
+                          Add Your First Medicine
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="medicine-list medicine-list--my-medicine">
+                        <div className="medicine-table-header">
+                          <span className="medicine-col medicine-name-col">Medicine</span>
+                          <span className="medicine-col medicine-dosage-col">Dosage</span>
+                          <span className="medicine-col medicine-time-col">Timing</span>
+                          <span className="medicine-col medicine-frequency-col">Frequency</span>
+                          <span className="medicine-col medicine-status-col">Status</span>
+                        </div>
+                        {medicines.map((medicine) => (
+                          <div key={medicine.id} className="medicine-item">
+                            <div className="medicine-info">
+                              <h5>{medicine.medicineName}</h5>
+                            </div>
+                            <div className="medicine-dosage-value">{medicine.dosage}</div>
+                            <div className="medicine-time-value">
+                              <Clock size={14} />
+                              {medicine.timing}
+                            </div>
+                            <div className="medicine-frequency-value">{medicine.frequency}</div>
+                            <div className="medicine-status">
+                              <span className="status-badge pending">Pending</span>
+                            </div>
+                          </div>
+                        ))}
+                        <button className="add-more-btn" onClick={handleAddMedicine}>
+                          <Plus size={24} />
+                          Add More Medicine
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="dashboard-card calendar-card">
@@ -552,4 +578,3 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
-

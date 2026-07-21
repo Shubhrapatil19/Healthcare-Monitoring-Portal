@@ -24,9 +24,15 @@ body{
 }
 
 .dashboard-blur{
-    filter:blur(6px);
-    pointer-events:none;
-    user-select:none;
+    filter: blur(6px);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.85;
+}
+
+/* If modal is open, keep background visible to avoid “blank screen”. */
+.dashboard:not(.dashboard-blur){
+    opacity: 1;
 }
 
 /* ================= HEADER ================= */
@@ -154,6 +160,19 @@ body{
     border-radius: 999px;
     border: 1px solid rgba(15, 118, 110, 0.18);
     background: #f7fffd;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.profile-box:hover {
+    transform: translateY(-2px);
+    border-color: rgba(15, 118, 110, 0.35);
+    box-shadow: 0 4px 16px rgba(15, 118, 110, 0.15), 0 0 0 2px rgba(20, 184, 166, 0.1);
+}
+
+.profile-box:active {
+    transform: translateY(0) scale(0.97);
 }
 
 .avatar {
@@ -165,12 +184,25 @@ body{
     justify-content: center;
     align-items: center;
     color: #ffffff;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.profile-box:hover .avatar {
+    background: #0f766e;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25);
 }
 
 .profile-box span {
     font-size: 16px;
     font-weight: 600;
     color: #0f5660;
+    transition: color 0.3s ease;
+}
+
+.profile-box:hover span {
+    color: #0d9488;
 }
 
 /* ================= BODY ================= */
@@ -600,238 +632,7 @@ body{
 
 }
 
-/* ================= STATS (BASE) ================= */
-
-.stats-grid{
-
-    display:grid;
-
-    grid-template-columns:repeat(4,1fr);
-
-    gap:20px;
-
-    margin-bottom:30px;
-
-}
-
-.stat-card{
-
-    background:linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-
-    border-radius:20px;
-
-    padding:28px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:24px;
-
-    border:1px solid #e2e8f0;
-
-    position:relative;
-
-    overflow:hidden;
-
-    transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-    cursor:pointer;
-
-    box-shadow:0 4px 16px rgba(0,0,0,0.06);
-
-    backdrop-filter:blur(10px);
-
-}
-
-.stat-card::before{
-
-    content:'';
-
-    position:absolute;
-
-    left:0;
-
-    top:0;
-
-    bottom:0;
-
-    width:6px;
-
-    background:linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
-
-    transition:all 0.4s ease;
-
-    box-shadow:2px 0 8px rgba(15,118,110,0.3);
-
-}
-
-.stat-card::after{
-
-    content:'';
-
-    position:absolute;
-
-    top:-50%;
-
-    right:-50%;
-
-    width:200px;
-
-    height:200px;
-
-    background:radial-gradient(circle, rgba(15,118,110,0.1) 0%, transparent 70%);
-
-    border-radius:50%;
-
-    transition:all 0.5s ease;
-
-    pointer-events:none;
-
-}
-
-.stat-card:hover{
-
-    transform:translateY(-10px) scale(1.02);
-
-    box-shadow:0 20px 40px rgba(15,118,110,0.2);
-
-    border-color:#0f766e;
-
-}
-
-.stat-card:hover::before{
-
-    width:8px;
-
-    box-shadow:2px 0 12px rgba(15,118,110,0.5);
-
-}
-
-.stat-card:hover::after{
-
-    top:-30%;
-
-    right:-30%;
-
-    width:280px;
-
-    height:280px;
-
-}
-
-.stat-card svg{
-
-    width:56px;
-
-    height:56px;
-
-    color:#fff;
-
-    padding:14px;
-
-    border-radius:16px;
-
-    transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-    box-shadow:0 6px 16px rgba(15,118,110,0.25);
-
-    position:relative;
-
-    z-index:1;
-
-    flex-shrink:0;
-
-    filter:drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-
-}
-
-.stat-card:hover svg{
-
-    transform:scale(1.2) rotate(15deg);
-
-    box-shadow:0 8px 20px rgba(15,118,110,0.4);
-
-}
-
-.stat-card > div{
-
-    flex:1;
-
-    position:relative;
-
-    z-index:1;
-
-}
-
-.stat-card h1{
-
-    color:#0f766e;
-
-    font-size:48px;
-
-    font-weight:700;
-
-    transition:all 0.3s ease;
-
-    line-height:1;
-
-    margin:0;
-
-    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-
-    -webkit-background-clip:text;
-
-    -webkit-text-fill-color:transparent;
-
-    background-clip:text;
-
-}
-
-.stat-card:hover h1{
-
-    transform:scale(1.1);
-
-}
-
-.stat-card p{
-
-    font-size:13px;
-
-    color:#64748b;
-
-    font-weight:600;
-
-    text-transform:uppercase;
-
-    letter-spacing:1px;
-
-    margin:0;
-
-    line-height:1.4;
-
-}
-
-/* Individual card accent colors - Unified professional teal scheme */
-.stat-card:nth-child(1) svg,
-.stat-card:nth-child(2) svg,
-.stat-card:nth-child(3) svg,
-.stat-card:nth-child(4) svg{
-
-    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-
-}
-
-.stat-card:nth-child(1)::before,
-.stat-card:nth-child(2)::before,
-.stat-card:nth-child(3)::before,
-.stat-card:nth-child(4)::before{
-
-    background:linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
-
-}
-
-/* NOTE: Later duplicated STATS block removed to prevent style conflicts. */
+/* STAT cards - see definition below */
 
 .stats-grid {
     display: grid;
@@ -840,19 +641,102 @@ body{
     margin-bottom: 30px;
 }
 
+/* ─────────── CARD 1 – Today's Medicines (Teal/Blue) ─────────── */
+.stat-card:nth-child(1) {
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+    border-color: rgba(13, 148, 136, 0.2);
+    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.08);
+}
+.stat-card:nth-child(1)::before {
+    background: linear-gradient(180deg, #0d9488, #14b8a6);
+}
+.stat-card:nth-child(1) svg {
+    background: linear-gradient(135deg, #0d9488, #14b8a6);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+}
+.stat-card:nth-child(1) h1 {
+    color: #0d9488;
+}
+.stat-card:nth-child(1):hover {
+    box-shadow: 0 18px 34px rgba(13, 148, 136, 0.18);
+    border-color: rgba(13, 148, 136, 0.35);
+}
+
+/* ─────────── CARD 2 – Taken (Blue) ─────────── */
+.stat-card:nth-child(2) {
+    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+    border-color: rgba(37, 99, 235, 0.2);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+}
+.stat-card:nth-child(2)::before {
+    background: linear-gradient(180deg, #2563eb, #60a5fa);
+}
+.stat-card:nth-child(2) svg {
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+.stat-card:nth-child(2) h1 {
+    color: #2563eb;
+}
+.stat-card:nth-child(2):hover {
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18);
+    border-color: rgba(37, 99, 235, 0.35);
+}
+
+/* ─────────── CARD 3 – Missed (Red/Rose) ─────────── */
+.stat-card:nth-child(3) {
+    background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+    border-color: rgba(225, 29, 72, 0.2);
+    box-shadow: 0 8px 24px rgba(225, 29, 72, 0.08);
+}
+.stat-card:nth-child(3)::before {
+    background: linear-gradient(180deg, #e11d48, #fb7185);
+}
+.stat-card:nth-child(3) svg {
+    background: linear-gradient(135deg, #e11d48, #fb7185);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+}
+.stat-card:nth-child(3) h1 {
+    color: #e11d48;
+}
+.stat-card:nth-child(3):hover {
+    box-shadow: 0 18px 34px rgba(225, 29, 72, 0.18);
+    border-color: rgba(225, 29, 72, 0.35);
+}
+
+/* ─────────── CARD 4 – Low Stock Alerts (Amber) ─────────── */
+.stat-card:nth-child(4) {
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+    border-color: rgba(217, 119, 6, 0.2);
+    box-shadow: 0 8px 24px rgba(217, 119, 6, 0.08);
+}
+.stat-card:nth-child(4)::before {
+    background: linear-gradient(180deg, #d97706, #f59e0b);
+}
+.stat-card:nth-child(4) svg {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+.stat-card:nth-child(4) h1 {
+    color: #d97706;
+}
+.stat-card:nth-child(4):hover {
+    box-shadow: 0 18px 34px rgba(217, 119, 6, 0.18);
+    border-color: rgba(217, 119, 6, 0.35);
+}
+
+/* ─────────── BASE CARD STYLES ─────────── */
 .stat-card {
-    background: #ffffff;
     border-radius: 22px;
     padding: 24px 22px;
     display: flex;
     align-items: center;
     gap: 18px;
-    border: 1px solid rgba(15, 118, 110, 0.12);
     position: relative;
     overflow: hidden;
     transition: all 0.35s ease;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(15, 118, 110, 0.08);
+    border: 1px solid;
 }
 
 .stat-card::before {
@@ -862,39 +746,15 @@ body{
     top: 1rem;
     width: 8px;
     height: calc(100% - 2rem);
-    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
     border-radius: 0 8px 8px 0;
     transition: all 0.35s ease;
-}
-
-.stat-card::after {
-    content: '';
-    position: absolute;
-    top: -45px;
-    right: -45px;
-    width: 140px;
-    height: 140px;
-    background: radial-gradient(circle, rgba(20, 160, 152, 0.15) 0%, transparent 70%);
-    border-radius: 50%;
-    transition: all 0.35s ease;
-    pointer-events: none;
-}
-
-.stat-card:nth-child(1)::before {
-    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
-}
-
-.stat-card:nth-child(2)::before,
-.stat-card:nth-child(3)::before,
-.stat-card:nth-child(4)::before {
-    background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
 }
 
 .stat-card svg {
     width: 48px;
     height: 48px;
     color: white;
-    padding: 14px;
+    padding: 12px;
     border-radius: 16px;
     transition: all 0.35s ease;
     position: relative;
@@ -902,27 +762,8 @@ body{
     flex-shrink: 0;
 }
 
-.stat-card:nth-child(1) svg {
-    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-}
-
-.stat-card:nth-child(2) svg,
-.stat-card:nth-child(3) svg,
-.stat-card:nth-child(4) svg {
-    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-}
-
 .stat-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 18px 34px rgba(15, 118, 110, 0.14);
-    border-color: rgba(15, 118, 110, 0.18);
-}
-
-.stat-card:hover::after {
-    top: -35px;
-    right: -35px;
-    width: 160px;
-    height: 160px;
 }
 
 .stat-card > div {
@@ -932,7 +773,6 @@ body{
 }
 
 .stat-card h1 {
-    color: #0f766e;
     font-size: 44px;
     font-weight: 700;
     margin: 0;
@@ -1468,7 +1308,7 @@ body{
 /* ================= SCHEDULE CONTENT ================= */
 
 .schedule-content{
-    padding:20px;
+    padding:18px 20px 20px;
     flex:1;
     display:flex;
     flex-direction:column;
@@ -1483,124 +1323,65 @@ body{
 }
 
 .medicine-list{
-
     display:flex;
-
     flex-direction:column;
-
-    gap:12px;
+    gap:10px;
     flex:1;
+}
 
+.medicine-table-header{
+    padding:10px 14px;
+    background:#f3f4f6;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:700;
+    color:#6b7280;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
 }
 
 .medicine-item{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    padding:16px;
-
+    padding:14px;
     background:#f9fafb;
-
     border-radius:10px;
-
     border:1px solid #e5e7eb;
-
     transition:.3s;
-
 }
 
 .medicine-item:hover{
-
     background:#f0fdfa;
-
     border-color:#0f766e;
-
 }
 
 .medicine-info{
-
-    flex:1;
-
+    min-width:0;
 }
 
 .medicine-info h5{
-
-    font-size:16px;
-
+    font-size:15px;
     font-weight:600;
-
     color:#1f2937;
-
-    margin-bottom:4px;
-
+    margin:0;
 }
 
-.medicine-dosage{
-
+.medicine-dosage-value,
+.medicine-time-value{
     font-size:13px;
-
-    color:#6b7280;
-
-    margin-bottom:8px;
-
-}
-
-.medicine-details{
-
-    display:flex;
-
-    gap:16px;
-
-    flex-wrap:wrap;
-
-}
-
-.medicine-timing,
-
-.medicine-frequency{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:6px;
-
-    font-size:13px;
-
     color:#4b5563;
-
+    display:flex;
+    align-items:center;
+    gap:6px;
 }
 
-.medicine-timing svg,
-
-.medicine-frequency svg{
-
+.medicine-time-value svg{
     color:#0f766e;
-
+    flex-shrink:0;
 }
 
 .medicine-status{
-
-    margin-left:12px;
-
-}
-
-.status-badge{
-
-    padding:6px 12px;
-
-    border-radius:20px;
-
-    font-size:12px;
-
-    font-weight:600;
-
-    white-space:nowrap;
-
+    display:flex;
+    justify-content:flex-end;
+    align-items: flex-start;
 }
 
 .status-badge.pending{
@@ -1837,9 +1618,146 @@ body{
 
 }
 
+/* ================= STOCK TABLE (Inventory Overview) ================= */
+
+.stock-table{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:20px;
+    flex:1;
+}
+
+.stock-table-header{
+    display:grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap:12px;
+
+    padding:12px 16px;
+    background:#f0fdfa;
+    border-radius:8px;
+    font-weight:700;
+    font-size:13px;
+    color:#0f766e;
+    border:1px solid rgba(15,118,110,0.4);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+}
+
+.stock-table-row{
+    display:grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+
+    gap:12px;
+    padding:14px 16px;
+    background:#f9fafb;
+    border-radius:10px;
+    border:1px solid #e5e7eb;
+    align-items:center;
+}
+
+.stock-medicine-name{
+    font-weight:600;
+    color:#1f2937;
+}
+
+.add-stock-inline-btn{
+    margin-top:auto;
+    border:none;
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color:#fff;
+    padding:12px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    box-shadow:0 4px 12px rgba(15,118,110,0.2);
+    transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-stock-inline-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(15,118,110,0.3);
+}
+
 /* ================= RESPONSIVE TABLE ================= */
 
+@media(max-width:768px){
+    .stock-table-header{
+        display:none;
+    }
+
+    .stock-table-row{
+        grid-template-columns: 1fr;
+        gap:6px;
+    }
+
+    .stock-table-row span:nth-child(1){
+        font-weight:700;
+    }
+
+    /* Today's Schedules - Match My Medicine responsive behavior */
+    .medicine-list--today .medicine-table-header {
+        display: none;
+    }
+
+    .medicine-list--today .medicine-item {
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-info h5 {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-dosage-value,
+    .medicine-list--today .medicine-item .medicine-time-value,
+    .medicine-list--today .medicine-item .medicine-frequency-value {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-dosage-value::before {
+        content: "Dosage: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-time-value::before {
+        content: "Time: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-frequency-value::before {
+        content: "Frequency: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-status {
+        justify-content: flex-start !important;
+        margin-top: 4px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-status::before {
+        content: "Status: ";
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 13px;
+    }
+}
+
 @media(max-width:992px){
+
 
     .medicine-table-header,
 
@@ -2850,13 +2768,275 @@ body{
         font-size:11px;
     }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar{
-        width:6px;
-    }
+}
 
-    ::-webkit-scrollbar-thumb{
-        border-radius:10px;
-    }
+/* ===== UPDATED OVERRIDES – Today's Schedule Table ===== */
 
+/* ── Grid definitions for Today's Schedule ── */
+.medicine-list--today .medicine-table-header,
+.medicine-list--today .medicine-item{
+    display:grid;
+    grid-template-columns: 1.5fr 1fr 1.2fr 1.2fr 0.9fr !important;
+    gap:14px;
+    align-items:center;
+}
+
+/* ── Header cell alignment per column ── */
+.medicine-col{
+    min-width:0;
+    display:flex;
+    align-items:center;
+}
+
+/* Medicine column – left aligned */
+.medicine-name-col{
+    justify-content:flex-start;
+    text-align:left;
+}
+
+/* Dosage column – center */
+.medicine-dosage-col{
+    justify-content:center;
+    text-align:center;
+}
+
+/* Timing column – center */
+.medicine-time-col{
+    justify-content:center;
+    text-align:center;
+}
+
+/* Frequency column – center */
+.medicine-frequency-col{
+    justify-content:center;
+    text-align:center;
+}
+
+/* Status column – center */
+.medicine-status-col{
+    justify-content:center;
+    text-align:center;
+}
+
+/* ── Data cell alignment per column ── */
+.medicine-info{
+    text-align:left;
+    justify-content:flex-start;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.medicine-info h5{
+    font-size:15px;
+    font-weight:600;
+    color:#1e293b;
+    margin:0;
+}
+
+.medicine-dosage-value{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:13px;
+    font-weight:500;
+    color:#334155;
+    background:rgba(15,118,110,0.06);
+    padding:4px 12px;
+    border-radius:20px;
+    white-space:nowrap;
+}
+
+.medicine-time-value{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:5px;
+    font-size:13px;
+    font-weight:500;
+    color:#334155;
+}
+
+.medicine-time-value svg{
+    color:#0f766e;
+    flex-shrink:0;
+    width:14px;
+    height:14px;
+}
+
+.medicine-frequency-value{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-size:12px;
+    font-weight:500;
+    color:#475569;
+    background:rgba(99,102,241,0.08);
+    padding:4px 10px;
+    border-radius:20px;
+    white-space:nowrap;
+}
+
+.medicine-status{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-width:0;
+}
+
+.status-badge{
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    line-height:1;
+    letter-spacing:0.02em;
+    text-transform:capitalize;
+}
+
+.status-badge.pending{
+    color:#d97706;
+}
+
+.status-badge.taken{
+    color:#059669;
+}
+
+.status-badge.missed{
+    color:#dc2626;
+}
+
+/* ── Header visual styling (modern glass effect) ── */
+.medicine-list--today .medicine-table-header{
+    padding:12px 18px !important;
+    margin-bottom:14px;
+    border-radius:14px;
+    min-height:40px;
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    font-size:11px;
+    font-weight:700;
+    color:#ffffff;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    border:none;
+    box-shadow:0 4px 12px rgba(15,118,110,0.2), 0 2px 4px rgba(15,118,110,0.1);
+    position:relative;
+    overflow:hidden;
+}
+
+.medicine-list--today .medicine-table-header::after{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:linear-gradient(90deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+    pointer-events:none;
+}
+
+.medicine-list--today .medicine-col{
+    position:relative;
+    z-index:1;
+}
+
+/* ── Row styling (alternating + card style) ── */
+.medicine-list--today .medicine-item{
+    padding:14px 18px !important;
+    margin-bottom:10px;
+    border-radius:14px;
+    background:#ffffff;
+    border:1px solid #e2e8f0;
+    transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    position:relative;
+}
+
+/* Alternating row colors */
+.medicine-list--today .medicine-item:nth-child(even){
+    background:#f8fafc;
+}
+
+.medicine-list--today .medicine-item:nth-child(odd){
+    background:#ffffff;
+}
+
+/* Teal left accent bar */
+.medicine-list--today .medicine-item::before{
+    content:'';
+    position:absolute;
+    left:0;
+    top:8px;
+    bottom:8px;
+    width:4px;
+    border-radius:0 4px 4px 0;
+    background:linear-gradient(180deg, #0f766e, #14b8a6);
+    opacity:0.5;
+    transition:opacity 0.3s ease;
+}
+
+.medicine-list--today .medicine-item:hover{
+    background:#f0fdfa;
+    border-color:#0f766e;
+    transform:translateY(-2px) scale(1.005);
+    box-shadow:0 8px 20px rgba(15,118,110,0.12), 0 4px 8px rgba(15,118,110,0.06);
+}
+
+.medicine-list--today .medicine-item:hover::before{
+    opacity:1;
+}
+
+/* ── Add More Button ── */
+.add-more-btn{
+    margin-top:18px !important;
+    padding:14px !important;
+    border:none;
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color:#fff;
+    border-radius:14px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    align-self:stretch;
+    box-shadow:0 4px 14px rgba(15,118,110,0.2);
+    position:relative;
+    overflow:hidden;
+    letter-spacing:0.02em;
+}
+
+.add-more-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(15,118,110,0.3);
+}
+
+.add-more-btn::after{
+    content:'';
+    position:absolute;
+    top:0;
+    left:-100%;
+    width:100%;
+    height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition:left 0.5s ease;
+}
+
+.add-more-btn:hover::after{
+    left:100%;
+}
+
+.add-more-btn svg{
+    width:20px;
+    height:20px;
+    transition:transform 0.3s ease;
+}
+
+.add-more-btn:hover svg{
+    transform:rotate(90deg);
 }

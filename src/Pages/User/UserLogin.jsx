@@ -13,7 +13,7 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 
-const UserLogin = ({ onLoginSuccess }) => {
+const UserLogin = ({ onLoginSuccess, onGoRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isForgetOpen, setIsForgetOpen] = useState(false);
@@ -197,7 +197,10 @@ const UserLogin = ({ onLoginSuccess }) => {
               type="button"
               onClick={() => {
                 // local demo session
+                const savedUser = JSON.parse(localStorage.getItem("registeredUser") || "null");
+                const userName = savedUser?.fullName?.trim() || "User";
                 localStorage.setItem("isLoggedIn", "true");
+                localStorage.setItem("currentUserName", userName);
                 if (typeof onLoginSuccess === "function") onLoginSuccess();
               }}
             >
@@ -211,7 +214,15 @@ const UserLogin = ({ onLoginSuccess }) => {
 
               Don't have an account?
 
-              <a href="/"> Register Now</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (typeof onGoRegister === "function") onGoRegister();
+                }}
+              >
+                Register Now
+              </a>
 
             </div>
 

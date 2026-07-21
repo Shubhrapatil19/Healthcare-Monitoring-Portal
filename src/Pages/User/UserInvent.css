@@ -433,10 +433,7 @@
 }
 
 .title-underline-small {
-  width: 50px;
-  height: 3px;
-  background-color: #14a098;
-  margin-bottom: 25px;
+  display: none;
 }
 
 .chart-container {

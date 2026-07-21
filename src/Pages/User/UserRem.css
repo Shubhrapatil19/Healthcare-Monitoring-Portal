@@ -1,493 +1,1015 @@
-/* ================= REMINDER CONTAINER ================= */
+/* ============================================
+   REMINDER PAGE — Premium v4
+   ============================================ */
 
-.reminder-container {
-  max-width: 100%;
-  margin: 0;
-  padding: 24px;
-  min-height: 100vh;
-  background-color: #f8f9fa;
+.rem-page {
+  width: 100%;
+  min-height: 100%;
+  background: linear-gradient(135deg, #F6F8FC 0%, #F0F4FA 50%, #EDF1F7 100%);
+  padding: 32px;
+  box-sizing: border-box;
+  font-family: "Inter", "Poppins", sans-serif;
 }
 
-/* ================= HEADER ================= */
+/* ============================================
+   HEADER — Premium glass effect
+   ============================================ */
 
-.reminder-header {
-  margin-bottom: 30px;
-  animation: slideDown 0.5s ease-out;
+.rem-header-section {
+  margin-bottom: 36px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px 32px;
+  border: 1px solid rgba(231, 236, 242, 0.6);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
 
-.reminder-title {
-  font-size: 32px;
-  font-weight: 600;
-  color: #1a2f3a;
-  margin: 0 0 8px 0;
-}
-
-.reminder-subtitle {
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ================= NO REMINDERS SECTION ================= */
-
-.no-reminders-section {
+.rem-header-top {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-  animation: fadeInUp 0.6s ease-out;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
 }
 
-.no-reminders-card {
-  background-color: white;
-  border-radius: 16px;
-  padding: 48px;
-  text-align: center;
-  max-width: 600px;
-  width: 100%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 2px dashed #e5e7eb;
-  transition: all 0.3s ease;
+.rem-header-left {
+  display: flex;
+  flex-direction: column;
 }
 
-.no-reminders-card:hover {
-  border-color: #0d7377;
-  box-shadow: 0 8px 20px rgba(13, 115, 119, 0.12);
+.rem-heading {
+  font-size: 38px;
+  font-weight: 700;
+  color: #13294B;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #13294B 0%, #1E3A5F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.no-reminders-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 24px;
-  color: #0d7377;
-  animation: pulse 2s ease-in-out infinite;
+.rem-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
 }
 
-.no-reminders-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
-.no-reminders-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1a2f3a;
-  margin: 0 0 16px 0;
-}
-
-.no-reminders-text {
+.rem-header-add-btn {
+  width: auto;
+  max-width: none;
+  padding: 12px 24px;
+  height: 44px;
+  margin-bottom: 0;
   font-size: 15px;
-  color: #6b7280;
-  line-height: 24px;
-  margin: 0 0 32px 0;
-}
-
-.add-medicine-btn {
+  border: none;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  color: #FFFFFF;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  background-color: #0d7377;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
+  gap: 8px;
+  cursor: pointer;
+  font-family: inherit;
   font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+}
+
+.rem-header-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.4);
+}
+
+.rem-header-add-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.rem-header-add-btn:hover svg {
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* ============================================
+   EMPTY STATE — Premium card
+   ============================================ */
+
+.rem-card {
+  width: 100%;
+  min-height: 760px;
+  background: #FFFFFF;
+  border-radius: 28px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 10px 40px rgba(15, 118, 110, 0.06);
+  padding: 60px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.rem-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(15,118,110,0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.rem-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  width: 100%;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.rem-illustration {
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 8px 24px rgba(15,118,110,0.1));
+}
+
+.rem-empty-heading {
+  font-size: 30px;
+  font-weight: 700;
+  color: #134E4A;
+  margin: 0 0 14px 0;
+  line-height: 1.2;
+}
+
+.rem-empty-desc {
+  font-size: 17px;
+  font-weight: 400;
+  color: #64748B;
+  line-height: 26px;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 0 28px 0;
+}
+
+.rem-add-btn {
+  width: 220px;
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(13, 115, 119, 0.2);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.2);
 }
 
-.add-medicine-btn:hover {
-  background-color: #0a5c5f;
+.rem-add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(13, 115, 119, 0.3);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.3);
 }
 
-.add-medicine-btn:active {
-  transform: translateY(0);
+.rem-add-btn:active {
+  transform: translateY(0) scale(0.97);
 }
 
-/* ================= REMINDER HISTORY SECTION ================= */
-
-.reminder-history-section {
-  animation: fadeInUp 0.6s ease-out;
+.rem-add-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
 }
 
-.reminder-history-title {
+.rem-add-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+.rem-banner {
+  width: 100%;
+  max-width: 1180px;
+  min-height: 110px;
+  background: linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 100%);
+  border-radius: 20px;
+  border: 1px solid #CCFBF1;
+  padding: 24px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 600;
-  color: #1a2f3a;
-  margin: 0 0 20px 0;
+  gap: 16px;
+  margin-top: 70px;
+  position: relative;
+  overflow: hidden;
 }
 
-.reminder-history-title svg {
-  color: #0d7377;
+.rem-banner::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ================= TABLE ================= */
-
-.reminder-table-wrapper {
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  overflow-x: auto;
-}
-
-.reminder-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.reminder-table thead {
-  background-color: #0d7377;
-}
-
-.reminder-table thead tr {
-  border-radius: 8px;
-}
-
-.reminder-table th {
-  padding: 16px;
-  text-align: center;
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.5px;
-}
-
-.reminder-table tbody tr {
-  border-bottom: 1px solid #e8f0f0;
-  transition: all 0.3s ease;
-}
-
-.reminder-table tbody tr:hover {
-  background-color: #f0f9f9;
-  transform: translateX(4px);
-}
-
-.reminder-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.reminder-table td {
-  padding: 18px 16px;
-  text-align: center;
-  color: #1a2f3a;
-  font-size: 14px;
-}
-
-/* ================= STATUS BADGE ================= */
-
-.status-badge {
-  display: inline-block;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  min-width: 100px;
-}
-
-.status-badge.pending {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fbbf24;
-}
-
-.status-badge.taken {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.status-badge.missed {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
-}
-
-/* ================= ACTION BUTTON ================= */
-
-.action-btn {
-  width: 40px;
-  height: 40px;
+.rem-banner-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #CCFBF1 0%, #A7F3D0 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: transparent;
-  border: 1px solid #0d7377;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  padding: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(15,118,110,0.1);
 }
 
-.action-btn:hover {
-  background-color: #e8f5f5;
+.rem-banner-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #0F766E;
+}
+
+.rem-banner-text {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.rem-banner-text h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #0F766E;
+  margin: 0 0 4px 0;
+}
+
+.rem-banner-text p {
+  font-size: 18px;
+  font-weight: 400;
+  color: #64748B;
+  margin: 0;
+}
+
+.rem-banner-decoration {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  opacity: 0.25;
+}
+
+/* ============================================
+   CONTENT & SECTION HEADER
+   ============================================ */
+
+.rem-content {
+  width: 100%;
+}
+
+.rem-section-header {
+  margin-bottom: 18px;
+  text-align: left;
+  padding-left: 8px;
+}
+
+.rem-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #4F83CC;
+  text-transform: uppercase;
+  display: block;
+  position: relative;
+}
+
+.rem-section-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #0F766E, #14B8A6);
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+/* ============================================
+   REMINDER CARD — Premium vertical stacked cards
+   ============================================ */
+
+.rem-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.rem-card-item {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #EDF2F7;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  padding: 24px 24px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 200px;
+  height: auto;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.rem-card-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(180deg, #0F766E, #14B8A6, #5EEAD4);
+  border-radius: 5px 0 0 5px;
+  opacity: 0.85;
+}
+
+.rem-card-item::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(15,118,110,0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.rem-card-item:hover {
+  border-color: #CCFBF1;
+  box-shadow: 0 16px 40px rgba(15, 118, 110, 0.12);
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+
+/* --- Top Row: Time Badge + Label --- */
+
+.rem-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.rem-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%);
+  padding: 6px 16px 6px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(15, 118, 110, 0.15);
+  font-size: 18px;
+  font-weight: 700;
+  color: #0F766E;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.06);
+}
+
+.rem-time-badge svg {
+  width: 16px;
+  height: 16px;
+  color: #0F766E;
+  flex-shrink: 0;
+}
+
+.rem-next-dose-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  line-height: 1;
+}
+
+/* --- Middle Row: Pill Icon + Medicine Info --- */
+
+.rem-card-middle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-left: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.rem-pill-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #E6FAF8 0%, #CCFBF1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+  transition: transform 0.3s ease;
+}
+
+.rem-card-item:hover .rem-pill-icon-wrap {
+  transform: scale(1.05) rotate(-5deg);
+}
+
+.rem-pill-icon-wrap svg {
+  width: 26px;
+  height: 26px;
+  color: #0F766E;
+}
+
+.rem-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rem-card-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #13294B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+
+.rem-card-dose {
+  font-size: 15px;
+  font-weight: 400;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.rem-card-dose::before {
+  content: '•';
+  margin-right: 6px;
+  color: #14B8A6;
+  font-weight: 700;
+}
+
+/* --- Date Row --- */
+
+.rem-card-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #475569;
+  position: relative;
+  z-index: 1;
+  border: 1px solid #EDF2F7;
+}
+
+.rem-card-date-row svg {
+  width: 16px;
+  height: 16px;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+/* --- Actions Bar --- */
+
+.rem-card-actions-bar {
+  display: flex;
+  gap: 12px;
+  padding-top: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.rem-snooze-btn {
+  flex: 1;
+  height: 46px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.rem-snooze-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #94A3B8;
+  transition: all 0.25s ease;
+}
+
+.rem-snooze-btn:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #334155;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+.rem-snooze-btn:hover svg {
+  color: #0F766E;
+}
+
+.rem-taken-btn {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  font-size: 15px;
+  font-weight: 600;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.25);
+}
+
+.rem-taken-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.35);
+}
+
+.rem-taken-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.rem-add-more-btn:not(.rem-header-add-btn) {
+  display: none;
+}
+
+/* ============================================
+   REMINDER HISTORY CARD — Premium
+   ============================================ */
+
+.rem-history-card {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #E7ECF2;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
+  margin-top: 26px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rem-history-header {
+  padding: 26px 28px;
+  border-bottom: 1px solid #E7ECF2;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #FAFBFC 0%, #FFFFFF 100%);
+}
+
+.rem-history-header h3 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #13294B;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+/* ============================================
+   HISTORY LIST — Premium card-style
+   ============================================ */
+
+.rem-history-list {
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding: 20px 24px;
+  background: #F8FAFC;
+}
+
+.rem-hl-header {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  border-radius: 14px;
+  padding: 0 24px;
+  gap: 0;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.rem-hl-header::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.rem-hl-header .rem-hl-col {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.rem-hl-row {
+  display: flex;
+  align-items: center;
+  min-height: 60px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 24px;
+  gap: 0;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+  border: 1px solid #EDF2F7;
+  position: relative;
+}
+
+.rem-hl-row:last-child {
+  margin-bottom: 0;
+}
+
+.rem-hl-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 4px;
+  height: 60%;
+  background: linear-gradient(180deg, #0F766E, #14B8A6);
+  border-radius: 0 4px 4px 0;
+  transition: transform 0.3s ease;
+}
+
+.rem-hl-row:hover::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.rem-hl-row:hover {
+  background: #FFFFFF;
+  border-color: #CCFBF1;
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.1);
+  transform: translateY(-2px) translateX(4px);
+}
+
+.rem-hl-col {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #334155;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rem-hl-col-name { width: 22%; }
+.rem-hl-col-dose { width: 15%; }
+.rem-hl-col-date { width: 22%; }
+.rem-hl-col-time { width: 15%; }
+.rem-hl-col-status { width: 16%; }
+.rem-hl-col-action { width: 10%; justify-content: center; }
+
+.rem-hl-value {
+  font-size: 14px;
+  color: #475569;
+}
+
+.rem-hl-value-name {
+  font-weight: 700;
+  color: #13294B;
+  font-size: 15px;
+}
+
+.rem-hl-label {
+  display: none;
+}
+
+/* Status Badge — Premium */
+.rem-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  height: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  letter-spacing: 0.3px;
+  gap: 6px;
+}
+
+.rem-status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.rem-status-taken {
+  background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
+  color: #15803D;
+}
+.rem-status-taken::before { background: #15803D; }
+
+.rem-status-snoozed {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #D97706;
+}
+.rem-status-snoozed::before { background: #D97706; }
+
+.rem-status-missed {
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  color: #DC2626;
+}
+.rem-status-missed::before { background: #DC2626; }
+
+/* Delete Button — Premium */
+.rem-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  color: #94A3B8;
+  background: #F8FAFC;
+  border: 1px solid #EDF2F7;
+}
+
+.rem-delete-btn:hover {
+  color: #DC2626;
+  background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+  border-color: #FECACA;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+  transform: scale(1.08) rotate(-3deg);
+}
+
+.rem-delete-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.rem-delete-btn:hover svg {
   transform: scale(1.1);
 }
 
-.action-btn svg {
-  width: 20px;
-  height: 20px;
-  color: #0d7377;
+/* ============================================
+   HISTORY BOTTOM EMPTY STATE
+   ============================================ */
+
+.rem-history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  flex: 1;
+  text-align: center;
+  background: linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 100%);
 }
 
-/* ================= RESPONSIVE DESIGN ================= */
-
-/* Tablets and smaller screens */
-@media (max-width: 1024px) {
-  .reminder-container {
-    padding: 20px;
-  }
-
-  .reminder-title {
-    font-size: 28px;
-  }
-
-  .reminder-table th,
-  .reminder-table td {
-    padding: 14px 10px;
-    font-size: 13px;
-  }
-
-  .no-reminders-card {
-    padding: 36px;
-  }
-
-  .no-reminders-icon {
-    width: 70px;
-    height: 70px;
-  }
-
-  .no-reminders-title {
-    font-size: 22px;
-  }
+.rem-history-empty-illustration {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 8px 24px rgba(15,118,110,0.1));
 }
 
-/* Mobile devices */
+.rem-history-empty-illustration svg {
+  width: 150px;
+  height: 150px;
+}
+
+.rem-history-empty-heading {
+  font-size: 24px;
+  font-weight: 700;
+  color: #13294B;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.rem-history-empty-desc {
+  font-size: 18px;
+  font-weight: 400;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .rem-page { padding: 24px; }
+  .rem-heading { font-size: 34px; }
+  .rem-subtitle { font-size: 16px; }
+  .rem-header-top { flex-wrap: wrap; gap: 10px; }
+  .rem-header-add-btn { padding: 10px 20px; height: 40px; font-size: 14px; }
+  .rem-card { padding: 40px; }
+  .rem-cards-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .rem-card-item { padding: 22px 20px 18px; min-height: 190px; gap: 12px; }
+  .rem-time-badge { font-size: 17px; padding: 5px 14px 5px 10px; }
+  .rem-pill-icon-wrap { width: 48px; height: 48px; }
+  .rem-pill-icon-wrap svg { width: 24px; height: 24px; }
+  .rem-card-name { font-size: 22px; }
+  .rem-card-dose { font-size: 14px; }
+  .rem-card-date-row { font-size: 14px; padding: 8px 10px; }
+  .rem-snooze-btn,
+  .rem-taken-btn { height: 42px; font-size: 14px; }
+  .rem-history-list { padding: 16px 18px; }
+  .rem-hl-header,
+  .rem-hl-row { padding: 0 18px; }
+  .rem-hl-header .rem-hl-col { font-size: 12px; }
+  .rem-hl-row { min-height: 54px; }
+  .rem-hl-value { font-size: 13px; }
+}
+
+@media (max-width: 992px) {
+  .rem-page { padding: 20px; }
+  .rem-heading { font-size: 30px; }
+  .rem-subtitle { font-size: 15px; }
+  .rem-header-section { padding: 20px 24px; }
+  .rem-header-section { margin-bottom: 30px; }
+  .rem-card { padding: 32px; min-height: 600px; }
+  .rem-illustration svg { width: 240px; height: auto; }
+  .rem-empty-heading { font-size: 26px; }
+  .rem-empty-desc { font-size: 15px; line-height: 24px; max-width: 500px; }
+  .rem-add-btn { width: 190px; height: 48px; font-size: 15px; }
+  .rem-banner { margin-top: 50px; padding: 20px; }
+  .rem-banner-text h3 { font-size: 20px; }
+  .rem-banner-text p { font-size: 16px; }
+  .rem-cards-grid { grid-template-columns: 1fr; gap: 18px; }
+  .rem-card-item { padding: 20px 18px 16px; min-height: 180px; gap: 12px; }
+  .rem-time-badge { font-size: 16px; padding: 5px 12px 5px 10px; }
+  .rem-next-dose-label { font-size: 10px; padding: 3px 10px; }
+  .rem-pill-icon-wrap { width: 46px; height: 46px; }
+  .rem-pill-icon-wrap svg { width: 22px; height: 22px; }
+  .rem-card-middle { gap: 14px; }
+  .rem-card-name { font-size: 20px; }
+  .rem-card-dose { font-size: 14px; }
+  .rem-card-date-row { font-size: 14px; padding: 8px 10px; }
+  .rem-snooze-btn,
+  .rem-taken-btn { height: 40px; font-size: 14px; }
+  .rem-history-list { padding: 14px 16px; }
+  .rem-hl-header,
+  .rem-hl-row { padding: 0 16px; }
+  .rem-hl-header .rem-hl-col { font-size: 12px; }
+  .rem-hl-row { min-height: 50px; }
+  .rem-hl-value { font-size: 13px; }
+}
+
 @media (max-width: 768px) {
-  .reminder-container {
-    padding: 16px;
-  }
-
-  .reminder-header {
-    margin-bottom: 24px;
-  }
-
-  .reminder-title {
-    font-size: 24px;
-  }
-
-  .reminder-subtitle {
-    font-size: 14px;
-  }
-
-  .no-reminders-card {
-    padding: 32px 24px;
-  }
-
-  .no-reminders-icon {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 20px;
-  }
-
-  .no-reminders-title {
-    font-size: 20px;
-  }
-
-  .no-reminders-text {
-    font-size: 14px;
-    line-height: 22px;
-  }
-
-  .add-medicine-btn {
-    padding: 12px 24px;
-    font-size: 15px;
-  }
-
-  .reminder-history-title {
-    font-size: 20px;
-  }
-
-  .reminder-table-wrapper {
-    padding: 12px;
-    border-radius: 8px;
-  }
-
-  .reminder-table thead {
-    display: none;
-  }
-
-  .reminder-table tbody tr {
-    display: block;
-    margin-bottom: 16px;
-    border: 1px solid #e8f0f0;
-    border-radius: 8px;
-    padding: 12px;
-    background: #fafcfc;
-  }
-
-  .reminder-table tbody tr:last-child {
-    border-bottom: 1px solid #e8f0f0;
-  }
-
-  .reminder-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    text-align: right;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 13px;
-  }
-
-  .reminder-table td:last-child {
-    border-bottom: none;
-  }
-
-  .reminder-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #0d7377;
-    text-align: left;
-    margin-right: 10px;
-  }
-
-  .status-badge {
-    padding: 5px 14px;
-    font-size: 12px;
-    min-width: auto;
-  }
-
-  .action-btn {
-    width: 36px;
-    height: 36px;
-    padding: 6px;
-  }
-
-  .action-btn svg {
-    width: 18px;
-    height: 18px;
-  }
+  .rem-page { padding: 16px; }
+  .rem-heading { font-size: 26px; }
+  .rem-subtitle { font-size: 14px; }
+  .rem-header-section { padding: 16px 20px; border-radius: 16px; }
+  .rem-header-section { margin-bottom: 24px; }
+  .rem-card { padding: 24px; min-height: 500px; border-radius: 20px; }
+  .rem-illustration svg { width: 200px; height: auto; }
+  .rem-empty-heading { font-size: 22px; margin-bottom: 12px; }
+  .rem-empty-desc { font-size: 14px; line-height: 22px; max-width: 100%; margin-bottom: 20px; }
+  .rem-add-btn { width: 180px; height: 44px; font-size: 14px; }
+  .rem-banner { margin-top: 36px; padding: 16px; flex-wrap: wrap; min-height: auto; }
+  .rem-banner-icon { width: 48px; height: 48px; }
+  .rem-banner-text h3 { font-size: 18px; }
+  .rem-banner-text p { font-size: 14px; }
+  .rem-banner-decoration { display: none; }
+  .rem-cards-grid { gap: 16px; }
+  .rem-card-item { padding: 18px 16px 16px; gap: 12px; min-height: auto; }
+  .rem-card-item::before { width: 100%; height: 3px; border-radius: 4px 4px 0 0; background: linear-gradient(90deg, #0F766E, #14B8A6, #5EEAD4); }
+  .rem-card-top-row { padding-left: 0; }
+  .rem-time-badge { font-size: 15px; padding: 4px 12px 4px 8px; }
+  .rem-next-dose-label { font-size: 9px; padding: 3px 8px; }
+  .rem-card-middle { padding-left: 0; gap: 12px; }
+  .rem-pill-icon-wrap { width: 44px; height: 44px; border-radius: 12px; }
+  .rem-pill-icon-wrap svg { width: 20px; height: 20px; }
+  .rem-card-name { font-size: 18px; }
+  .rem-card-dose { font-size: 13px; }
+  .rem-card-date-row { font-size: 13px; padding: 8px 10px; }
+  .rem-card-actions-bar { gap: 10px; padding-top: 2px; }
+  .rem-snooze-btn,
+  .rem-taken-btn { height: 38px; font-size: 13px; border-radius: 10px; }
+  .rem-history-card { height: auto; min-height: 500px; }
+  .rem-history-header { padding: 20px; }
+  .rem-history-header h3 { font-size: 22px; }
+  .rem-history-list { padding: 14px 14px; }
+  .rem-hl-header,
+  .rem-hl-row { padding: 0 14px; }
+  .rem-hl-header .rem-hl-col { font-size: 11px; }
+  .rem-hl-row { min-height: 46px; padding: 10px 14px; }
+  .rem-hl-value { font-size: 12px; }
+  .rem-history-empty { padding: 30px 16px; }
+  .rem-history-empty-illustration svg { width: 120px; height: 120px; }
+  .rem-history-empty-heading { font-size: 20px; }
+  .rem-history-empty-desc { font-size: 15px; }
 }
 
-/* Small mobile devices */
 @media (max-width: 480px) {
-  .reminder-container {
-    padding: 12px;
-  }
-
-  .reminder-title {
-    font-size: 22px;
-  }
-
-  .reminder-subtitle {
-    font-size: 13px;
-  }
-
-  .no-reminders-card {
-    padding: 24px 16px;
-  }
-
-  .no-reminders-icon {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 16px;
-  }
-
-  .no-reminders-title {
-    font-size: 18px;
-  }
-
-  .no-reminders-text {
-    font-size: 13px;
-    line-height: 20px;
-  }
-
-  .add-medicine-btn {
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-
-  .reminder-history-title {
-    font-size: 18px;
-  }
-
-  .reminder-table-wrapper {
-    padding: 10px;
-  }
-
-  .reminder-table td {
-    font-size: 12px;
-  }
-
-  .status-badge {
-    padding: 4px 12px;
-    font-size: 11px;
-  }
-
-  .action-btn {
-    width: 32px;
-    height: 32px;
-    padding: 5px;
-  }
-
-  .action-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-/* Extra small devices */
-@media (max-width: 360px) {
-  .reminder-title {
-    font-size: 20px;
-  }
-
-  .no-reminders-title {
-    font-size: 16px;
-  }
-
-  .reminder-history-title {
-    font-size: 16px;
-  }
+  .rem-page { padding: 12px; }
+  .rem-heading { font-size: 22px; margin-bottom: 6px; }
+  .rem-subtitle { font-size: 13px; }
+  .rem-header-section { padding: 14px 16px; margin-bottom: 20px; }
+  .rem-card { padding: 20px; min-height: 420px; border-radius: 16px; }
+  .rem-illustration svg { width: 160px; height: auto; }
+  .rem-empty-heading { font-size: 18px; margin-bottom: 10px; }
+  .rem-empty-desc { font-size: 13px; line-height: 20px; margin-bottom: 18px; }
+  .rem-add-btn { width: 160px; height: 40px; font-size: 13px; border-radius: 10px; }
+  .rem-add-btn svg { width: 14px; height: 14px; }
+  .rem-banner { margin-top: 28px; padding: 14px; gap: 12px; }
+  .rem-banner-icon { width: 40px; height: 40px; }
+  .rem-banner-text h3 { font-size: 16px; }
+  .rem-banner-text p { font-size: 13px; }
+  .rem-cards-grid { gap: 14px; }
+  .rem-card-item { padding: 16px 14px 14px; gap: 10px; min-height: auto; }
+  .rem-time-badge { font-size: 14px; padding: 4px 10px 4px 8px; gap: 6px; }
+  .rem-time-badge svg { width: 14px; height: 14px; }
+  .rem-next-dose-label { font-size: 8px; padding: 2px 8px; letter-spacing: 0.5px; }
+  .rem-pill-icon-wrap { width: 40px; height: 40px; border-radius: 10px; }
+  .rem-pill-icon-wrap svg { width: 18px; height: 18px; }
+  .rem-card-middle { gap: 10px; }
+  .rem-card-name { font-size: 16px; }
+  .rem-card-dose { font-size: 12px; }
+  .rem-card-date-row { font-size: 12px; padding: 6px 8px; gap: 6px; }
+  .rem-card-date-row svg { width: 14px; height: 14px; }
+  .rem-card-actions-bar { gap: 8px; flex-direction: column; }
+  .rem-snooze-btn,
+  .rem-taken-btn { height: 36px; font-size: 12px; border-radius: 8px; }
+  .rem-history-card { min-height: 400px; }
+  .rem-history-header { padding: 16px; }
+  .rem-history-header h3 { font-size: 18px; }
+  .rem-history-list { padding: 10px 10px; }
+  .rem-hl-header,
+  .rem-hl-row { padding: 0 10px; }
+  .rem-hl-header .rem-hl-col { font-size: 10px; }
+  .rem-hl-row { min-height: 42px; padding: 8px 10px; }
+  .rem-hl-value { font-size: 11px; }
+  .rem-history-empty { padding: 24px 12px; }
+  .rem-history-empty-illustration svg { width: 100px; height: 100px; }
+  .rem-history-empty-heading { font-size: 18px; }
+  .rem-history-empty-desc { font-size: 14px; }
 }

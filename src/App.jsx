@@ -27,7 +27,10 @@ function App() {
       {view === "register" ? (
         <UserRegister onSuccess={() => setView("login")} />
       ) : view === "login" ? (
-        <UserLogin onLoginSuccess={() => setView("dashboard")} />
+        <UserLogin
+          onLoginSuccess={() => setView("dashboard")}
+          onGoRegister={() => setView("register")}
+        />
       ) : (
         // dashboard
         <UserDash onLogout={() => setView("login")} />
