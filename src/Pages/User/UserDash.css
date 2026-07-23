@@ -1630,42 +1630,65 @@ body{
 
 .stock-table-header{
     display:grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap:12px;
-
-    padding:12px 16px;
-    background:#f0fdfa;
-    border-radius:8px;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap:8px;
+    padding:10px 14px;
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    border-radius:10px;
     font-weight:700;
-    font-size:13px;
-    color:#0f766e;
-    border:1px solid rgba(15,118,110,0.4);
+    font-size:12px;
+    color:#ffffff;
+    border:none;
     text-transform:uppercase;
     letter-spacing:0.04em;
+    box-shadow:0 4px 12px rgba(15,118,110,0.2);
+}
+
+.stock-table-header span{
+    text-align:center;
+}
+
+.stock-table-header span:first-child{
+    text-align:left;
+    padding-left:4px;
 }
 
 .stock-table-row{
     display:grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-
-    gap:12px;
-    padding:14px 16px;
-    background:#f9fafb;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap:8px;
+    padding:12px 14px;
+    background:#ffffff;
     border-radius:10px;
     border:1px solid #e5e7eb;
     align-items:center;
+    transition:all 0.3s ease;
 }
 
-.stock-medicine-name{
+.stock-table-row:hover{
+    background:#f0fdfa;
+    border-color:#0f766e;
+    transform:translateX(4px);
+}
+
+.stock-table-row span{
+    text-align:center;
+    font-size:13px;
+    color:#374151;
+}
+
+.stock-table-row span:first-child{
+    text-align:left;
     font-weight:600;
     color:#1f2937;
+    padding-left:4px;
 }
 
 .add-stock-inline-btn{
     margin-top:auto;
-    border:none;
-    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-    color:#fff;
+    border:2px solid #0f766e;
+    background:transparent;
+    color:#0f766e;
     padding:12px 14px;
     border-radius:10px;
     cursor:pointer;
@@ -1675,11 +1698,13 @@ body{
     align-items:center;
     justify-content:center;
     gap:8px;
-    box-shadow:0 4px 12px rgba(15,118,110,0.2);
+    box-shadow:none;
     transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .add-stock-inline-btn:hover{
+    background:#0f766e;
+    color:#fff;
     transform:translateY(-2px);
     box-shadow:0 8px 20px rgba(15,118,110,0.3);
 }

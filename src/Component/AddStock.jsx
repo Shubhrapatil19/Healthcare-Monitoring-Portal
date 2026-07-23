@@ -14,6 +14,12 @@ const AddStockModal = ({ onClose }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // For stock fields, reject any negative values including standalone "-" sign
+    if ((name === "currentStock" || name === "minimumStock") && (value.includes("-") || Number(value) < 0)) {
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value
@@ -30,11 +36,17 @@ const AddStockModal = ({ onClose }) => {
     if (!formData.medicineName)
       temp.medicineName = "Medicine name is required";
 
-    if (!formData.currentStock)
+    if (!formData.currentStock) {
       temp.currentStock = "Current stock is required";
+    } else if (Number(formData.currentStock) < 0) {
+      temp.currentStock = "Current stock cannot be negative";
+    }
 
-    if (!formData.minimumStock)
+    if (!formData.minimumStock) {
       temp.minimumStock = "Minimum stock is required";
+    } else if (Number(formData.minimumStock) < 0) {
+      temp.minimumStock = "Minimum stock cannot be negative";
+    }
 
     if (!formData.expiryDate)
       temp.expiryDate = "Expiry date is required";
@@ -75,6 +87,7 @@ const AddStockModal = ({ onClose }) => {
             <input
               type="number"
               name="currentStock"
+              min="0"
               placeholder="Enter current stock"
               value={formData.currentStock}
               onChange={handleChange}
@@ -87,6 +100,7 @@ const AddStockModal = ({ onClose }) => {
             <input
               type="number"
               name="minimumStock"
+              min="0"
               placeholder="Enter minimum stock"
               value={formData.minimumStock}
               onChange={handleChange}

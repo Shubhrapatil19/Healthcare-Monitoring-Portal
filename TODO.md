@@ -1,43 +1,27 @@
-# TODO.md
+# Tasks
 
-## Task: Add effects to Reminder Empty State Page (Completed ✅)
+## Task 1: Show stock data in table format in Inventory Overview card
+- [x] Add `stockItems` state variable in UserDash.jsx
+- [x] Create `handleAddStock` function to capture stock data from AddStockModal
+- [x] Update AddStockModal's onClose to use `handleAddStock`
+- [x] Replace empty state in Inventory Overview with stock data table (using existing `.stock-table` CSS classes)
+- [x] Keep "Add Medicine Stock" button at bottom when items exist
 
-### Plan:
+## Task 2: Wire View Report button to open UserViewRep page
+- [x] Add `showViewReport` state in UserDash.jsx
+- [x] Import `UserViewRep` component
+- [x] Pass `onViewReport` prop to `UserReport` that sets `showViewReport` to true
+- [x] When `showViewReport` is true, render `UserViewRep` component with `onBack` prop to go back
 
-**Information Gathered:**
-- The empty state is in `UserRem.jsx` (rendered when `medicines.length === 0`)
-- The empty state contains: SVG illustration, heading "No Reminders Scheduled Yet", description text, "Add Medicine" button, and a motivational banner
-- The CSS is in `UserRem.css` with `.rem-empty`, `.rem-illustration`, `.rem-empty-heading`, `.rem-empty-desc`, `.rem-add-btn`, `.rem-banner` classes
-- Currently no animations/effects exist on the empty state
-
-**Plan:**
-1. Add `@keyframes` animations in CSS:
-   - `fadeSlideUp` - fade in + slide up for text elements
-   - `float` - gentle floating animation for the SVG illustration
-   - `pulseGlow` - subtle pulse glow for the Add Medicine button
-   - `gradientShift` - subtle gradient animation for the banner
-   - `shimmer` - shimmer overlay effect on the card
-
-2. Apply animation classes with staggered delays to empty state elements:
-   - SVG illustration: `float` animation + `fadeSlideUp` (0s delay)
-   - Heading: `fadeSlideUp` (0.2s delay)
-   - Description: `fadeSlideUp` (0.4s delay)
-   - Add Medicine button: `fadeSlideUp` (0.6s delay) + `pulseGlow`
-   - Banner: `fadeSlideUp` (0.8s delay) + `gradientShift`
-
-3. Add a subtle background pattern/dot grid that moves slowly (parallax feel)
-
-**Dependent Files to be Edited:**
-- `src/Pages/User/UserRem.css` - Add all CSS animations and apply to existing classes
-
-**Followup Steps:**
-- No installations needed, pure CSS animations
-- Test by viewing the page in browser
-
-### Steps:
-- [x] Step 1: Read existing files to understand current code
-- [x] Step 2: Create plan
-- [x] Step 3: Get user approval on plan
-- [x] Step 4: Implement CSS animations in UserRem.css
-- [x] Step 5: Fixed time display from 24-hour
+## Task 3: Modernize UserViewRep page design
+- [x] Modern cards with gradient accents and hover effects
+- [x] Improved heading fonts with decorative underline
+- [x] Teal gradient header top border on report-header-section
+- [x] Soft shadow system with hover elevation
+- [x] Summary cards with left accent bar and icon rotation on hover
+- [x] Section headers with gradient bottom border
+- [x] Enhanced table styling with teal header row
+- [x] Status badges with gradient backgrounds
+- [x] Modern back button with gradient hover effect
+- [x] Consistent responsive design across all breakpoints
 

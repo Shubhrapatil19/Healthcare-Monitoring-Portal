@@ -14,6 +14,7 @@ import UserLogout from "./UserLogout";
 
 import UserManage from "./UserManage";
 import UserProfiles from "./UserProfiles";
+import UserViewRep from "./UserViewRep";
 
 import {
   Home,
@@ -48,6 +49,7 @@ const UserDash = ({ onLogout }) => {
     localStorage.getItem("profileCompleted") !== "true"
   );
   const [activeItem, setActiveItem] = useState("Home");
+  const [showViewReport, setShowViewReport] = useState(false);
 
   const myMedicineRef = useRef(null);
 
@@ -72,6 +74,7 @@ const UserDash = ({ onLogout }) => {
     calendarDays.push("");
   }
   const [medicines, setMedicines] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -161,6 +164,17 @@ const UserDash = ({ onLogout }) => {
     }
   };
 
+  const handleAddStock = (stockData) => {
+    if (stockData) {
+      const newStock = {
+        id: Date.now(),
+        ...stockData,
+      };
+      setStockItems((prev) => [...prev, newStock]);
+    }
+    setShowAddStockModal(false);
+  };
+
   return (
     <>
       {/* Profile Modal */}
@@ -178,7 +192,7 @@ const UserDash = ({ onLogout }) => {
       {/* Add Stock Modal */}
       {showAddStockModal && (
         <div>
-          <AddStockModal onClose={() => setShowAddStockModal(false)} />
+          <AddStockModal onClose={handleAddStock} />
         </div>
       )}
 
@@ -331,10 +345,12 @@ const UserDash = ({ onLogout }) => {
 
           {/* ================= MAIN ================= */}
           <main className="main-content">
-            {activeItem === "Medicine Inventory" ? (
+            {showViewReport ? (
+              <UserViewRep onBack={() => setShowViewReport(false)} />
+            ) : activeItem === "Medicine Inventory" ? (
               <UserInvent />
             ) : activeItem === "Reports" ? (
-              <UserReport />
+              <UserReport onViewReport={() => setShowViewReport(true)} />
             ) : activeItem === "Alerts" ? (
               <UserAlert onAddMedicine={handleAddMedicine} />
             ) : activeItem === "Reminders" ? (
@@ -430,7 +446,7 @@ const UserDash = ({ onLogout }) => {
                                 {medicine.timing}
                               </div>
                               <div className="medicine-frequency-value">{medicine.frequency}</div>
-                              <div className="medicine-status">
+<div className="medicine-status">
                                 <span className="status-badge pending">Pending</span>
                               </div>
                             </div>
@@ -450,18 +466,44 @@ const UserDash = ({ onLogout }) => {
                       Inventory Overview
                     </div>
 
-                    <div className="empty-card">
-                      <Package size={60} />
-                      <h4>No inventory data available</h4>
-                      <p>Add medicine to track stock and get alerts</p>
-                      <button
-                        className="add-first-medicine-btn"
-                        onClick={() => setShowAddStockModal(true)}
-                      >
-                        <Plus size={24} />
-                        Add Medicine Stock
-                      </button>
-                    </div>
+                    {stockItems.length === 0 ? (
+                      <div className="empty-card">
+                        <Package size={60} />
+                        <h4>No inventory data available</h4>
+                        <p>Add medicine to track stock and get alerts</p>
+                        <button
+                          className="add-first-medicine-btn"
+                          onClick={() => setShowAddStockModal(true)}
+                        >
+                          <Plus size={24} />
+                          Add Medicine Stock
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="stock-table">
+                        <div className="stock-table-header">
+                          <span>Medicine</span>
+                          <span>Current Stock</span>
+                          <span>Min Stock</span>
+                          <span>Expiry Date</span>
+                        </div>
+                        {stockItems.map((item) => (
+                          <div key={item.id} className="stock-table-row">
+                            <span className="stock-medicine-name">{item.medicineName}</span>
+                            <span>{item.currentStock}</span>
+                            <span>{item.minimumStock}</span>
+                            <span>{item.expiryDate}</span>
+                          </div>
+                        ))}
+                        <button
+                          className="add-stock-inline-btn"
+                          onClick={() => setShowAddStockModal(true)}
+                        >
+                          <Plus size={20} />
+                          Add More Stock
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -559,3 +601,4 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+

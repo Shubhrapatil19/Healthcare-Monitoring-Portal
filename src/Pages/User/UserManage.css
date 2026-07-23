@@ -11,6 +11,55 @@
   flex-shrink: 0;
 }
 
+/* ===== HEADER WITH SEARCH BAR ===== */
+.user-manage-card .user-manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.user-manage-card .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-manage-card .medicine-search-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: all 0.25s ease;
+}
+
+.user-manage-card .medicine-search-box:focus-within {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.user-manage-card .medicine-search-box svg {
+  color: #0f766e;
+  flex-shrink: 0;
+}
+
+.user-manage-card .medicine-search-box input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #1f2937;
+  width: 160px;
+  background: transparent;
+}
+
+.user-manage-card .medicine-search-box input::placeholder {
+  color: #9ca3af;
+}
+
 /* ===== MEDICINE TABLE - GRID LAYOUT ===== */
 
 .user-manage-card .medicine-list--my-medicine {
@@ -37,6 +86,14 @@
   border: 1px solid rgba(15, 118, 110, 0.25);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* ===== ITEMS WRAPPER - GROWS TO FILL SPACE, PUSHES FOOTER TO CARD BOTTOM ===== */
+.user-manage-card .medicine-list--my-medicine .medicine-items-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ===== MEDICINE ITEM - GRADIENT ACCENT EFFECT ===== */
@@ -171,6 +228,28 @@
   height: 15px;
 }
 
+/* ===== NO RESULTS FOUND ===== */
+.user-manage-card .medicine-list--my-medicine .no-results-found {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px 10px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.user-manage-card .medicine-list--my-medicine .no-results-found svg {
+  color: #d1d5db;
+}
+
+.user-manage-card .medicine-list--my-medicine .no-results-found p {
+  font-size: 13px;
+  margin: 0;
+}
+
 /* ===== MEDICINE COUNT INFO ===== */
 .user-manage-card .medicine-list--my-medicine .medicine-count-info {
   font-size: 12px;
@@ -181,14 +260,23 @@
   letter-spacing: 0.02em;
 }
 
-/* ===== PAGINATION CONTROLS ===== */
+/* ===== FOOTER (Add More Button + Pagination) - ALWAYS AT CARD BOTTOM ===== */
+.user-manage-card .medicine-list--my-medicine .user-manage-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* ===== PAGINATION CONTROLS - CENTERED, BELOW ADD-MORE BUTTON ===== */
 .user-manage-card .medicine-list--my-medicine .pagination-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 6px;
-  margin-top: 4px;
-  padding: 4px 0;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
 }
 
 .user-manage-card .medicine-list--my-medicine .pagination-btn {
@@ -228,8 +316,6 @@
 
 /* ===== GHOST BUTTON STYLE - ADD MORE MEDICINE ===== */
 .user-manage-card .medicine-list--my-medicine .add-more-btn {
-  margin-top: auto;
-  margin-bottom: 4px;
   padding: 14px 24px;
   background: transparent !important;
   border: 2px solid #0f766e !important;
@@ -270,6 +356,19 @@
 /* ===== RESPONSIVE ===== */
 
 @media (max-width: 768px) {
+  .user-manage-card .user-manage-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-manage-card .medicine-search-box {
+    width: 100%;
+  }
+
+  .user-manage-card .medicine-search-box input {
+    width: 100%;
+  }
+
   .user-manage-card .medicine-list--my-medicine .medicine-table-header {
     display: none;
   }

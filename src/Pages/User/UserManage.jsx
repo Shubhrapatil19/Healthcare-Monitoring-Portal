@@ -11,11 +11,6 @@ const UserManage = ({ medicines, onAddMedicine }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const totalPages = useMemo(() => {
-    if (!medicines) return 0;
-    return Math.max(1, Math.ceil(medicines.length / ITEMS_PER_PAGE));
-  }, [medicines]);
-
   const filteredMedicines = useMemo(() => {
     if (!medicines) return [];
     if (!searchTerm.trim()) return medicines;
@@ -28,6 +23,11 @@ const UserManage = ({ medicines, onAddMedicine }) => {
     );
   }, [medicines, searchTerm]);
 
+  const totalPages = useMemo(() => {
+    if (!filteredMedicines) return 0;
+    return Math.max(1, Math.ceil(filteredMedicines.length / ITEMS_PER_PAGE));
+  }, [filteredMedicines]);
+
   const paginatedMedicines = useMemo(() => {
     if (!filteredMedicines) return [];
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -36,6 +36,11 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleAddMedicine = () => {
@@ -50,7 +55,6 @@ const UserManage = ({ medicines, onAddMedicine }) => {
     }
   };
 
-  // Generate visible page numbers
   const getPageNumbers = () => {
     const pages = [];
     const maxVisible = 3;
@@ -67,7 +71,6 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 
   return (
     <>
-      {/* Add Medicine Modal */}
       {showAddMedicineModal && (
         <div>
           <AddMedicineModal onClose={handleCloseMedicineModal} />
@@ -75,9 +78,21 @@ const UserManage = ({ medicines, onAddMedicine }) => {
       )}
 
       <div className="dashboard-card active-card user-manage-card">
-        <div className="card-header">
-          <Pill />
-          My Medicine
+        <div className="card-header user-manage-header">
+          <div className="header-title">
+            <Pill />
+            My Medicine
+          </div>
+
+          <div className="medicine-search-box">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search medicine..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
         </div>
 
         {medicines && medicines.length === 0 ? (
@@ -100,69 +115,80 @@ const UserManage = ({ medicines, onAddMedicine }) => {
               <span className="medicine-col medicine-status-col">Status</span>
             </div>
 
-            {/* Show count info */}
             <div className="medicine-count-info">
-              Showing {paginatedMedicines.length} of {medicines.length} medicines
+              Showing {paginatedMedicines.length} of {filteredMedicines.length} medicines
             </div>
 
-            {paginatedMedicines.map((medicine) => (
-              <div key={medicine.id} className="medicine-item">
-                <div className="medicine-info">
-                  <h5>{medicine.medicineName}</h5>
+            {/* Items area grows to fill space, pushing everything below it to the bottom */}
+            <div className="medicine-items-wrapper">
+              {paginatedMedicines.length > 0 ? (
+                paginatedMedicines.map((medicine) => (
+                  <div key={medicine.id} className="medicine-item">
+                    <div className="medicine-info">
+                      <h5>{medicine.medicineName}</h5>
+                    </div>
+                    <div className="medicine-dosage-value">{medicine.dosage}</div>
+                    <div className="medicine-time-value">
+                      <Clock size={14} />
+                      {medicine.timing}
+                    </div>
+                    <div className="medicine-frequency-value">{medicine.frequency}</div>
+                    <div className="medicine-status">
+                      <span className={`status-badge ${medicine.status === "missed" ? "missed" : "taken"}`}>
+                        {medicine.status === "missed" ? (
+                          <><XCircle size={14} /> Missed</>
+                        ) : (
+                          <><CheckCircle2 size={14} /> Taken</>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-results-found">
+                  <Search size={28} />
+                  <p>No medicine found matching "{searchTerm}"</p>
                 </div>
-                <div className="medicine-dosage-value">{medicine.dosage}</div>
-                <div className="medicine-time-value">
-                  <Clock size={14} />
-                  {medicine.timing}
-                </div>
-                <div className="medicine-frequency-value">{medicine.frequency}</div>
-                <div className="medicine-status">
-                  <span className={`status-badge ${medicine.status === "missed" ? "missed" : "taken"}`}>
-                    {medicine.status === "missed" ? (
-                      <><XCircle size={14} /> Missed</>
-                    ) : (
-                      <><CheckCircle2 size={14} /> Taken</>
-                    )}
-                  </span>
-                </div>
-              </div>
-            ))}
+              )}
+            </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  className="pagination-btn"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft size={16} />
-                </button>
+            {/* Footer area: Add More button + Pagination — always pinned to card bottom */}
+            <div className="user-manage-footer">
+              <button className="add-more-btn" onClick={handleAddMedicine}>
+                <Plus size={24} />
+                Add More Medicine
+              </button>
 
-                {getPageNumbers().map((page) => (
+              {totalPages > 1 && (
+                <div className="pagination-controls">
                   <button
-                    key={page}
-                    className={`pagination-btn ${page === currentPage ? "active" : ""}`}
-                    onClick={() => handlePageChange(page)}
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
                   >
-                    {page}
+                    <ChevronLeft size={16} />
                   </button>
-                ))}
 
-                <button
-                  className="pagination-btn"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
+                  {getPageNumbers().map((page) => (
+                    <button
+                      key={page}
+                      className={`pagination-btn ${page === currentPage ? "active" : ""}`}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
 
-            <button className="add-more-btn" onClick={handleAddMedicine}>
-              <Plus size={24} />
-              Add More Medicine
-            </button>
+                  <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
