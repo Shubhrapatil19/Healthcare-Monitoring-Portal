@@ -1,3 +1,6 @@
+/* ============================================
+   USER INVENTORY PAGE STYLES
+   ============================================ */
 .inventory-container {
   max-width: 100%;
   margin: 0;
@@ -54,6 +57,28 @@
   gap: 15px;
 }
 
+.header-left h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a2f3a;
+  margin: 0;
+  letter-spacing: -0.5px;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.header-left h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #0d7377, #14a098);
+  border-radius: 2px;
+}
+
 .logo-icon {
   width: 50px;
   height: 50px;
@@ -67,22 +92,65 @@
   height: 100%;
 }
 
-.inventory-title {
-  font-size: 32px;
-  font-weight: 600;
-  color: #1a2f3a;
-  margin: 0;
+/* ===== ADD MEDICINE BUTTON ===== */
+.add-medicine-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #0d7377 0%, #14a098 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(13, 115, 119, 0.3);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
 }
 
-.title-underline {
+.add-medicine-btn::before {
+  content: '';
   position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 60px;
-  height: 3px;
-  background-color: #14a098;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
 }
 
+.add-medicine-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.add-medicine-btn:hover {
+  background: linear-gradient(135deg, #0a5c5f 0%, #0d7377 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 115, 119, 0.4);
+}
+
+.add-medicine-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(13, 115, 119, 0.3);
+}
+
+.add-medicine-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.add-medicine-btn:hover svg {
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* ===== ADD STOCK BUTTON (legacy) ===== */
 .add-stock-btn {
   display: flex;
   align-items: center;
@@ -129,6 +197,7 @@
   transform: translateY(0);
 }
 
+/* ===== TABLE WRAPPER ===== */
 .inventory-table-wrapper {
   background-color: white;
   border-radius: 12px;
@@ -142,6 +211,170 @@
 .inventory-table-wrapper:hover {
   box-shadow: 0 8px 20px rgba(13, 115, 119, 0.12);
   transform: translateY(-2px);
+}
+
+/* ===== TABLE HEADER WITH SEARCH & SORT ===== */
+.inventory-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8f0f0;
+  flex-wrap: wrap;
+}
+
+.sort-controls-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-dropdown-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a2f3a;
+  white-space: nowrap;
+  font-family: 'Poppins', sans-serif;
+}
+
+.sort-select {
+  padding: 8px 32px 8px 12px;
+  border: 2px solid #d0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: #1a2f3a;
+  background-color: #f8fcfc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a2f3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 160px;
+}
+
+.sort-select:hover {
+  border-color: #14a098;
+}
+
+.sort-select:focus {
+  border-color: #0d7377;
+  box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.1);
+}
+
+.sort-direction-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid #0d7377;
+  border-radius: 8px;
+  background-color: #f0f9f9;
+  color: #0d7377;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sort-direction-btn:hover {
+  background-color: #0d7377;
+  color: white;
+  box-shadow: 0 2px 8px rgba(13, 115, 119, 0.25);
+  transform: translateY(-1px);
+}
+
+.sort-direction-btn:active {
+  transform: translateY(0);
+}
+
+.search-bar-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 42px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: #1a2f3a;
+  background-color: #f8fcfc;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.search-input:focus {
+  border-color: #14a098;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(20, 160, 152, 0.1);
+}
+
+.search-input:focus + .search-icon,
+.search-bar-container:focus-within .search-icon {
+  color: #14a098;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background-color: #e8f0f0;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.search-clear-btn:hover {
+  background-color: #f0f4f4;
+  color: #ef4444;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.search-clear-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 @keyframes fadeInUp {
@@ -162,10 +395,6 @@
 
 .inventory-table thead {
   background-color: #0d7377;
-}
-
-.inventory-table thead tr {
-  border-radius: 8px;
 }
 
 .inventory-table th {
@@ -217,6 +446,7 @@
   font-weight: 500;
 }
 
+/* ===== MEDICINE NAME ===== */
 .medicine-name {
   display: flex;
   align-items: center;
@@ -260,6 +490,7 @@
   font-size: 18px;
 }
 
+/* ===== STATUS BADGES ===== */
 .status-badge {
   display: inline-block;
   padding: 10px 20px;
@@ -302,6 +533,7 @@
   animation: pulse 2.5s ease-in-out infinite;
 }
 
+/* ===== EDIT BUTTON ===== */
 .edit-btn {
   width: 48px;
   height: 48px;
@@ -327,7 +559,7 @@
   color: #0d7377;
 }
 
-/* ===== Edit Mode Styles ===== */
+/* ===== EDIT MODE STYLES ===== */
 .edit-input {
   width: 100%;
   padding: 8px 12px;
@@ -409,6 +641,7 @@
   transform: none;
 }
 
+/* ===== STOCK STATUS SECTION ===== */
 .stock-status-section {
   background-color: white;
   border-radius: 12px;
@@ -565,6 +798,142 @@
   white-space: nowrap;
 }
 
+/* ===== Pagination Styles ===== */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8f0f0;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-showing {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.pagination-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.pagination-per-page label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pagination-select {
+  padding: 6px 12px;
+  border: 2px solid #d0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: #1a2f3a;
+  background-color: #f8fcfc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.pagination-select:hover {
+  border-color: #14a098;
+}
+
+.pagination-select:focus {
+  border-color: #0d7377;
+  box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.1);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-nav-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e0e8e8;
+  border-radius: 8px;
+  background-color: white;
+  color: #1a2f3a;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.page-nav-btn:hover:not(:disabled) {
+  border-color: #14a098;
+  background-color: #f0f9f9;
+  color: #0d7377;
+}
+
+.page-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e0e8e8;
+  border-radius: 8px;
+  background-color: white;
+  color: #1a2f3a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 8px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.page-btn:hover {
+  border-color: #14a098;
+  background-color: #f0f9f9;
+  color: #0d7377;
+}
+
+.page-btn.active {
+  border-color: #0d7377;
+  background-color: #0d7377;
+  color: white;
+  box-shadow: 0 2px 8px rgba(13, 115, 119, 0.25);
+}
+
+.page-ellipsis {
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
 /* ============================
    RESPONSIVE DESIGN
 ============================ */
@@ -576,6 +945,10 @@
   }
 
   .inventory-title {
+    font-size: 28px;
+  }
+
+  .header-left h1 {
     font-size: 28px;
   }
 
@@ -601,6 +974,15 @@
 
   .bar-label {
     font-size: 13px;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pagination-controls {
+    align-self: flex-end;
   }
 }
 
@@ -628,12 +1010,17 @@
     font-size: 22px;
   }
 
+  .header-left h1 {
+    font-size: 22px;
+  }
+
   .title-underline {
     position: relative;
     bottom: auto;
     margin-top: 5px;
   }
 
+  .add-medicine-btn,
   .add-stock-btn {
     width: 100%;
     justify-content: center;
@@ -646,7 +1033,20 @@
     border-radius: 8px;
   }
 
-  .inventory-table,
+  .inventory-table-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-bar-container {
+    max-width: 100%;
+  }
+
+  .search-input {
+    padding: 10px 40px 10px 40px;
+    font-size: 14px;
+  }
+
   .inventory-table tbody,
   .inventory-table tr,
   .inventory-table td {
@@ -822,11 +1222,16 @@
     font-size: 20px;
   }
 
+  .header-left h1 {
+    font-size: 20px;
+  }
+
   .title-underline {
     width: 50px;
     height: 2px;
   }
 
+  .add-medicine-btn,
   .add-stock-btn {
     padding: 10px 20px;
     font-size: 14px;
@@ -916,6 +1321,10 @@
 /* Extra small devices */
 @media (max-width: 360px) {
   .inventory-title {
+    font-size: 18px;
+  }
+
+  .header-left h1 {
     font-size: 18px;
   }
 

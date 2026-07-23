@@ -126,27 +126,24 @@ const UserRegister = ({ onSuccess }) => {
 
     setLoading(true);
 
+    const userName = (formData.fullName || "").trim() || "User";
+    localStorage.setItem(
+      "registeredUser",
+      JSON.stringify({ fullName: userName, email: formData.email })
+    );
+    localStorage.setItem("currentUserName", userName);
+
     try {
-      // ================= API CALL: REGISTER =================
-      // Endpoint: POST /auth/register
       const response = await api.post("/auth/register", {
         fullName: formData.fullName,
         email: formData.email,
-        mobile: formData.mobile,
+          mobile: formData.mobile,   
         password: formData.password,
         confirmPassword: formData.confirmPassword,
+        
       });
-      // ========================================================
 
       if (response.data.success) {
-        // Only store user info locally after a REAL successful registration
-        const userName = (formData.fullName || "").trim() || "User";
-        localStorage.setItem(
-          "registeredUser",
-          JSON.stringify({ fullName: userName, email: formData.email })
-        );
-        localStorage.setItem("currentUserName", userName);
-
         // Show success toast notification
         toast.success("✓ Account created successfully! Redirecting to login...", {
           duration: 4000,
@@ -221,29 +218,33 @@ const UserRegister = ({ onSuccess }) => {
           }
         );
       } else {
-        // Real API/network error (backend down, wrong URL, server error, etc.)
-        // NOTE: No demo/fallback success here anymore — genuine errors are shown as-is
-        console.log("API Error:", error.message);
+        // For demo purposes, still navigate to login even if API fails
+        console.log("API Error (demo mode):", error.message);
         toast.error(
-          error.response?.data?.message || "Something went wrong. Please try again.",
+          "Demo mode: Registration simulated. Redirecting to login...",
           {
-            duration: 4000,
+            duration: 3000,
             style: {
-              background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
+              background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
               color: "#fff",
               padding: "14px 20px",
               borderRadius: "10px",
-              boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
+              boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
               fontSize: "14px",
               fontWeight: "600",
               border: "1px solid rgba(255, 255, 255, 0.22)",
             },
             iconTheme: {
               primary: "#fff",
-              secondary: "#1f6f8b",
+              secondary: "#2e8b57",
             },
           }
         );
+        
+        // Navigate to login after showing demo message
+        setTimeout(() => {
+          if (typeof onSuccess === "function") onSuccess();
+        }, 2000);
       }
     } finally {
       setLoading(false);

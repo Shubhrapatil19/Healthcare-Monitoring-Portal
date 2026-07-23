@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 
 import "./UserDash.css";
 
@@ -9,14 +9,15 @@ import AddStockModal from "../../Component/AddStock";
 import UserInvent from "./UserInvent";
 import UserReport from "./UserReport";
 import UserRem from "./UserRem";
+import UserAlert from "./UserAlert";
 import UserLogout from "./UserLogout";
 
+import UserManage from "./UserManage";
 import UserProfiles from "./UserProfiles";
 
 import {
   Home,
   User,
-  Pill,
   ClipboardPlus,
   Bell,
   TriangleAlert,
@@ -48,6 +49,8 @@ const UserDash = ({ onLogout }) => {
   );
   const [activeItem, setActiveItem] = useState("Home");
 
+  const myMedicineRef = useRef(null);
+
   const [showAddMedicineModal, setShowAddMedicineModal] = useState(false);
   const today = new Date();
   const todayDate = today.getDate();
@@ -72,6 +75,20 @@ const UserDash = ({ onLogout }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const currentUserName = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("currentUserName");
+      if (stored && stored.trim()) return stored.trim();
+      const registeredUser = localStorage.getItem("registeredUser");
+      if (registeredUser) {
+        const parsed = JSON.parse(registeredUser);
+        if (parsed.fullName && parsed.fullName.trim()) return parsed.fullName.trim();
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return "User";
+  }, []);
 
   const handleProfileComplete = () => {
     localStorage.setItem("profileCompleted", "true");
@@ -116,6 +133,15 @@ const UserDash = ({ onLogout }) => {
     } else {
       setShowProfile(false);
       setShowLogoutModal(false);
+    }
+
+    // Scroll to My Medicine card when Medicine Management is clicked
+    if (itemName === "Medicine Management") {
+      setTimeout(() => {
+        if (myMedicineRef.current) {
+          myMedicineRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
     }
   };
 
@@ -198,7 +224,7 @@ const UserDash = ({ onLogout }) => {
               <div className="avatar">
                 <User size={24} />
               </div>
-              <span>Jhon Deo</span>
+              <span>{currentUserName}</span>
             </div>
           </div>
         </header>
@@ -309,6 +335,8 @@ const UserDash = ({ onLogout }) => {
               <UserInvent />
             ) : activeItem === "Reports" ? (
               <UserReport />
+            ) : activeItem === "Alerts" ? (
+              <UserAlert onAddMedicine={handleAddMedicine} />
             ) : activeItem === "Reminders" ? (
               <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} />
             ) : showLogoutModal ? (
@@ -438,55 +466,8 @@ const UserDash = ({ onLogout }) => {
                 </div>
 
                 {/* ================= ROW 2 ================= */}
-                <div className="card-row">
-                  <div className={`dashboard-card ${activeItem === "Medicine Management" ? "active-card" : ""}`}>
-                    <div className="card-header">
-                      <Pill />
-                      My Medicine
-                    </div>
-
-                    {medicines.length === 0 ? (
-                      <div className="empty-card">
-                        <Pill size={60} />
-                        <h4>No medicine added yet</h4>
-                        <p>Add your medicine to see your medicine list</p>
-                        <button onClick={handleAddMedicine}>
-                          <Plus size={24} />
-                          Add Your First Medicine
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="medicine-list medicine-list--my-medicine">
-                        <div className="medicine-table-header">
-                          <span className="medicine-col medicine-name-col">Medicine</span>
-                          <span className="medicine-col medicine-dosage-col">Dosage</span>
-                          <span className="medicine-col medicine-time-col">Timing</span>
-                          <span className="medicine-col medicine-frequency-col">Frequency</span>
-                          <span className="medicine-col medicine-status-col">Status</span>
-                        </div>
-                        {medicines.map((medicine) => (
-                          <div key={medicine.id} className="medicine-item">
-                            <div className="medicine-info">
-                              <h5>{medicine.medicineName}</h5>
-                            </div>
-                            <div className="medicine-dosage-value">{medicine.dosage}</div>
-                            <div className="medicine-time-value">
-                              <Clock size={14} />
-                              {medicine.timing}
-                            </div>
-                            <div className="medicine-frequency-value">{medicine.frequency}</div>
-                            <div className="medicine-status">
-                              <span className="status-badge pending">Pending</span>
-                            </div>
-                          </div>
-                        ))}
-                        <button className="add-more-btn" onClick={handleAddMedicine}>
-                          <Plus size={24} />
-                          Add More Medicine
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                <div className="card-row" ref={myMedicineRef}>
+                  <UserManage medicines={medicines} onAddMedicine={handleCloseMedicineModal} />
 
                   <div className="dashboard-card calendar-card">
                     <div className="card-header">

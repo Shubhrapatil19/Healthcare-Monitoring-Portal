@@ -106,6 +106,17 @@
   background: #ffffff;
 }
 
+/* Calendar icon color - make it black for date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0) brightness(0);
+  cursor: pointer;
+}
+
+input[type="date"]::-moz-calendar-picker-indicator {
+  filter: invert(0) brightness(0);
+  cursor: pointer;
+}
+
 .form-group textarea {
   resize: none;
   font-family: inherit;
@@ -166,6 +177,65 @@
   background: #115e59;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2);
+}
+
+/* ============================
+   SIMPLE AM/PM TIME PICKER
+============================ */
+
+.time-picker-simple {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-picker-simple-input {
+  flex: 1;
+  padding: 6px 8px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 5px !important;
+  font-size: 12px !important;
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+  outline: none !important;
+  transition: all 0.3s !important;
+  min-width: 0;
+}
+
+.time-picker-simple-input:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1) !important;
+  background: #ffffff !important;
+}
+
+/* Make time input's icon/dropdown black */
+input[type="time"].time-picker-simple-input::-webkit-calendar-picker-indicator {
+  filter: invert(0) brightness(0);
+  cursor: pointer;
+}
+
+.time-picker-simple-ampm {
+  width: auto !important;
+  flex: none !important;
+  padding: 6px 10px !important;
+  border: 1px solid #ccfbf1 !important;
+  border-radius: 5px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  background: #f0fdfa !important;
+  color: #0f766e !important;
+  outline: none !important;
+  transition: all 0.3s !important;
+  cursor: pointer !important;
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  min-width: 64px;
+  text-align: center;
+}
+
+.time-picker-simple-ampm:focus {
+  border-color: #0f766e !important;
+  background: #ccfbf1 !important;
 }
 
 /* ============================

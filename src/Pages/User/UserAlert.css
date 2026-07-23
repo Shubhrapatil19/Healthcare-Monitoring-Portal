@@ -1,0 +1,427 @@
+/* ============================================
+   ALERTS PAGE — Matching Reminders UI v1
+   ============================================ */
+
+/* ===== KEYFRAMES ===== */
+
+@keyframes alertFadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes alertFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes alertPulseGlow {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 28px rgba(15, 118, 110, 0.45), 0 0 60px rgba(20, 184, 166, 0.15);
+  }
+}
+
+@keyframes alertGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes alertShimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+/* ===== PAGE CONTAINER ===== */
+
+.alert-page {
+  width: 100%;
+  min-height: 100%;
+  background: linear-gradient(135deg, #F6F8FC 0%, #F0F4FA 50%, #EDF1F7 100%);
+  padding: 32px;
+  box-sizing: border-box;
+  font-family: "Inter", "Poppins", sans-serif;
+}
+
+/* ===== HEADER ===== */
+
+.alert-header-section {
+  margin-bottom: 36px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 28px 32px;
+  border: 1px solid rgba(231, 236, 242, 0.6);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.alert-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.alert-header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #13294B;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #13294B 0%, #1E3A5F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.alert-subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ===== EMPTY STATE CARD ===== */
+
+.alert-card {
+  width: 100%;
+  min-height: 760px;
+  background: #FFFFFF;
+  border-radius: 28px;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 10px 40px rgba(15, 118, 110, 0.06);
+  padding: 60px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: alertFadeSlideUp 0.7s ease-out forwards;
+}
+
+.alert-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(15,118,110,0.03) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.alert-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  animation: alertShimmer 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.alert-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  width: 100%;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== ILLUSTRATION ===== */
+
+.alert-illustration {
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 8px 24px rgba(15,118,110,0.1));
+  animation: alertFadeSlideUp 0.7s ease-out forwards, alertFloat 4s ease-in-out 0.7s infinite;
+}
+
+/* ===== EMPTY CONTENT ===== */
+
+.alert-empty-heading {
+  font-size: 30px;
+  font-weight: 700;
+  color: #134E4A;
+  margin: 0 0 14px 0;
+  line-height: 1.2;
+  opacity: 0;
+  animation: alertFadeSlideUp 0.7s ease-out 0.2s forwards;
+}
+
+.alert-empty-desc {
+  font-size: 17px;
+  font-weight: 400;
+  color: #64748B;
+  line-height: 26px;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 0 28px 0;
+  opacity: 0;
+  animation: alertFadeSlideUp 0.7s ease-out 0.4s forwards;
+}
+
+/* ===== ADD MEDICINE BUTTON ===== */
+
+.alert-add-medicine-btn {
+  width: 220px;
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.2);
+  opacity: 0;
+  animation: alertFadeSlideUp 0.7s ease-out 0.6s forwards, alertPulseGlow 2.5s ease-in-out 1.3s infinite;
+}
+
+.alert-add-medicine-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.3);
+}
+
+.alert-add-medicine-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.alert-add-medicine-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.alert-add-medicine-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+/* ===== BANNER ===== */
+
+.alert-banner {
+  width: 100%;
+  max-width: 1180px;
+  min-height: 110px;
+  background: linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 100%, #F0FDFA 0%);
+  background-size: 200% 200%;
+  border-radius: 20px;
+  border: 1px solid #CCFBF1;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 70px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  animation: alertFadeSlideUp 0.7s ease-out 0.8s forwards, alertGradientShift 6s ease-in-out 1.5s infinite;
+}
+
+.alert-banner::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.alert-banner-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #CCFBF1 0%, #A7F3D0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(15,118,110,0.1);
+}
+
+.alert-banner-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #0F766E;
+}
+
+.alert-banner-text {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.alert-banner-text h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #0F766E;
+  margin: 0 0 4px 0;
+}
+
+.alert-banner-text p {
+  font-size: 18px;
+  font-weight: 400;
+  color: #64748B;
+  margin: 0;
+}
+
+.alert-banner-decoration {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  opacity: 0.25;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .alert-page {
+    padding: 20px;
+  }
+
+  .alert-header-section {
+    padding: 20px;
+  }
+
+  .alert-heading {
+    font-size: 26px;
+  }
+
+  .alert-subtitle {
+    font-size: 14px;
+  }
+
+  .alert-card {
+    padding: 40px 24px;
+    min-height: 500px;
+  }
+
+  .alert-illustration svg {
+    width: 240px;
+    height: auto;
+  }
+
+  .alert-empty-heading {
+    font-size: 24px;
+  }
+
+  .alert-empty-desc {
+    font-size: 14px;
+  }
+
+  .alert-empty-desc br {
+    display: none;
+  }
+
+  .alert-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px 20px;
+    margin-top: 50px;
+    min-height: auto;
+  }
+
+  .alert-banner-text h3 {
+    font-size: 20px;
+  }
+
+  .alert-banner-text p {
+    font-size: 15px;
+  }
+
+  .alert-banner-decoration {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .alert-page {
+    padding: 16px;
+  }
+
+  .alert-header-section {
+    padding: 16px;
+  }
+
+  .alert-heading {
+    font-size: 22px;
+  }
+
+  .alert-card {
+    padding: 32px 16px;
+    min-height: 420px;
+    border-radius: 20px;
+  }
+
+  .alert-illustration svg {
+    width: 200px;
+    height: auto;
+  }
+
+  .alert-empty-heading {
+    font-size: 20px;
+  }
+
+  .alert-banner {
+    margin-top: 36px;
+    padding: 20px 16px;
+  }
+
+  .alert-banner-text h3 {
+    font-size: 18px;
+  }
+
+  .alert-banner-text p {
+    font-size: 14px;
+  }
+}

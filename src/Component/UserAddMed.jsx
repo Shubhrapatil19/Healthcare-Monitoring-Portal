@@ -3,10 +3,11 @@ import { useState } from "react";
 import "./UserAddMed.css";
 
 const AddMedicineModal = ({ onClose }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     medicineName: "",
     dosage: "",
     timing: "",
+    timingPeriod: "AM",
     frequency: "",
     startDate: "",
     endDate: "",
@@ -25,6 +26,25 @@ const AddMedicineModal = ({ onClose }) => {
       ...prev,
       [name]: ""
     }));
+  };
+
+const buildTiming24 = (time24, period) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":");
+    let h = parseInt(hours, 10);
+    if (period === "PM" && h !== 12) h += 12;
+    if (period === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${minutes}`;
+  };
+
+  const handleTimingChange = (field, value) => {
+    const updated = { ...formData, [field]: value };
+    // Rebuild the 24-hour timing string from time + period
+    if (updated.timing && field === "timingPeriod") {
+      updated.timing = buildTiming24(updated.timing, value);
+    }
+    setFormData(updated);
+    setErrors((prev) => ({ ...prev, timing: "" }));
   };
 
   const validate = () => {
@@ -89,14 +109,30 @@ const AddMedicineModal = ({ onClose }) => {
             <span className="error">{errors.dosage}</span>
           </div>
 
-          <div className="form-group">
+<div className="form-group">
             <label>Timing *</label>
-            <input
-              type="time"
-              name="timing"
-              value={formData.timing}
-              onChange={handleChange}
-            />
+            <div className="time-picker-simple">
+              <input
+                type="time"
+                name="timing"
+                value={formData.timing}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({ ...prev, timing: val }));
+                  setErrors((prev) => ({ ...prev, timing: "" }));
+                }}
+                className="time-picker-simple-input"
+              />
+              <select
+                name="timingPeriod"
+                value={formData.timingPeriod}
+                onChange={(e) => handleTimingChange("timingPeriod", e.target.value)}
+                className="time-picker-simple-ampm"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
             <span className="error">{errors.timing}</span>
           </div>
 

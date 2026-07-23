@@ -18,7 +18,7 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
     year: "numeric",
   });
 
-  const formatDate = (dateStr) => {
+const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     return d.toLocaleDateString("en-US", {
@@ -26,6 +26,15 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const convertTo12Hour = (time24) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":");
+    const h = parseInt(hours, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
   };
 
   return (
@@ -106,7 +115,7 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
                 <div className="rem-card-top-row">
                   <div className="rem-time-badge">
                     <Clock size={16} />
-                    <span>{med.timing}</span>
+                    <span>{convertTo12Hour(med.timing)}</span>
                   </div>
                   <span className="rem-next-dose-label">NEXT DOSE</span>
                 </div>
@@ -168,9 +177,9 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
                     <span className="rem-hl-label">Date</span>
                     <span className="rem-hl-value">{formatDate(med.date) || dateStr}</span>
                   </div>
-                  <div className="rem-hl-col rem-hl-col-time">
+<div className="rem-hl-col rem-hl-col-time">
                     <span className="rem-hl-label">Time</span>
-                    <span className="rem-hl-value">{med.timing}</span>
+                    <span className="rem-hl-value">{convertTo12Hour(med.timing)}</span>
                   </div>
                   <div className="rem-hl-col rem-hl-col-status">
                     <span className="rem-hl-label">Status</span>

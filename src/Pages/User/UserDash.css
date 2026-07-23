@@ -2988,47 +2988,34 @@ body{
     opacity:1;
 }
 
-/* ── Add More Button ── */
+/* ── Ghost Add More Button (Today's Schedule) ── */
 .add-more-btn{
     margin-top:18px !important;
     padding:14px !important;
-    border:none;
-    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-    color:#fff;
-    border-radius:14px;
+    border:2px solid #0f766e !important;
+    background:transparent !important;
+    color:#0f766e !important;
+    border-radius:14px !important;
     cursor:pointer;
-    font-size:14px;
-    font-weight:700;
+    font-size:15px !important;
+    font-weight:700 !important;
     display:flex;
     align-items:center;
     justify-content:center;
     gap:10px;
     transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     align-self:stretch;
-    box-shadow:0 4px 14px rgba(15,118,110,0.2);
+    box-shadow:none !important;
     position:relative;
     overflow:hidden;
-    letter-spacing:0.02em;
+    letter-spacing:0.03em;
 }
 
 .add-more-btn:hover{
+    background:#0f766e !important;
+    color:#ffffff !important;
     transform:translateY(-2px);
-    box-shadow:0 8px 24px rgba(15,118,110,0.3);
-}
-
-.add-more-btn::after{
-    content:'';
-    position:absolute;
-    top:0;
-    left:-100%;
-    width:100%;
-    height:100%;
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-    transition:left 0.5s ease;
-}
-
-.add-more-btn:hover::after{
-    left:100%;
+    box-shadow:0 8px 20px rgba(15,118,110,0.25) !important;
 }
 
 .add-more-btn svg{
@@ -3038,5 +3025,5 @@ body{
 }
 
 .add-more-btn:hover svg{
-    transform:rotate(90deg);
+    transform:rotate(90deg) scale(1.1);
 }
