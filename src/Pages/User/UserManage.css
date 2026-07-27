@@ -228,6 +228,17 @@
   height: 15px;
 }
 
+/* ===== UPCOMING STATUS BADGE ===== */
+.user-manage-card .medicine-list--my-medicine .status-badge.upcoming {
+  color: #1d4ed8;
+}
+
+.user-manage-card .medicine-list--my-medicine .status-badge.upcoming svg {
+  color: #1d4ed8;
+  width: 15px;
+  height: 15px;
+}
+
 /* ===== NO RESULTS FOUND ===== */
 .user-manage-card .medicine-list--my-medicine .no-results-found {
   flex: 1;

@@ -120,7 +120,7 @@ const UserLogin = ({ onLoginSuccess, onGoRegister }) => {
 
             {/* EMAIL */}
 
-            <label>Email / Username</label>
+            <label>Email </label>
 
             <div className="input-box">
 
@@ -128,7 +128,7 @@ const UserLogin = ({ onLoginSuccess, onGoRegister }) => {
 
               <input
                 type="text"
-                placeholder="Enter your email or username"
+                placeholder="Enter your email"
               />
 
             </div>

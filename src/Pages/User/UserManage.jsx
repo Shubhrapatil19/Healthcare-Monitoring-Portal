@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Pill, Plus, Search, Clock, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pill, Plus, Search, Clock, CheckCircle2, XCircle, CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import AddMedicineModal from "../../Component/UserAddMed";
 
 import "./UserManage.css";
@@ -69,12 +69,22 @@ const UserManage = ({ medicines, onAddMedicine }) => {
     return pages;
   };
 
+  const getStatusBadgeClass = (status) => {
+    if (status === "missed") return "missed";
+    if (status === "upcoming") return "upcoming";
+    return "taken";
+  };
+
+  const getStatusIcon = (status) => {
+    if (status === "missed") return <><XCircle size={14} /> Missed</>;
+    if (status === "upcoming") return <><CalendarClock size={14} /> Upcoming</>;
+    return <><CheckCircle2 size={14} /> Taken</>;
+  };
+
   return (
     <>
       {showAddMedicineModal && (
-        <div>
-          <AddMedicineModal onClose={handleCloseMedicineModal} />
-        </div>
+        <AddMedicineModal onClose={handleCloseMedicineModal} />
       )}
 
       <div className="dashboard-card active-card user-manage-card">
@@ -119,7 +129,6 @@ const UserManage = ({ medicines, onAddMedicine }) => {
               Showing {paginatedMedicines.length} of {filteredMedicines.length} medicines
             </div>
 
-            {/* Items area grows to fill space, pushing everything below it to the bottom */}
             <div className="medicine-items-wrapper">
               {paginatedMedicines.length > 0 ? (
                 paginatedMedicines.map((medicine) => (
@@ -134,12 +143,8 @@ const UserManage = ({ medicines, onAddMedicine }) => {
                     </div>
                     <div className="medicine-frequency-value">{medicine.frequency}</div>
                     <div className="medicine-status">
-                      <span className={`status-badge ${medicine.status === "missed" ? "missed" : "taken"}`}>
-                        {medicine.status === "missed" ? (
-                          <><XCircle size={14} /> Missed</>
-                        ) : (
-                          <><CheckCircle2 size={14} /> Taken</>
-                        )}
+                      <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
+                        {getStatusIcon(medicine.status)}
                       </span>
                     </div>
                   </div>
@@ -152,7 +157,6 @@ const UserManage = ({ medicines, onAddMedicine }) => {
               )}
             </div>
 
-            {/* Footer area: Add More button + Pagination — always pinned to card bottom */}
             <div className="user-manage-footer">
               <button className="add-more-btn" onClick={handleAddMedicine}>
                 <Plus size={24} />
@@ -197,3 +201,4 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 };
 
 export default UserManage;
+

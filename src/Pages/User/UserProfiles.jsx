@@ -1,10 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   User,
   Calendar,
-  Phone,
   Mail,
-  MapPin,
   Users,
   Edit2,
   Stethoscope,
@@ -16,6 +14,15 @@ const UserProfiles = () => {
     const savedProfile = localStorage.getItem("profileData");
     return savedProfile ? JSON.parse(savedProfile) : null;
   });
+
+  const registeredUser = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("registeredUser");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(() => {
@@ -89,16 +96,17 @@ const UserProfiles = () => {
               </div>
               <div className="up-info-content">
                 <label>Full Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editFormData.fullName || "Jhon Deo"}
-                    onChange={(e) => handleInputChange("fullName", e.target.value)}
-                    className="up-input-field"
-                  />
-                ) : (
-                  <p>Jhon Deo</p>
-                )}
+                <p>{registeredUser?.fullName || "Not specified"}</p>
+              </div>
+            </div>
+
+            <div className="up-info-item">
+              <div className="up-icon">
+                <Mail size={20} />
+              </div>
+              <div className="up-info-content">
+                <label>Email</label>
+                <p>{registeredUser?.email || "Not specified"}</p>
               </div>
             </div>
 
@@ -116,7 +124,7 @@ const UserProfiles = () => {
                     className="up-input-field"
                   />
                 ) : (
-                  <p>{profileData.age || "68"}</p>
+                  <p>{profileData.age || "Not specified"}</p>
                 )}
               </div>
             </div>
@@ -139,64 +147,7 @@ const UserProfiles = () => {
                     <option value="Other">Other</option>
                   </select>
                 ) : (
-                  <p>{profileData.gender || "male"}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="up-info-item">
-              <div className="up-icon">
-                <Phone size={20} />
-              </div>
-              <div className="up-info-content">
-                <label>Mobile</label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={editFormData.mobile || "9898967770"}
-                    onChange={(e) => handleInputChange("mobile", e.target.value)}
-                    className="up-input-field"
-                  />
-                ) : (
-                  <p>9898967770</p>
-                )}
-              </div>
-            </div>
-
-            <div className="up-info-item">
-              <div className="up-icon">
-                <Mail size={20} />
-              </div>
-              <div className="up-info-content">
-                <label>Email</label>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    value={editFormData.email || "jhon@gmail.com"}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="up-input-field"
-                  />
-                ) : (
-                  <p>jhon@gmail.com</p>
-                )}
-              </div>
-            </div>
-
-            <div className="up-info-item">
-              <div className="up-icon">
-                <MapPin size={20} />
-              </div>
-              <div className="up-info-content">
-                <label>Address</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editFormData.address || "Mumbai, maharastra"}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    className="up-input-field"
-                  />
-                ) : (
-                  <p>Mumbai, maharastra</p>
+                  <p>{profileData.gender || "Not specified"}</p>
                 )}
               </div>
             </div>
@@ -244,26 +195,34 @@ const UserProfiles = () => {
                 <Users size={20} />
               </div>
               <div className="up-info-content">
-                <label>Riya (Wife)</label>
+                <label>Contact 1 - {profileData.relation1 || "Relation"}</label>
                 {isEditing ? (
                   <div className="up-contact-edit">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={editFormData.contact1Name || "Riya"}
-                      onChange={(e) => handleInputChange("contact1Name", e.target.value)}
+                    <select
+                      value={editFormData.relation1 || ""}
+                      onChange={(e) => handleInputChange("relation1", e.target.value)}
                       className="up-input-field"
-                    />
+                    >
+                      <option value="">Select Relation</option>
+                      <option>Father</option>
+                      <option>Mother</option>
+                      <option>Brother</option>
+                      <option>Sister</option>
+                      <option>Spouse</option>
+                      <option>Friend</option>
+                      <option>Guardian</option>
+                    </select>
                     <input
                       type="tel"
                       placeholder="Phone"
-                      value={editFormData.contact1 || "9988664747"}
+                      value={editFormData.contact1 || ""}
                       onChange={(e) => handleInputChange("contact1", e.target.value)}
                       className="up-input-field"
+                      maxLength={10}
                     />
                   </div>
                 ) : (
-                  <p>9988664747</p>
+                  <p>{profileData.contact1 || "Not specified"}</p>
                 )}
               </div>
             </div>
@@ -273,26 +232,34 @@ const UserProfiles = () => {
                 <Users size={20} />
               </div>
               <div className="up-info-content">
-                <label>Rohit (Son)</label>
+                <label>Contact 2 - {profileData.relation2 || "Relation"}</label>
                 {isEditing ? (
                   <div className="up-contact-edit">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={editFormData.contact2Name || "Rohit"}
-                      onChange={(e) => handleInputChange("contact2Name", e.target.value)}
+                    <select
+                      value={editFormData.relation2 || ""}
+                      onChange={(e) => handleInputChange("relation2", e.target.value)}
                       className="up-input-field"
-                    />
+                    >
+                      <option value="">Select Relation</option>
+                      <option>Father</option>
+                      <option>Mother</option>
+                      <option>Brother</option>
+                      <option>Sister</option>
+                      <option>Spouse</option>
+                      <option>Friend</option>
+                      <option>Guardian</option>
+                    </select>
                     <input
                       type="tel"
                       placeholder="Phone"
-                      value={editFormData.contact2 || "9988664747"}
+                      value={editFormData.contact2 || ""}
                       onChange={(e) => handleInputChange("contact2", e.target.value)}
                       className="up-input-field"
+                      maxLength={10}
                     />
                   </div>
                 ) : (
-                  <p>9988664747</p>
+                  <p>{profileData.contact2 || "Not specified"}</p>
                 )}
               </div>
             </div>

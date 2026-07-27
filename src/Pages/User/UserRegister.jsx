@@ -492,7 +492,10 @@ const UserRegister = ({ onSuccess }) => {
               </button>
 
               <p className="register-login-text">
-                Already have an account? <a href="#login">Login Now</a>
+                Already have an account?{" "}
+                <a href="#login" onClick={(e) => { e.preventDefault(); if (typeof onSuccess === "function") onSuccess(); }}>
+                  Login Now
+                </a>
               </p>
             </form>
           </div>

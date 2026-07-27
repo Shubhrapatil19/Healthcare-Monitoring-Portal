@@ -59,8 +59,8 @@ const ComProfile = ({ onComplete }) => {
       newErrors.gender = "Please select gender";
     }
 
-    if (!formData.disease.trim()) {
-      newErrors.disease = "Enter medical condition";
+    if (!formData.disease) {
+      newErrors.disease = "Please select a medical condition";
     }
 
     if (!formData.relation1) {
@@ -213,17 +213,42 @@ const ComProfile = ({ onComplete }) => {
 
               <label>Disease / Medical Condition</label>
 
-              <div className="cp-input">
+              <div className="cp-select">
 
                 <Stethoscope size={18} />
 
-                <input
-                  type="text"
+                <select
                   name="disease"
-                  placeholder="Ex. Diabetes"
                   value={formData.disease}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">
+                    Select Medical Condition
+                  </option>
+
+                  <option>DIABETES</option>
+
+                  <option>HYPERTENSION</option>
+
+                  <option>HEART_DISEASE</option>
+
+                  <option>ASTHMA</option>
+
+                  <option>ARTHRITIS</option>
+
+                  <option>KIDNEY_DISEASE</option>
+
+                  <option>THYROID</option>
+
+                  <option>CANCER</option>
+
+                  <option>ALZHEIMERS</option>
+
+                  <option>OTHER</option>
+
+                </select>
+
+                <ChevronDown size={18} />
 
               </div>
 

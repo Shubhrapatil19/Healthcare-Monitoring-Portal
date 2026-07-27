@@ -1,5 +1,6 @@
 import "./UserRem.css";
 
+import toast from "react-hot-toast";
 import {
   Plus,
   Clock,
@@ -137,7 +138,40 @@ const formatDate = (dateStr) => {
                     <Clock size={16} />
                     Snooze
                   </button>
-                  <button className="rem-taken-btn" type="button">
+                  <button className="rem-taken-btn" type="button" onClick={() => toast.custom((t) => (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: 'linear-gradient(135deg, #065F46, #0F766E)',
+                      color: '#fff',
+                      padding: '14px 24px',
+                      borderRadius: '14px',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      boxShadow: '0 8px 32px rgba(15, 118, 110, 0.35)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      animation: t.visible ? 'slideInUp 0.4s ease-out' : 'slideOutDown 0.3s ease-in',
+                      transformOrigin: 'top',
+                    }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.2)',
+                        fontSize: '18px',
+                        animation: 'popIn 0.5s ease-out',
+                      }}>✓</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '16px', fontWeight: '700' }}>{med.medicineName}</span>
+                        <span style={{ fontSize: '12px', opacity: '0.85', fontWeight: '400' }}>Medicine taken successfully! 💊</span>
+                      </div>
+                    </div>
+                  ), { duration: 3000 })}
+                  >
                     ✓ Taken
                   </button>
                 </div>

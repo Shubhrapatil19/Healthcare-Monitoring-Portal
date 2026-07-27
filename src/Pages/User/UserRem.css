@@ -72,6 +72,44 @@
   }
 }
 
+/* ===== Toast Animation Keyframes ===== */
+
+@keyframes slideInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideOutDown {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .rem-page {
   width: 100%;
   min-height: 100%;
@@ -1052,11 +1090,41 @@
   .rem-history-header { padding: 20px; }
   .rem-history-header h3 { font-size: 22px; }
   .rem-history-list { padding: 14px 14px; }
-  .rem-hl-header,
-  .rem-hl-row { padding: 0 14px; }
-  .rem-hl-header .rem-hl-col { font-size: 11px; }
-  .rem-hl-row { min-height: 46px; padding: 10px 14px; }
-  .rem-hl-value { font-size: 12px; }
+  .rem-hl-header { display: none; }
+  .rem-hl-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px !important;
+    min-height: auto !important;
+    gap: 8px;
+  }
+  .rem-hl-col {
+    width: 100% !important;
+    white-space: normal;
+    flex-shrink: 1;
+    justify-content: flex-start;
+    display: flex;
+    gap: 8px;
+  }
+  .rem-hl-label {
+    display: inline-block;
+    font-weight: 600;
+    color: #64748B;
+    font-size: 12px;
+    min-width: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .rem-hl-value {
+    font-size: 13px;
+    color: #334155;
+  }
+  .rem-hl-col-action {
+    justify-content: flex-start;
+    padding-top: 4px;
+    border-top: 1px solid #EDF2F7;
+    margin-top: 4px;
+  }
   .rem-history-empty { padding: 30px 16px; }
   .rem-history-empty-illustration svg { width: 120px; height: 120px; }
   .rem-history-empty-heading { font-size: 20px; }
@@ -1097,11 +1165,11 @@
   .rem-history-header { padding: 16px; }
   .rem-history-header h3 { font-size: 18px; }
   .rem-history-list { padding: 10px 10px; }
-  .rem-hl-header,
-  .rem-hl-row { padding: 0 10px; }
-  .rem-hl-header .rem-hl-col { font-size: 10px; }
-  .rem-hl-row { min-height: 42px; padding: 8px 10px; }
-  .rem-hl-value { font-size: 11px; }
+  .rem-hl-row { padding: 12px 14px !important; gap: 6px; }
+  .rem-hl-col { gap: 6px; }
+  .rem-hl-label { font-size: 11px; min-width: 80px; }
+  .rem-hl-value { font-size: 12px; }
+  .rem-hl-col-action { padding-top: 2px; margin-top: 2px; }
   .rem-history-empty { padding: 24px 12px; }
   .rem-history-empty-illustration svg { width: 100px; height: 100px; }
   .rem-history-empty-heading { font-size: 18px; }

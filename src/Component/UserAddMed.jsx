@@ -2,12 +2,54 @@ import { useState } from "react";
 
 import "./UserAddMed.css";
 
+// How many doses each frequency implies, and whether timing is required
+const FREQUENCY_CONFIG = {
+  "Once a day": { doses: 1, required: true },
+  "Twice a day": { doses: 2, required: true },
+  "Three times a day": { doses: 3, required: true },
+  "As needed": { doses: 1, required: false },
+  "Weekly": { doses: 1, required: true },
+};
+
+// Build evenly-spaced default dose times starting from an 8 AM baseline.
+// e.g. Three times a day -> 08:00, 16:00, 00:00 (8 hours apart)
+const buildSuggestedTimings = (doseCount) => {
+  if (doseCount <= 0) return [];
+  const startHour = 8;
+  const intervalHours = 24 / doseCount;
+  const timings = [];
+  for (let i = 0; i < doseCount; i++) {
+    const hour = Math.round(startHour + i * intervalHours) % 24;
+    timings.push({ time: `${String(hour).padStart(2, "0")}:00` });
+  }
+  return timings;
+};
+
+// The <input type="time"> value is always stored as 24-hour "HH:MM".
+// These helpers derive the 12-hour display + AM/PM used by the select,
+// same as the original single-field timing picker.
+const to12Hour = (time24) => {
+  if (!time24) return { hour12: null, minute: "00", period: "AM" };
+  const [h, m] = time24.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  let hour12 = h % 12;
+  if (hour12 === 0) hour12 = 12;
+  return { hour12, minute: String(m).padStart(2, "0"), period };
+};
+
+const buildTiming24 = (time24, period) => {
+  if (!time24) return "";
+  const { hour12, minute } = to12Hour(time24);
+  let h = hour12 % 12;
+  if (period === "PM") h += 12;
+  return `${String(h).padStart(2, "0")}:${minute}`;
+};
+
 const AddMedicineModal = ({ onClose }) => {
-const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     medicineName: "",
     dosage: "",
-    timing: "",
-    timingPeriod: "AM",
+    timings: [], // [{ time: "HH:MM" }, ...] - one entry per dose
     frequency: "",
     startDate: "",
     endDate: "",
@@ -28,22 +70,39 @@ const [formData, setFormData] = useState({
     }));
   };
 
-const buildTiming24 = (time24, period) => {
-    if (!time24) return "";
-    const [hours, minutes] = time24.split(":");
-    let h = parseInt(hours, 10);
-    if (period === "PM" && h !== 12) h += 12;
-    if (period === "AM" && h === 12) h = 0;
-    return `${String(h).padStart(2, "0")}:${minutes}`;
+  const handleFrequencyChange = (e) => {
+    const freq = e.target.value;
+    const config = FREQUENCY_CONFIG[freq];
+    const doseCount = config ? config.doses : 0;
+
+    setFormData((prev) => ({
+      ...prev,
+      frequency: freq,
+      // Auto-suggest timings whenever the dose count changes so the user
+      // always sees the right number of slots, evenly spaced.
+      timings: buildSuggestedTimings(doseCount)
+    }));
+    setErrors((prev) => ({ ...prev, frequency: "", timing: "" }));
   };
 
-  const handleTimingChange = (field, value) => {
-    const updated = { ...formData, [field]: value };
-    // Rebuild the 24-hour timing string from time + period
-    if (updated.timing && field === "timingPeriod") {
-      updated.timing = buildTiming24(updated.timing, value);
-    }
-    setFormData(updated);
+  const handleTimingChange = (index, value) => {
+    setFormData((prev) => {
+      const updated = [...prev.timings];
+      updated[index] = { ...updated[index], time: value };
+      return { ...prev, timings: updated };
+    });
+    setErrors((prev) => ({ ...prev, timing: "" }));
+  };
+
+  // Switching the AM/PM select rebuilds that dose's 24-hour time string,
+  // keeping the hour/minute the same and just flipping the half of day.
+  const handleTimingPeriodChange = (index, newPeriod) => {
+    setFormData((prev) => {
+      const updated = [...prev.timings];
+      const current = updated[index]?.time || "";
+      updated[index] = { ...updated[index], time: buildTiming24(current, newPeriod) };
+      return { ...prev, timings: updated };
+    });
     setErrors((prev) => ({ ...prev, timing: "" }));
   };
 
@@ -56,11 +115,16 @@ const buildTiming24 = (time24, period) => {
     if (!formData.dosage.trim())
       temp.dosage = "Dosage is required";
 
-    if (!formData.timing)
-      temp.timing = "Timing is required";
-
     if (!formData.frequency)
       temp.frequency = "Select frequency";
+
+    const config = FREQUENCY_CONFIG[formData.frequency];
+    if (config && config.required) {
+      const hasEmptyTiming =
+        formData.timings.length === 0 ||
+        formData.timings.some((t) => !t.time);
+      if (hasEmptyTiming) temp.timing = "Please set a time for every dose";
+    }
 
     if (!formData.startDate)
       temp.startDate = "Start date is required";
@@ -78,6 +142,9 @@ const buildTiming24 = (time24, period) => {
       onClose(formData);
     }
   };
+
+  const doseCount = formData.timings.length;
+  const intervalHours = doseCount > 1 ? Math.round(24 / doseCount) : null;
 
   return (
     <div className="modal-overlay">
@@ -109,39 +176,12 @@ const buildTiming24 = (time24, period) => {
             <span className="error">{errors.dosage}</span>
           </div>
 
-<div className="form-group">
-            <label>Timing *</label>
-            <div className="time-picker-simple">
-              <input
-                type="time"
-                name="timing"
-                value={formData.timing}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFormData((prev) => ({ ...prev, timing: val }));
-                  setErrors((prev) => ({ ...prev, timing: "" }));
-                }}
-                className="time-picker-simple-input"
-              />
-              <select
-                name="timingPeriod"
-                value={formData.timingPeriod}
-                onChange={(e) => handleTimingChange("timingPeriod", e.target.value)}
-                className="time-picker-simple-ampm"
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
-            </div>
-            <span className="error">{errors.timing}</span>
-          </div>
-
           <div className="form-group">
             <label>Frequency *</label>
             <select
               name="frequency"
               value={formData.frequency}
-              onChange={handleChange}
+              onChange={handleFrequencyChange}
             >
               <option value="">Select frequency</option>
               <option>Once a day</option>
@@ -152,6 +192,51 @@ const buildTiming24 = (time24, period) => {
             </select>
             <span className="error">{errors.frequency}</span>
           </div>
+
+          {doseCount > 0 && (
+            <div className="form-group">
+              <label>
+                Dose Timing{doseCount > 1 ? "s" : ""}
+                {FREQUENCY_CONFIG[formData.frequency]?.required ? " *" : ""}
+                {intervalHours && (
+                  <span className="interval-badge">
+                    ~{intervalHours}h apart
+                  </span>
+                )}
+              </label>
+
+              <div className="timing-list">
+                {formData.timings.map((t, idx) => {
+                  const { period } = to12Hour(t.time);
+                  return (
+                    <div className="timing-row" key={idx}>
+                      <span className="timing-row-label">
+                        Dose {idx + 1}
+                      </span>
+                      <div className="time-picker-simple">
+                        <input
+                          type="time"
+                          value={t.time}
+                          onChange={(e) => handleTimingChange(idx, e.target.value)}
+                          className="time-picker-simple-input"
+                        />
+                        <select
+                          value={period}
+                          onChange={(e) => handleTimingPeriodChange(idx, e.target.value)}
+                          className="time-picker-simple-ampm"
+                        >
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <span className="error">{errors.timing}</span>
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">

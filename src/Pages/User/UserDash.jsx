@@ -352,7 +352,11 @@ const UserDash = ({ onLogout }) => {
             ) : activeItem === "Reports" ? (
               <UserReport onViewReport={() => setShowViewReport(true)} />
             ) : activeItem === "Alerts" ? (
-              <UserAlert onAddMedicine={handleAddMedicine} />
+              <UserAlert
+                onAddMedicine={handleAddMedicine}
+                medicines={medicines}
+                stockItems={stockItems}
+              />
             ) : activeItem === "Reminders" ? (
               <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} />
             ) : showLogoutModal ? (
@@ -447,7 +451,7 @@ const UserDash = ({ onLogout }) => {
                               </div>
                               <div className="medicine-frequency-value">{medicine.frequency}</div>
 <div className="medicine-status">
-                                <span className="status-badge pending">Pending</span>
+                                <span className="status-badge upcoming">Upcoming</span>
                               </div>
                             </div>
                           ))}
@@ -601,4 +605,3 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
-

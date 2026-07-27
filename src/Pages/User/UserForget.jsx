@@ -48,7 +48,7 @@ const UserForget = ({ isOpen, onClose }) => {
 
         <form className="fp-form">
 
-          <label>Email / Username</label>
+          <label>Email</label>
 
           <div className="fp-input">
 
@@ -56,7 +56,7 @@ const UserForget = ({ isOpen, onClose }) => {
 
             <input
               type="email"
-              placeholder="Enter your email or username"
+              placeholder="Enter your email"
             />
 
           </div>

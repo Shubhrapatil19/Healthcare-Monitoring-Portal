@@ -1380,16 +1380,24 @@ body{
 
 .medicine-status{
     display:flex;
-    justify-content:flex-end;
-    align-items: flex-start;
+    justify-content:center;
+    align-items:center;
 }
 
-.status-badge.pending{
-
-    background:#fef3c7;
-
-    color:#92400e;
-
+.status-badge.upcoming{
+    background:#dbeafe;
+    color:#1e40af;
+    font-size:11px;
+    padding:3px 12px;
+    border-radius:20px;
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    font-weight:600;
+    line-height:1.4;
+    white-space:nowrap;
+    min-width:fit-content;
+    width:auto;
 }
 
 .status-badge.taken{
@@ -2324,100 +2332,148 @@ body{
 
     /* Keep notification visible on smaller screens while keeping the header compact */
     .notification-btn {
-        width: 42px;
-        height: 42px;
+        width: 38px;
+        height: 38px;
     }
 
     .top-icon {
         display: inline-flex;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
     }
 
     /* Header adjustments */
     .topbar{
-        padding:10px 12px;
-        flex-wrap:wrap;
-        height:auto;
-        gap:8px;
+        padding: 8px 10px;
+        flex-wrap: nowrap;
+        height: auto;
+        gap: 6px;
+        min-height: 50px;
+    }
+
+    .logo-section {
+        flex: 1;
+        min-width: 0;
+        gap: 6px;
     }
 
     .logo{
-        width:70px;
-        height:52px;
+        width: 36px;
+        height: 28px;
+        padding: 3px;
     }
 
+    .logo-text p {
+        display: none;
+    }
+
+    .logo-section h2 {
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .profile-box {
+        padding: 4px 8px;
+        gap: 6px;
+    }
+
+    .avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .avatar svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .profile-box span {
+        display: none;
+    }
+
+    .top-right {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    /* Fix: Use fixed overlay sidebar on mobile instead of relative block */
     .dashboard-body,
     .dashboard-body.sidebar-open,
     .dashboard-body.sidebar-closed {
-        display: block;
-    }
-
-    .sidebar,
-    .dashboard-body.sidebar-open .sidebar,
-    .dashboard-body.sidebar-closed .sidebar {
+        display: flex;
         position: relative;
-        width: 100%;
-        top: auto;
-        left: auto;
-        height: auto;
-        max-height: none;
-        border-right: none;
-        box-shadow: none;
+        min-height: calc(100vh - 50px);
     }
 
-    .main-content,
-    .dashboard-body.sidebar-open .main-content,
-    .dashboard-body.sidebar-closed .main-content {
+    .dashboard-body.mobile-view .sidebar,
+    .dashboard-body.mobile-view.sidebar-open .sidebar,
+    .dashboard-body.mobile-view.sidebar-closed .sidebar {
+        position: fixed;
+        top: 50px;
+        left: 0;
+        width: min(84vw, 300px);
+        height: calc(100vh - 50px);
+        transform: translateX(-100%);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+        z-index: 5;
+        border-right: 1px solid rgba(15,118,110,0.18);
+        display: flex;
+    }
+
+    .dashboard-body.mobile-view.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    .dashboard-body.mobile-view.sidebar-closed .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .dashboard-body.mobile-view .main-content,
+    .dashboard-body.mobile-view.sidebar-open .main-content,
+    .dashboard-body.mobile-view.sidebar-closed .main-content {
         margin-left: 0;
         width: 100%;
         padding: 12px;
     }
 
-    .logo-section{
-        gap:8px;
-    }
-
     .logo-section h2{
-        font-size:17px;
+        font-size:13px;
         line-height:1.2;
-    }
-
-    .logo-section p{
-        font-size:11px;
     }
 
     /* Stats grid */
     .stats-grid{
         grid-template-columns:1fr;
-        gap:16px;
-        margin-bottom:24px;
+        gap:14px;
+        margin-bottom:20px;
     }
 
     .stat-card{
-        padding:22px;
-        gap:18px;
+        padding:16px;
+        gap:14px;
     }
 
     .stat-card svg{
-        width:48px;
-        height:48px;
-        padding:12px;
+        width:40px;
+        height:40px;
+        padding:8px;
     }
 
     .stat-card h1{
-        font-size:38px;
+        font-size:30px;
     }
 
     .stat-card p{
-        font-size:12px;
+        font-size:11px;
         letter-spacing:0.6px;
     }
 
     .card-row{
         grid-template-columns:1fr;
-        gap:15px;
-        margin-bottom:18px;
+        gap:14px;
+        margin-bottom:16px;
     }
 
     .dashboard-card{
@@ -2425,77 +2481,96 @@ body{
     }
 
     .card-header{
-        padding:14px 16px;
-        font-size:15px;
+        padding:12px 14px;
+        font-size:14px;
     }
 
     /* Empty cards */
     .empty-card{
-        padding:25px 15px;
+        padding:20px 12px;
     }
 
     .empty-card svg{
-        width:60px;
-        height:60px;
-        margin-bottom:12px;
+        width:50px;
+        height:50px;
+        margin-bottom:10px;
     }
 
     .empty-card h4{
-        font-size:16px;
-        margin-bottom:8px;
+        font-size:14px;
+        margin-bottom:6px;
     }
 
     .empty-card p{
-        font-size:13px;
-        margin-bottom:16px;
+        font-size:12px;
+        margin-bottom:14px;
     }
 
     .empty-card button,
     .add-first-medicine-btn{
-        padding:12px 24px;
-        font-size:14px;
+        padding:10px 20px;
+        font-size:13px;
     }
 
     /* Calendar */
     .calendar-container{
-        padding:15px;
+        padding:12px;
     }
 
     .calendar-header{
-        padding:0 5px;
-        margin-bottom:15px;
+        padding:0 3px;
+        margin-bottom:12px;
     }
 
     .calendar-header h3{
-        font-size:16px;
+        font-size:14px;
     }
 
     .calendar-grid{
-        gap:6px;
+        gap:4px;
     }
 
     .calendar-day-header{
-        font-size:11px;
-        padding:6px 0;
+        font-size:10px;
+        padding:4px 0;
     }
 
     .calendar-date{
-        font-size:12px;
+        font-size:11px;
+        height: 34px;
     }
 
     .calendar-legend{
-        gap:12px;
-        margin-top:15px;
-        padding-top:15px;
+        gap:10px;
+        margin-top:12px;
+        padding-top:12px;
     }
 
     .legend-item{
-        font-size:11px;
+        font-size:10px;
+    }
+
+    .calendar-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .calendar-actions {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .calendar-action-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 16px;
+        font-size: 12px;
     }
 
     /* Medicine tables */
     .medicine-list-container{
-        padding:15px;
+        padding:12px;
     }
 
     .medicine-table-header{
@@ -2505,12 +2580,12 @@ body{
     .medicine-table-row{
         grid-template-columns:1fr;
         gap:6px;
-        padding:12px;
+        padding:10px;
     }
 
     .medicine-name-cell{
         font-weight:600;
-        font-size:14px;
+        font-size:13px;
     }
 
     .medicine-dosage-cell,
@@ -2549,16 +2624,16 @@ body{
         gap: 6px;
     }
 
-.add-more-btn svg{
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    transition:transform 0.3s ease;
-}
+    .add-more-btn svg{
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+        transition:transform 0.3s ease;
+    }
 
-.add-more-btn:hover svg{
-    transform:rotate(90deg);
-}
+    .add-more-btn:hover svg{
+        transform:rotate(90deg);
+    }
 
     /* Quick actions */
     .quick-actions{
@@ -2567,221 +2642,12 @@ body{
     }
 
     .action-card{
-        padding:18px;
-    }
-
-    .action-card svg{
-        width:34px;
-        height:34px;
-        margin-bottom:12px;
-    }
-
-    .action-card h4{
-        font-size:15px;
-    }
-
-    .action-card p{
-        font-size:12px;
-    }
-
-}
-
-/* Small Mobile Devices */
-@media(max-width:480px){
-
-    .topbar{
-        padding:10px 12px;
-        gap:6px;
-    }
-
-    .logo{
-        width:60px;
-        height:45px;
-    }
-
-    .logo-section{
-        gap:6px;
-    }
-
-    .logo-section h2{
-        font-size:16px;
-    }
-
-    .logo-section p{
-        font-size:10px;
-    }
-
-    .profile-box span{
-        display:none;
-    }
-
-    .avatar{
-        width:36px;
-        height:36px;
-    }
-
-    .avatar svg{
-        width:20px;
-        height:20px;
-    }
-
-    .main-content{
-        padding:12px;
-    }
-
-    .page-title{
-        font-size:20px;
-        margin-bottom:12px;
-    }
-
-    .stat-card{
-        padding:15px;
-        gap:12px;
-    }
-
-    .stat-card svg{
-        width:34px;
-        height:34px;
-        padding:5px;
-    }
-
-    .stat-card h1{
-        font-size:28px;
-    }
-
-    .stat-card p{
-        font-size:12px;
-    }
-
-    .card-header{
-        padding:12px 14px;
-        font-size:14px;
-        gap:8px;
-    }
-
-    .card-header svg{
-        width:20px;
-        height:20px;
-    }
-
-    .empty-card{
-        padding:20px 12px;
-    }
-
-    .empty-card svg{
-        width:50px;
-        height:50px;
-    }
-
-    .empty-card h4{
-        font-size:15px;
-    }
-
-    .empty-card p{
-        font-size:12px;
-    }
-
-    .empty-card button,
-    .add-first-medicine-btn{
-        padding:10px 20px;
-        font-size:13px;
-    }
-
-    .calendar-container{
-        padding:12px;
-    }
-
-    .calendar-header{
-        padding:0;
-        margin-bottom:12px;
-    }
-
-    .calendar-header h3{
-        font-size:14px;
-    }
-
-    .calendar-nav-btn{
-        padding:6px;
-    }
-
-    .calendar-nav-btn svg{
-        width:16px;
-        height:16px;
-    }
-
-    .calendar-grid{
-        gap:4px;
-    }
-
-    .calendar-day-header{
-        font-size:10px;
-        padding:4px 0;
-    }
-
-    .calendar-date{
-        font-size:11px;
-        border-radius:6px;
-    }
-
-    .calendar-legend{
-        gap:8px;
-        margin-top:12px;
-        padding-top:12px;
-    }
-
-    .legend-item{
-        font-size:10px;
-        gap:4px;
-    }
-
-    .legend-dot{
-        width:6px;
-        height:6px;
-    }
-
-    .medicine-list-container{
-        padding:12px;
-    }
-
-    .medicine-table-row{
-        padding:10px;
-    }
-
-    .medicine-name-cell{
-        font-size:13px;
-    }
-
-    .medicine-dosage-cell,
-    .medicine-time-cell,
-    .medicine-frequency-cell{
-        font-size:11px;
-    }
-
-    .status-badge{
-        padding:4px 10px;
-        font-size:11px;
-    }
-
-    .add-more-btn{
-        padding:10px;
-        font-size:12px;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .add-more-btn svg{
-        width: 14px;
-        height: 14px;
-        flex-shrink: 0;
-    }
-
-    .action-card{
         padding:15px;
     }
 
     .action-card svg{
-        width:30px;
-        height:30px;
+        width:32px;
+        height:32px;
         margin-bottom:10px;
     }
 
@@ -2790,10 +2656,282 @@ body{
     }
 
     .action-card p{
-        font-size:11px;
+        font-size:12px;
     }
 
+    /* Today's Schedule mobile responsive */
+    .medicine-list--today .medicine-table-header {
+        display: none;
+    }
+
+    .medicine-list--today .medicine-item {
+        display: flex !important;
+        flex-direction: column;
+        gap: 8px;
+        padding: 14px 16px !important;
+    }
+
+    .medicine-list--today .medicine-item .medicine-info h5 {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-dosage-value,
+    .medicine-list--today .medicine-item .medicine-time-value,
+    .medicine-list--today .medicine-item .medicine-frequency-value {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        justify-content: flex-start;
+    }
+
+    .medicine-list--today .medicine-item .medicine-dosage-value::before {
+        content: "Dosage: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-time-value::before {
+        content: "Time: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-frequency-value::before {
+        content: "Frequency: ";
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .medicine-list--today .medicine-item .medicine-status {
+        justify-content: flex-start !important;
+        margin-top: 4px;
+    }
+
+    .medicine-list--today .medicine-item .medicine-status::before {
+        content: "Status: ";
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 12px;
+    }
 }
+
+/* Small Mobile Devices */
+@media(max-width:480px){
+
+    .topbar{
+        padding: 6px 8px;
+        gap: 4px;
+    }
+
+    .logo{
+        width: 30px;
+        height: 24px;
+        padding: 2px;
+    }
+
+    .logo-section h2{
+        font-size: 11px;
+    }
+
+    .notification-btn {
+        width: 34px;
+        height: 34px;
+    }
+
+    .top-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .profile-box {
+        padding: 3px 6px;
+        gap: 4px;
+    }
+
+    .avatar {
+        width: 26px;
+        height: 26px;
+    }
+
+    .avatar svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .main-content{
+        padding: 10px;
+    }
+
+    .page-title{
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .stat-card{
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .stat-card svg{
+        width: 34px;
+        height: 34px;
+        padding: 5px;
+    }
+
+    .stat-card h1{
+        font-size: 24px;
+    }
+
+    .stat-card p{
+        font-size: 10px;
+    }
+
+    .card-header{
+        padding: 10px 12px;
+        font-size: 13px;
+        gap: 6px;
+    }
+
+    .card-header svg{
+        width: 18px;
+        height: 18px;
+    }
+
+    .empty-card{
+        padding: 16px 10px;
+    }
+
+    .empty-card svg{
+        width: 40px;
+        height: 40px;
+    }
+
+    .empty-card h4{
+        font-size: 13px;
+    }
+
+    .empty-card p{
+        font-size: 11px;
+    }
+
+    .empty-card button,
+    .add-first-medicine-btn{
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    .calendar-container{
+        padding: 10px;
+    }
+
+    .calendar-header{
+        padding: 0;
+        margin-bottom: 10px;
+    }
+
+    .calendar-header h3{
+        font-size: 13px;
+    }
+
+    .calendar-nav-btn{
+        padding: 5px;
+    }
+
+    .calendar-nav-btn svg{
+        width: 14px;
+        height: 14px;
+    }
+
+    .calendar-grid{
+        gap: 3px;
+    }
+
+    .calendar-day-header{
+        font-size: 9px;
+        padding: 3px 0;
+    }
+
+    .calendar-date{
+        font-size: 10px;
+        height: 30px;
+        border-radius: 6px;
+    }
+
+    .calendar-legend{
+        gap: 6px;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+
+    .legend-item{
+        font-size: 9px;
+        gap: 3px;
+    }
+
+    .legend-dot{
+        width: 5px;
+        height: 5px;
+    }
+
+    .calendar-action-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    .medicine-list-container{
+        padding: 10px;
+    }
+
+    .medicine-table-row{
+        padding: 8px;
+    }
+
+    .medicine-name-cell{
+        font-size: 12px;
+    }
+
+    .medicine-dosage-cell,
+    .medicine-time-cell,
+    .medicine-frequency-cell{
+        font-size: 11px;
+    }
+
+    .status-badge{
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    .add-more-btn{
+        padding: 8px;
+        font-size: 11px;
+    }
+
+    .add-more-btn svg{
+        width: 12px;
+        height: 12px;
+    }
+
+    .action-card{
+        padding: 12px;
+    }
+
+    .action-card svg{
+        width: 28px;
+        height: 28px;
+        margin-bottom: 8px;
+    }
+
+    .action-card h4{
+        font-size: 13px;
+    }
+
+    .action-card p{
+        font-size: 11px;
+    }
+}
+
 
 /* ===== UPDATED OVERRIDES – Today's Schedule Table ===== */
 
@@ -2921,8 +3059,19 @@ body{
     text-transform:capitalize;
 }
 
-.status-badge.pending{
-    color:#d97706;
+.status-badge.upcoming{
+    color:#1e40af;
+    font-size:11px;
+    padding:3px 12px;
+    border-radius:20px;
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    font-weight:600;
+    line-height:1.4;
+    white-space:nowrap;
+    min-width:fit-content;
+    width:auto;
 }
 
 .status-badge.taken{
