@@ -1,4 +1,6 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+import api from "../api/axiosInstance";
 
 import "./UserAddMed.css";
 
@@ -9,6 +11,17 @@ const FREQUENCY_CONFIG = {
   "Three times a day": { doses: 3, required: true },
   "As needed": { doses: 1, required: false },
   "Weekly": { doses: 1, required: true },
+};
+
+// Backend (POST /medicine/add) only supports these exact frequency values.
+// "As needed" and "Weekly" are NOT supported yet — confirm with backend
+// team before enabling them for real submissions.
+const FREQUENCY_TO_BACKEND = {
+  "Once a day": "ONCE_DAILY",
+  "Twice a day": "TWICE_DAILY",
+  "Three times a day": "THRICE_DAILY",
+  // "As needed": not supported by backend yet
+  // "Weekly": not supported by backend yet
 };
 
 // Build evenly-spaced default dose times starting from an 8 AM baseline.
@@ -57,6 +70,7 @@ const AddMedicineModal = ({ onClose }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,17 +143,58 @@ const AddMedicineModal = ({ onClose }) => {
     if (!formData.startDate)
       temp.startDate = "Start date is required";
 
+    // Frequencies not yet supported by backend
+    if (formData.frequency && !FREQUENCY_TO_BACKEND[formData.frequency]) {
+      temp.frequency = `"${formData.frequency}" is not supported by the backend yet. Please choose Once/Twice/Three times a day.`;
+    }
+
     setErrors(temp);
     return Object.keys(temp).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (validate()) {
-      console.log("Medicine Data:", formData);
+    if (!validate()) return;
+
+    setLoading(true);
+
+    try {
+      // ================= API CALL: ADD MEDICINE =================
+      // Endpoint: POST /medicine/add (requires JWT header - auto attached
+      // by axiosInstance interceptor)
+      // NOTE: Backend only takes a single "startTiming" field (HH:MM:SS).
+      // We send the first dose's time as the anchor; the backend is
+      // expected to derive further doses from "frequency" itself.
+      const firstTime = formData.timings[0]?.time || "";
+      const startTiming = firstTime ? `${firstTime}:00` : "";
+
+      const response = await api.post("/medicine/add", {
+        medicineName: formData.medicineName,
+        dosage: formData.dosage,
+        startTiming: startTiming,
+        frequency: FREQUENCY_TO_BACKEND[formData.frequency],
+        startDate: formData.startDate,
+        endDate: formData.endDate || undefined,
+        notes: formData.notes,
+      });
+      // ==============================================================
+
       localStorage.setItem("medicineAdded", "true");
+
+      toast.success(response.data?.message || "Medicine added successfully!", {
+        duration: 3000,
+      });
+
       onClose(formData);
+    } catch (error) {
+      console.log("Add Medicine API Error:", error.message);
+      toast.error(
+        error.response?.data?.message || "Failed to add medicine. Please try again.",
+        { duration: 4000 }
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -273,11 +328,11 @@ const AddMedicineModal = ({ onClose }) => {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn-save">
-              Save Medicine
+            <button type="submit" className="btn-save" disabled={loading}>
+              {loading ? "Saving..." : "Save Medicine"}
             </button>
           </div>
         </form>

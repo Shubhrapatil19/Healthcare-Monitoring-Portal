@@ -20,7 +20,6 @@ import "./UserRegister.css";
 const UserRegister = ({ onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -31,7 +30,6 @@ const UserRegister = ({ onSuccess }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
 
   const validatePassword = (password) => {
     const requirements = {
@@ -46,37 +44,29 @@ const UserRegister = ({ onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Trim and convert email to lowercase
+
     if (name === "email") {
       const trimmedValue = value.trim().toLowerCase();
       setFormData((prev) => ({ ...prev, [name]: trimmedValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    
-    // Clear error when user starts typing
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-
-
   const validateForm = () => {
     const newErrors = {};
 
-    // Email validation
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else {
-      // Check for valid email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         newErrors.email = "Please enter a valid email address";
       }
-      
-      // Check maximum length (100 characters)
       if (formData.email.length > 100) {
         newErrors.email = "Email must not exceed 100 characters";
       }
@@ -126,25 +116,27 @@ const UserRegister = ({ onSuccess }) => {
 
     setLoading(true);
 
-    const userName = (formData.fullName || "").trim() || "User";
-    localStorage.setItem(
-      "registeredUser",
-      JSON.stringify({ fullName: userName, email: formData.email })
-    );
-    localStorage.setItem("currentUserName", userName);
-
     try {
+      // ================= API CALL: REGISTER =================
+      // Endpoint: POST /auth/register
       const response = await api.post("/auth/register", {
         fullName: formData.fullName,
         email: formData.email,
-          mobile: formData.mobile,   
+        mobile: formData.mobile,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        
       });
+      // ========================================================
 
       if (response.data.success) {
-        // Show success toast notification
+        // Save locally ONLY after a real successful registration
+        const userName = (formData.fullName || "").trim() || "User";
+        localStorage.setItem(
+          "registeredUser",
+          JSON.stringify({ fullName: userName, email: formData.email })
+        );
+        localStorage.setItem("currentUserName", userName);
+
         toast.success("✓ Account created successfully! Redirecting to login...", {
           duration: 4000,
           style: {
@@ -157,18 +149,13 @@ const UserRegister = ({ onSuccess }) => {
             fontWeight: "600",
             border: "1px solid rgba(255, 255, 255, 0.22)",
           },
-          iconTheme: {
-            primary: "#fff",
-            secondary: "#2e8b57",
-          },
+          iconTheme: { primary: "#fff", secondary: "#2e8b57" },
         });
 
-        // After successful registration, go to login screen
         setTimeout(() => {
           if (typeof onSuccess === "function") onSuccess();
         }, 2000);
       } else {
-        // Check if error is related to email already existing
         if (response.data.message && response.data.message.toLowerCase().includes("email")) {
           setErrors((prev) => ({ ...prev, email: "This email is already registered. Please use a different email or login." }));
         }
@@ -184,17 +171,13 @@ const UserRegister = ({ onSuccess }) => {
             fontWeight: "600",
             border: "1px solid rgba(255, 255, 255, 0.22)",
           },
-          iconTheme: {
-            primary: "#fff",
-            secondary: "#1f6f8b",
-          },
+          iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
         });
       }
     } catch (error) {
-      // Check if error is related to email already existing
       const errorMessage = error.response?.data?.message || "";
       const backendError = error.response?.data?.error;
-      
+
       if (errorMessage.toLowerCase().includes("email") || (backendError && typeof backendError === 'string' && backendError.toLowerCase().includes("email"))) {
         setErrors((prev) => ({ ...prev, email: "This email is already registered. Please use a different email or login." }));
         toast.error(
@@ -211,40 +194,29 @@ const UserRegister = ({ onSuccess }) => {
               fontWeight: "600",
               border: "1px solid rgba(255, 255, 255, 0.22)",
             },
-            iconTheme: {
-              primary: "#fff",
-              secondary: "#1f6f8b",
-            },
+            iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
           }
         );
       } else {
-        // For demo purposes, still navigate to login even if API fails
-        console.log("API Error (demo mode):", error.message);
+        // Real network/API error — no demo/fallback success anymore
+        console.log("API Error:", error.message);
         toast.error(
-          "Demo mode: Registration simulated. Redirecting to login...",
+          error.response?.data?.message || "Something went wrong. Please try again.",
           {
-            duration: 3000,
+            duration: 4000,
             style: {
-              background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
+              background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
               color: "#fff",
               padding: "14px 20px",
               borderRadius: "10px",
-              boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
+              boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
               fontSize: "14px",
               fontWeight: "600",
               border: "1px solid rgba(255, 255, 255, 0.22)",
             },
-            iconTheme: {
-              primary: "#fff",
-              secondary: "#2e8b57",
-            },
+            iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
           }
         );
-        
-        // Navigate to login after showing demo message
-        setTimeout(() => {
-          if (typeof onSuccess === "function") onSuccess();
-        }, 2000);
       }
     } finally {
       setLoading(false);
@@ -253,7 +225,6 @@ const UserRegister = ({ onSuccess }) => {
 
   return (
     <div className="register-page">
-      {/* Header */}
       <header className="login-header">
         <div className="header-left">
           <div className="logo-box">
@@ -263,33 +234,25 @@ const UserRegister = ({ onSuccess }) => {
               alt="Heart logo"
             />
           </div>
-
           <div>
             <h2 className="system-title">
               <span className="green-text">Healthcare Monitoring</span>{" "}
               <span className="blue-text">System</span>
             </h2>
-            <p className="header-subtitle">
-              Care. Monitor. Remind. Stay Healthy.
-            </p>
+            <p className="header-subtitle">Care. Monitor. Remind. Stay Healthy.</p>
           </div>
         </div>
-
         <div className="header-right">
           <h4>Your Health, Our Priority</h4>
           <p>Secure • Reliable • Care Focused</p>
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="register-container">
-        {/* LEFT SIDE - Promotional Section */}
         <div className="register-left-section">
           <div className="register-left-content">
-            {/* Hero Illustration */}
             <div className="reg-hero-illustration">
               <div className="reg-illustration-wrapper">
-                {/* Smartphone */}
                 <div className="reg-ill-phone">
                   <div className="reg-ill-phone-screen">
                     <img
@@ -299,11 +262,9 @@ const UserRegister = ({ onSuccess }) => {
                     />
                   </div>
                 </div>
-                {/* Shield */}
                 <div className="reg-ill-shield">
                   <Shield size={28} />
                 </div>
-                {/* Stethoscope */}
                 <div className="reg-ill-stethoscope">
                   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.3.3 0 1 0 .3.3"/>
@@ -311,27 +272,23 @@ const UserRegister = ({ onSuccess }) => {
                     <circle cx="20" cy="10" r="2"/>
                   </svg>
                 </div>
-                {/* Small decorative crosses */}
                 <div className="reg-ill-cross reg-ill-cross-1">+</div>
                 <div className="reg-ill-cross reg-ill-cross-2">+</div>
                 <div className="reg-ill-cross reg-ill-cross-3">+</div>
               </div>
             </div>
 
-            {/* Heading */}
             <h2 className="reg-heading">
               Take Charge of
               <br />
               <span className="reg-heading-highlight">Your Health</span>
             </h2>
 
-            {/* Description */}
             <p className="reg-description">
               Create your account and get personalized access to monitor your
               health, manage medications, and stay on track every day.
             </p>
 
-            {/* Feature Highlights */}
             <div className="reg-features">
               <div className="reg-feature-card">
                 <div className="reg-feature-icon reg-feature-icon-shield">
@@ -366,21 +323,16 @@ const UserRegister = ({ onSuccess }) => {
           </div>
         </div>
 
-        {/* RIGHT SIDE - Registration Form */}
         <div className="register-right-section">
           <div className="register-card">
             <div className="register-card-header">
               <h2 className="register-card-title">Create Account</h2>
-              <p className="register-card-subtitle">
-                Fill in the details below to get started
-              </p>
+              <p className="register-card-subtitle">Fill in the details below to get started</p>
             </div>
 
             <form className="register-form" onSubmit={handleSubmit}>
               <div className="register-field">
-                <label htmlFor="fullName" className="register-label">
-                  Full Name
-                </label>
+                <label htmlFor="fullName" className="register-label">Full Name</label>
                 <div className="register-input-wrapper">
                   <User className="register-input-icon" size={18} />
                   <input
@@ -396,9 +348,7 @@ const UserRegister = ({ onSuccess }) => {
               </div>
 
               <div className="register-field">
-                <label htmlFor="email" className="register-label">
-                  Email Address
-                </label>
+                <label htmlFor="email" className="register-label">Email Address</label>
                 <div className="register-input-wrapper">
                   <Mail className="register-input-icon" size={18} />
                   <input
@@ -415,9 +365,7 @@ const UserRegister = ({ onSuccess }) => {
               </div>
 
               <div className="register-field">
-                <label htmlFor="mobile" className="register-label">
-                  Mobile Number
-                </label>
+                <label htmlFor="mobile" className="register-label">Mobile Number</label>
                 <div className="register-input-wrapper">
                   <Phone className="register-input-icon" size={18} />
                   <input
@@ -433,9 +381,7 @@ const UserRegister = ({ onSuccess }) => {
               </div>
 
               <div className="register-field">
-                <label htmlFor="password" className="register-label">
-                  Password
-                </label>
+                <label htmlFor="password" className="register-label">Password</label>
                 <div className="register-input-wrapper">
                   <Lock className="register-input-icon" size={18} />
                   <input
@@ -460,9 +406,7 @@ const UserRegister = ({ onSuccess }) => {
               </div>
 
               <div className="register-field">
-                <label htmlFor="confirmPassword" className="register-label">
-                  Confirm Password
-                </label>
+                <label htmlFor="confirmPassword" className="register-label">Confirm Password</label>
                 <div className="register-input-wrapper">
                   <Lock className="register-input-icon" size={18} />
                   <input

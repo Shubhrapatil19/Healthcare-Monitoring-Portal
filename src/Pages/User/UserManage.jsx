@@ -1,15 +1,38 @@
 import { useState, useMemo } from "react";
-import { Pill, Plus, Search, Clock, CheckCircle2, XCircle, CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Pill,
+  Plus,
+  Search,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  Save,
+  X,
+} from "lucide-react";
 import AddMedicineModal from "../../Component/UserAddMed";
 
 import "./UserManage.css";
 
 const ITEMS_PER_PAGE = 3;
 
-const UserManage = ({ medicines, onAddMedicine }) => {
+const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine }) => {
   const [showAddMedicineModal, setShowAddMedicineModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Inline edit state
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    medicineName: "",
+    dosage: "",
+    timing: "",
+    frequency: "",
+  });
 
   const filteredMedicines = useMemo(() => {
     if (!medicines) return [];
@@ -52,6 +75,50 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 
     if (medicineData && onAddMedicine) {
       onAddMedicine(medicineData);
+    }
+  };
+
+  // ===== INLINE EDIT HANDLERS =====
+  const handleStartEdit = (medicine) => {
+    setEditingId(medicine.id);
+    setEditFormData({
+      medicineName: medicine.medicineName,
+      dosage: medicine.dosage,
+      timing: medicine.timing,
+      frequency: medicine.frequency,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditFormData({ medicineName: "", dosage: "", timing: "", frequency: "" });
+  };
+
+  const handleEditFieldChange = (field, value) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEdit = (medicine) => {
+    if (!editFormData.medicineName.trim() || !editFormData.dosage.trim()) {
+      return; // basic guard against empty required fields
+    }
+
+    if (onEditMedicine) {
+      onEditMedicine({
+        ...medicine,
+        ...editFormData,
+      });
+    }
+
+    setEditingId(null);
+  };
+
+  const handleDeleteMedicine = (medicine) => {
+    const confirmDelete = window.confirm(
+      `Kya aap "${medicine.medicineName}" ko delete karna chahte hain?`
+    );
+    if (confirmDelete && onDeleteMedicine) {
+      onDeleteMedicine(medicine.id);
     }
   };
 
@@ -123,6 +190,7 @@ const UserManage = ({ medicines, onAddMedicine }) => {
               <span className="medicine-col medicine-time-col">Timing</span>
               <span className="medicine-col medicine-frequency-col">Frequency</span>
               <span className="medicine-col medicine-status-col">Status</span>
+              <span className="medicine-col medicine-actions-col">Actions</span>
             </div>
 
             <div className="medicine-count-info">
@@ -131,24 +199,119 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 
             <div className="medicine-items-wrapper">
               {paginatedMedicines.length > 0 ? (
-                paginatedMedicines.map((medicine) => (
-                  <div key={medicine.id} className="medicine-item">
-                    <div className="medicine-info">
-                      <h5>{medicine.medicineName}</h5>
+                paginatedMedicines.map((medicine) => {
+                  const isEditing = editingId === medicine.id;
+
+                  return (
+                    <div
+                      key={medicine.id}
+                      className={`medicine-item ${isEditing ? "editing" : ""}`}
+                    >
+                      {isEditing ? (
+                        <>
+                          <div className="medicine-info">
+                            <input
+                              type="text"
+                              className="edit-input"
+                              value={editFormData.medicineName}
+                              onChange={(e) =>
+                                handleEditFieldChange("medicineName", e.target.value)
+                              }
+                              placeholder="Medicine name"
+                            />
+                          </div>
+                          <div className="medicine-dosage-value">
+                            <input
+                              type="text"
+                              className="edit-input"
+                              value={editFormData.dosage}
+                              onChange={(e) =>
+                                handleEditFieldChange("dosage", e.target.value)
+                              }
+                              placeholder="Dosage"
+                            />
+                          </div>
+                          <div className="medicine-time-value">
+                            <input
+                              type="text"
+                              className="edit-input"
+                              value={editFormData.timing}
+                              onChange={(e) =>
+                                handleEditFieldChange("timing", e.target.value)
+                              }
+                              placeholder="Timing"
+                            />
+                          </div>
+                          <div className="medicine-frequency-value">
+                            <input
+                              type="text"
+                              className="edit-input"
+                              value={editFormData.frequency}
+                              onChange={(e) =>
+                                handleEditFieldChange("frequency", e.target.value)
+                              }
+                              placeholder="Frequency"
+                            />
+                          </div>
+                          <div className="medicine-status">
+                            <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
+                              {getStatusIcon(medicine.status)}
+                            </span>
+                          </div>
+                          <div className="medicine-actions">
+                            <button
+                              className="action-btn save-btn"
+                              title="Save"
+                              onClick={() => handleSaveEdit(medicine)}
+                            >
+                              <Save size={15} />
+                            </button>
+                            <button
+                              className="action-btn cancel-btn"
+                              title="Cancel"
+                              onClick={handleCancelEdit}
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="medicine-info">
+                            <h5>{medicine.medicineName}</h5>
+                          </div>
+                          <div className="medicine-dosage-value">{medicine.dosage}</div>
+                          <div className="medicine-time-value">
+                            <Clock size={14} />
+                            {medicine.timing}
+                          </div>
+                          <div className="medicine-frequency-value">{medicine.frequency}</div>
+                          <div className="medicine-status">
+                            <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
+                              {getStatusIcon(medicine.status)}
+                            </span>
+                          </div>
+                          <div className="medicine-actions">
+                            <button
+                              className="action-btn edit-btn"
+                              title="Edit"
+                              onClick={() => handleStartEdit(medicine)}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              className="action-btn delete-btn"
+                              title="Delete"
+                              onClick={() => handleDeleteMedicine(medicine)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="medicine-dosage-value">{medicine.dosage}</div>
-                    <div className="medicine-time-value">
-                      <Clock size={14} />
-                      {medicine.timing}
-                    </div>
-                    <div className="medicine-frequency-value">{medicine.frequency}</div>
-                    <div className="medicine-status">
-                      <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
-                        {getStatusIcon(medicine.status)}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="no-results-found">
                   <Search size={28} />
@@ -201,4 +364,3 @@ const UserManage = ({ medicines, onAddMedicine }) => {
 };
 
 export default UserManage;
-

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import "./UserViewRep.css";
@@ -6,20 +6,87 @@ import "./UserViewRep.css";
 const UserViewRep = ({ onBack }) => {
   const reportRef = useRef(null);
 
-  // Sample data for medicine-wise report
-  const medicineData = [
-    { name: 'Paracetamol 500mg', totalScheduled: 30, taken: 29, missed: 1, compliance: 97 },
-    { name: 'Vitamin D3', totalScheduled: 30, taken: 28, missed: 2, compliance: 93 },
-    { name: 'Calcium Tablet', totalScheduled: 30, taken: 30, missed: 0, compliance: 100 },
-    { name: 'Zincovit', totalScheduled: 30, taken: 27, missed: 3, compliance: 90 },
-  ];
+  // FIX: UserDash.jsx saves medicines under "userMedicines" and stock
+  // under "userStockItems" — this component was reading the wrong keys
+  // ("medicines"), which is why the report always showed as empty.
+  const [medicines] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("userMedicines") || "[]");
+    } catch {
+      return [];
+    }
+  });
 
-  const inventoryData = [
-    { name: 'Paracetamol 500mg', currentStock: 20, minimumStock: 10, status: 'In Stock' },
-    { name: 'Vitamin D3', currentStock: 8, minimumStock: 10, status: 'Low Stock' },
-    { name: 'Calcium Tablet', currentStock: 18, minimumStock: 10, status: 'In Stock' },
-    { name: 'Zincovit', currentStock: 2, minimumStock: 10, status: 'Low Stock' },
-  ];
+  const [stockItems] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("userStockItems") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const hasMedicines = medicines.length > 0;
+
+  // Build medicine compliance data from real stored medicines.
+  // No hardcoded fallback numbers — if the backend/tracking data for
+  // taken/missed/scheduled doesn't exist yet, we show 0 rather than a
+  // fake placeholder like "30".
+  const medicineData = medicines.map((m) => {
+    const totalScheduled = m.totalScheduled ?? 0;
+    const taken = m.taken ?? 0;
+    const missed = m.missed ?? 0;
+    const compliance =
+      totalScheduled > 0 ? Math.round((taken / totalScheduled) * 100) : 0;
+
+    return {
+      name: m.medicineName || m.name || "Unknown",
+      totalScheduled,
+      taken,
+      missed,
+      compliance,
+    };
+  });
+
+  // Build inventory data from real stock items (added via Add Stock),
+  // not from the medicines list, and with no hardcoded minimum stock.
+  const inventoryData = stockItems.map((item) => {
+    const currentStock = Number(item.currentStock) || 0;
+    const minimumStock = Number(item.minimumStock) || 0;
+    return {
+      name: item.medicineName || "Unknown",
+      currentStock,
+      minimumStock,
+      status: currentStock >= minimumStock ? "In Stock" : "Low Stock",
+    };
+  });
+
+  // ── Summary stats computed from real data (no hardcoded 0s) ──
+  const totalTaken = medicineData.reduce((sum, m) => sum + m.taken, 0);
+  const totalMissed = medicineData.reduce((sum, m) => sum + m.missed, 0);
+  const totalScheduledSum = medicineData.reduce((sum, m) => sum + m.totalScheduled, 0);
+  const overallCompliance =
+    totalScheduledSum > 0 ? Math.round((totalTaken / totalScheduledSum) * 100) : 0;
+  const lowStockCount = inventoryData.filter((i) => i.status === "Low Stock").length;
+
+  // ── Dynamic dates instead of hardcoded "June 2026" ──
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const periodLabel = `${dateFormatter.format(monthStart)} - ${dateFormatter.format(monthEnd)}`;
+  const generatedLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(now);
+  const generatedFullLabel = `${generatedLabel}, ${now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
 
   const handleDownloadPDF = async () => {
     try {
@@ -57,7 +124,7 @@ const UserViewRep = ({ onBack }) => {
           Back
         </button>
         <h2 className="rep-top-title">Medical Compliance Report</h2>
-        <button className="rep-download-btn" onClick={handleDownloadPDF}>
+        <button className="rep-download-btn" onClick={handleDownloadPDF} disabled={!hasMedicines}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -69,6 +136,25 @@ const UserViewRep = ({ onBack }) => {
 
       {/* ===== REPORT CONTENT ===== */}
       <div className="rep-content" ref={reportRef}>
+        {!hasMedicines ? (
+          <div className="rep-empty-state">
+            <div className="rep-empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="64" height="64">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="9" x2="15" y2="9"/>
+                <line x1="9" y1="13" x2="15" y2="13"/>
+                <line x1="9" y1="17" x2="13" y2="17"/>
+              </svg>
+            </div>
+            <h3 className="rep-empty-title">No Medicines Added Yet</h3>
+            <p className="rep-empty-text">
+              Start by adding medicines to your schedule.
+              <br />
+              Your compliance report will appear here once you add medicines.
+            </p>
+          </div>
+        ) : (
+          <>
         {/* ── Report Header ── */}
         <div className="rep-header">
           <div className="rep-header-left">
@@ -79,13 +165,13 @@ const UserViewRep = ({ onBack }) => {
             </div>
             <div>
               <h1 className="rep-title">Compliance Report</h1>
-              <p className="rep-period">01 June 2026 - 30 June 2026</p>
+              <p className="rep-period">{periodLabel}</p>
             </div>
           </div>
           <div className="rep-header-right">
             <div className="rep-badge">
               <span className="rep-badge-dot"></span>
-              Generated: 20 June 2026
+              Generated: {generatedLabel}
             </div>
           </div>
         </div>
@@ -101,7 +187,7 @@ const UserViewRep = ({ onBack }) => {
             </div>
             <div className="rep-stat-info">
               <span className="rep-stat-label">Compliance</span>
-              <span className="rep-stat-value">90%</span>
+              <span className="rep-stat-value">{overallCompliance}%</span>
             </div>
           </div>
 
@@ -114,7 +200,7 @@ const UserViewRep = ({ onBack }) => {
             </div>
             <div className="rep-stat-info">
               <span className="rep-stat-label">Taken</span>
-              <span className="rep-stat-value">45</span>
+              <span className="rep-stat-value">{totalTaken}</span>
             </div>
           </div>
 
@@ -128,7 +214,7 @@ const UserViewRep = ({ onBack }) => {
             </div>
             <div className="rep-stat-info">
               <span className="rep-stat-label">Missed</span>
-              <span className="rep-stat-value">5</span>
+              <span className="rep-stat-value">{totalMissed}</span>
             </div>
           </div>
 
@@ -142,7 +228,7 @@ const UserViewRep = ({ onBack }) => {
             </div>
             <div className="rep-stat-info">
               <span className="rep-stat-label">Low Stock</span>
-              <span className="rep-stat-value">2</span>
+              <span className="rep-stat-value">{lowStockCount}</span>
             </div>
           </div>
         </div>
@@ -227,34 +313,40 @@ const UserViewRep = ({ onBack }) => {
               </div>
             </div>
             <div className="rep-table-wrap">
-              <table className="rep-table rep-table-sm">
-                <thead>
-                  <tr>
-                    <th>Medicine</th>
-                    <th>Stock</th>
-                    <th>Min</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {inventoryData.map((item, i) => (
-                    <tr key={i}>
-                      <td className="rep-td-name" data-label="Medicine">{item.name}</td>
-                      <td data-label="Stock">{item.currentStock}</td>
-                      <td data-label="Min">{item.minimumStock}</td>
-                      <td data-label="Status">
-                        <span className={`rep-inv-badge ${item.status === "In Stock" ? "rep-inv-instock" : "rep-inv-lowstock"}`}>
-                          {item.status === "In Stock" ? (
-                            <><span className="rep-badge-dot-green"></span> In Stock</>
-                          ) : (
-                            <><span className="rep-badge-dot-amber"></span> Low Stock</>
-                          )}
-                        </span>
-                      </td>
+              {inventoryData.length === 0 ? (
+                <p style={{ padding: "1.25rem", color: "#94a3b8", fontSize: "0.875rem" }}>
+                  No stock data added yet.
+                </p>
+              ) : (
+                <table className="rep-table rep-table-sm">
+                  <thead>
+                    <tr>
+                      <th>Medicine</th>
+                      <th>Stock</th>
+                      <th>Min</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                  {inventoryData.map((item, i) => (
+                      <tr key={i}>
+                        <td className="rep-td-name" data-label="Medicine">{item.name}</td>
+                        <td data-label="Stock">{item.currentStock}</td>
+                        <td data-label="Min">{item.minimumStock}</td>
+                        <td data-label="Status">
+                          <span className={`rep-inv-badge ${item.status === "In Stock" ? "rep-inv-instock" : "rep-inv-lowstock"}`}>
+                            {item.status === "In Stock" ? (
+                              <><span className="rep-badge-dot-green"></span> In Stock</>
+                            ) : (
+                              <><span className="rep-badge-dot-amber"></span> Low Stock</>
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 
@@ -279,11 +371,11 @@ const UserViewRep = ({ onBack }) => {
               </div>
               <div className="rep-info-row">
                 <span className="rep-info-key">Period</span>
-                <span className="rep-info-val">01 Jun - 30 Jun 2026</span>
+                <span className="rep-info-val">{periodLabel}</span>
               </div>
               <div className="rep-info-row">
                 <span className="rep-info-key">Generated</span>
-                <span className="rep-info-val">20 Jun 2026, 01:10 PM</span>
+                <span className="rep-info-val">{generatedFullLabel}</span>
               </div>
               <div className="rep-info-row">
                 <span className="rep-info-key">Generated By</span>
@@ -298,6 +390,8 @@ const UserViewRep = ({ onBack }) => {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

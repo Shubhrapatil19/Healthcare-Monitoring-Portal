@@ -1,4 +1,6 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+import api from "../api/axiosInstance";
 
 import {
   User,
@@ -9,6 +11,33 @@ import {
   Calendar,
 } from "lucide-react";
 import "./ComProfile.css";
+
+// Backend only accepts these exact disease values (POST /profile/complete)
+const DISEASE_OPTIONS = [
+  { label: "Diabetes", value: "DIABETES" },
+  { label: "Hypertension", value: "HYPERTENSION" },
+  { label: "Heart Disease", value: "HEART_DISEASE" },
+  { label: "Asthma", value: "ASTHMA" },
+  { label: "Arthritis", value: "ARTHRITIS" },
+  { label: "Kidney Disease", value: "KIDNEY_DISEASE" },
+  { label: "Thyroid", value: "THYROID" },
+  { label: "Cancer", value: "CANCER" },
+  { label: "Alzheimer's", value: "ALZHEIMERS" },
+  { label: "Other", value: "OTHER" },
+];
+
+// Backend only accepts these exact relation values (max 2 family contacts)
+const RELATION_OPTIONS = [
+  { label: "Father", value: "FATHER" },
+  { label: "Mother", value: "MOTHER" },
+  { label: "Brother", value: "BROTHER" },
+  { label: "Sister", value: "SISTER" },
+  { label: "Spouse", value: "SPOUSE" },
+  { label: "Son", value: "SON" },
+  { label: "Daughter", value: "DAUGHTER" },
+  { label: "Friend", value: "FRIEND" },
+  { label: "Other", value: "OTHER" },
+];
 
 const ComProfile = ({ onComplete }) => {
 
@@ -25,6 +54,7 @@ const ComProfile = ({ onComplete }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   // --------------------------
   // Handle Input Change
@@ -33,9 +63,14 @@ const ComProfile = ({ onComplete }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // Only allow digits for contact fields
+    const processedValue = name === "contact1" || name === "contact2"
+      ? value.replace(/\D/g, "")
+      : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
 
     setErrors((prev) => ({
@@ -51,6 +86,8 @@ const ComProfile = ({ onComplete }) => {
   const validate = () => {
     let newErrors = {};
 
+    const phoneRegex = /^[6-9]\d{9}$/;
+
     if (!formData.age.trim()) {
       newErrors.age = "Age is required";
     }
@@ -60,27 +97,47 @@ const ComProfile = ({ onComplete }) => {
     }
 
     if (!formData.disease) {
-      newErrors.disease = "Please select a medical condition";
+      newErrors.disease = "Select medical condition";
     }
 
+    // Contact 1
     if (!formData.relation1) {
       newErrors.relation1 = "Select relation";
     }
 
     if (!formData.contact1) {
-      newErrors.contact1 = "Enter contact number";
-    } else if (!/^[0-9]{10}$/.test(formData.contact1)) {
-      newErrors.contact1 = "Enter valid number";
+      newErrors.contact1 = "Contact number is required";
+    } else if (!phoneRegex.test(formData.contact1)) {
+      newErrors.contact1 = "Enter a valid 10-digit number starting with 6/7/8/9";
     }
 
+    // Contact 2
     if (!formData.relation2) {
       newErrors.relation2 = "Select relation";
     }
 
     if (!formData.contact2) {
-      newErrors.contact2 = "Enter contact number";
-    } else if (!/^[0-9]{10}$/.test(formData.contact2)) {
-      newErrors.contact2 = "Enter valid number";
+      newErrors.contact2 = "Contact number is required";
+    } else if (!phoneRegex.test(formData.contact2)) {
+      newErrors.contact2 = "Enter a valid 10-digit number starting with 6/7/8/9";
+    }
+
+    // Duplicate contacts
+    if (
+      formData.contact1 &&
+      formData.contact2 &&
+      formData.contact1 === formData.contact2
+    ) {
+      newErrors.contact2 = "Contact numbers cannot be the same";
+    }
+
+    // Duplicate relations
+    if (
+      formData.relation1 &&
+      formData.relation2 &&
+      formData.relation1 === formData.relation2
+    ) {
+      newErrors.relation2 = "Relations cannot be the same";
     }
 
     setErrors(newErrors);
@@ -92,20 +149,60 @@ const ComProfile = ({ onComplete }) => {
   // Save Profile
   // --------------------------
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) return;
 
-    localStorage.setItem("profileCompleted", "true");
+    setLoading(true);
 
-    localStorage.setItem(
-      "profileData",
-      JSON.stringify(formData)
-    );
+    try {
+      // ================= API CALL: PROFILE COMPLETE =================
+      // Endpoint: POST /profile/complete (requires JWT header - auto
+      // attached by axiosInstance interceptor)
+      const response = await api.post("/profile/complete", {
+        age: Number(formData.age),
+        diseases: [formData.disease], // backend expects an array
+        familyContacts: [
+          { phoneNumber: formData.contact1, relation: formData.relation1 },
+          { phoneNumber: formData.contact2, relation: formData.relation2 },
+        ],
+      });
+      // ==================================================================
 
-    if (onComplete) {
-      onComplete();
+      // Save locally only after a real successful save
+      localStorage.setItem("profileCompleted", "true");
+      // Store flat frontend structure so UserProfiles page
+      // can read fields like disease, relation1, contact1, etc.
+      // (backend returns { diseases: [], familyContacts: [...] })
+      const profileToStore = {
+        age: formData.age,
+        gender: formData.gender,
+        disease: formData.disease,
+        relation1: formData.relation1,
+        contact1: formData.contact1,
+        relation2: formData.relation2,
+        contact2: formData.contact2,
+        completed: true,
+        id: response.data?.id || Date.now(),
+      };
+      localStorage.setItem("profileData", JSON.stringify(profileToStore));
+
+      toast.success(response.data?.message || "Profile completed successfully!", {
+        duration: 3000,
+      });
+
+      if (onComplete) {
+        onComplete();
+      }
+    } catch (error) {
+      console.log("Profile Complete API Error:", error.message);
+      toast.error(
+        error.response?.data?.message || "Failed to save profile. Please try again.",
+        { duration: 4000 }
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -222,33 +319,13 @@ const ComProfile = ({ onComplete }) => {
                   value={formData.disease}
                   onChange={handleChange}
                 >
-                  <option value="">
-                    Select Medical Condition
-                  </option>
-
-                  <option>DIABETES</option>
-
-                  <option>HYPERTENSION</option>
-
-                  <option>HEART_DISEASE</option>
-
-                  <option>ASTHMA</option>
-
-                  <option>ARTHRITIS</option>
-
-                  <option>KIDNEY_DISEASE</option>
-
-                  <option>THYROID</option>
-
-                  <option>CANCER</option>
-
-                  <option>ALZHEIMERS</option>
-
-                  <option>OTHER</option>
-
+                  <option value="">Select medical condition</option>
+                  {DISEASE_OPTIONS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
-
-                <ChevronDown size={18} />
 
               </div>
 
@@ -289,19 +366,11 @@ const ComProfile = ({ onComplete }) => {
                       Select Relation
                     </option>
 
-                    <option>Father</option>
-
-                    <option>Mother</option>
-
-                    <option>Brother</option>
-
-                    <option>Sister</option>
-
-                    <option>Spouse</option>
-
-                    <option>Friend</option>
-
-                    <option>Guardian</option>
+                    {RELATION_OPTIONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
 
                   </select>
 
@@ -355,19 +424,11 @@ const ComProfile = ({ onComplete }) => {
                       Select Relation
                     </option>
 
-                    <option>Father</option>
-
-                    <option>Mother</option>
-
-                    <option>Brother</option>
-
-                    <option>Sister</option>
-
-                    <option>Spouse</option>
-
-                    <option>Friend</option>
-
-                    <option>Guardian</option>
+                    {RELATION_OPTIONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
 
                   </select>
 
@@ -409,8 +470,9 @@ const ComProfile = ({ onComplete }) => {
             <button
               type="submit"
               className="cp-save-btn"
+              disabled={loading}
             >
-              Save & Continue
+              {loading ? "Saving..." : "Save & Continue"}
             </button>
 
           </form>

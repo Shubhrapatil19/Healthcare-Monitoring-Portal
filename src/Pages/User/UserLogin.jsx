@@ -1,9 +1,10 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+import api from "../../api/axiosInstance";
 
 import "./UserLogin.css";
 
 import UserForget from "./UserForget";
-
 
 import {
   FaEnvelope,
@@ -13,10 +14,113 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 
-const UserLogin = ({ onLoginSuccess, onGoRegister }) => {
+const UserLogin = ({ onGoRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isForgetOpen, setIsForgetOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    }
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // ================= API CALL: LOGIN =================
+      // Endpoint: POST /auth/login
+      // Note: This does NOT return a JWT directly. Backend sends a
+      // confirmation email first ("Is it you?" check). The real JWT
+      // is only issued when the user clicks the link in that email,
+      // which hits GET /auth/confirm-login?token=xxxx (handled separately,
+      // not from this form).
+      const response = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      // =====================================================
+
+      // Backend returns { token: null, type: "Bearer", message: "Confirmation email sent..." }
+      toast.success(
+        response.data.message || "Confirmation email sent. Please check your inbox to complete login.",
+        {
+          duration: 5000,
+          style: {
+            background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
+            color: "#fff",
+            padding: "14px 20px",
+            borderRadius: "10px",
+            boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
+            fontSize: "14px",
+            fontWeight: "600",
+            border: "1px solid rgba(255, 255, 255, 0.22)",
+          },
+          iconTheme: { primary: "#fff", secondary: "#2e8b57" },
+        }
+      );
+
+      // NOTE: We do NOT call onLoginSuccess() here, because login is not
+      // actually complete yet — the user still has to click the email link.
+      // Once ConfirmLogin (separate route/page) receives the JWT, that is
+      // where onLoginSuccess()/redirect to dashboard should happen.
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "";
+
+      if (errorMessage.toLowerCase().includes("password") || errorMessage.toLowerCase().includes("credential")) {
+        setErrors((prev) => ({ ...prev, password: "Incorrect email or password" }));
+      }
+
+      toast.error(errorMessage || "Login failed. Please try again.", {
+        duration: 4000,
+        style: {
+          background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
+          color: "#fff",
+          padding: "14px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
+          fontSize: "14px",
+          fontWeight: "600",
+          border: "1px solid rgba(255, 255, 255, 0.22)",
+        },
+        iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
+      });
+      console.log("Login API Error:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-page">
@@ -118,95 +222,108 @@ const UserLogin = ({ onLoginSuccess, onGoRegister }) => {
               Sign in to continue to your account
             </p>
 
-            {/* EMAIL */}
+            <form onSubmit={handleLogin}>
 
-            <label>Email </label>
+              {/* EMAIL */}
 
-            <div className="input-box">
+              <label>Email </label>
 
-              <FaEnvelope className="input-icon" />
+              <div className="input-box">
 
-              <input
-                type="text"
-                placeholder="Enter your email"
-              />
-
-            </div>
-
-            {/* PASSWORD */}
-
-            <label>Password</label>
-
-            <div className="input-box">
-
-              <FaLock className="input-icon" />
-
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-              />
-
-              <button
-                type="button"
-                className="eye-btn"
-                onClick={() =>
-                  setShowPassword(!showPassword)
-                }
-              >
-                {showPassword ? (
-                  <FaEyeSlash />
-                ) : (
-                  <FaEye />
-                )}
-              </button>
-
-            </div>
-
-            {/* REMEMBER */}
-
-            <div className="login-options">
-
-              <label className="remember">
+                <FaEnvelope className="input-icon" />
 
                 <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={() =>
-                    setRememberMe(!rememberMe)
-                  }
+                  type="text"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
                 />
 
-                <span>Remember Me</span>
+              </div>
+              {errors.email && (
+                <span style={{ color: "#ef4444", fontSize: "13px", display: "block", marginTop: "-14px", marginBottom: "14px" }}>
+                  {errors.email}
+                </span>
+              )}
 
-              </label>
+              {/* PASSWORD */}
+
+              <label>Password</label>
+
+              <div className="input-box">
+
+                <FaLock className="input-icon" />
+
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+
+                <button
+                  type="button"
+                  className="eye-btn"
+                  onClick={() =>
+                    setShowPassword(!showPassword)
+                  }
+                >
+                  {showPassword ? (
+                    <FaEyeSlash />
+                  ) : (
+                    <FaEye />
+                  )}
+                </button>
+
+              </div>
+              {errors.password && (
+                <span style={{ color: "#ef4444", fontSize: "13px", display: "block", marginTop: "-14px", marginBottom: "14px" }}>
+                  {errors.password}
+                </span>
+              )}
+
+              {/* REMEMBER */}
+
+              <div className="login-options">
+
+                <label className="remember">
+
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() =>
+                      setRememberMe(!rememberMe)
+                    }
+                  />
+
+                  <span>Remember Me</span>
+
+                </label>
+
+                <button
+                  type="button"
+                  className="forget-link"
+                  onClick={() => setIsForgetOpen(true)}
+                >
+                  Forget Password?
+                </button>
+
+              </div>
+
+              {/* LOGIN BUTTON */}
 
               <button
-                type="button"
-                className="forget-link"
-                onClick={() => setIsForgetOpen(true)}
+                className="login-btn"
+                type="submit"
+                disabled={loading}
               >
-                Forget Password?
+                <FaSignInAlt />
+                {loading ? "Sending..." : "Login"}
               </button>
 
-            </div>
-
-            {/* LOGIN BUTTON */}
-
-            <button
-              className="login-btn"
-              type="button"
-              onClick={() => {
-                // local demo session
-                const savedUser = JSON.parse(localStorage.getItem("registeredUser") || "null");
-                const userName = savedUser?.fullName?.trim() || "User";
-                localStorage.setItem("isLoggedIn", "true");
-                localStorage.setItem("currentUserName", userName);
-                if (typeof onLoginSuccess === "function") onLoginSuccess();
-              }}
-            >
-              <FaSignInAlt />
-              Login
-            </button>
+            </form>
 
             {/* REGISTER */}
 

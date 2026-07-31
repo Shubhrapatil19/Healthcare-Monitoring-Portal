@@ -563,6 +563,52 @@
   background: #059669;
 }
 
+/* ── Empty State ── */
+.rep-content:has(.rep-empty-state) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+}
+
+.rep-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.rep-empty-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+  border-radius: 50%;
+  color: #0d9488;
+  margin-bottom: 1.25rem;
+  border: 2px dashed #99f6e4;
+}
+
+.rep-empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 0.5rem 0;
+}
+
+.rep-empty-text {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 360px;
+}
+
 /* ============================
    RESPONSIVE
    ============================ */

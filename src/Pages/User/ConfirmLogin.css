@@ -1,0 +1,83 @@
+/* ===========================
+   Confirm Login Page
+=========================== */
+
+.confirm-login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e8f8f5 0%, #dbeafe 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.confirm-card {
+  width: 420px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 12px 35px rgba(15, 118, 110, 0.15);
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.confirm-card h2 {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  color: #0f766e;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.confirm-card p {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.confirm-card button {
+  margin-top: 25px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0f766e, #2563eb);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirm-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+/* ===========================
+   Loading Spinner
+=========================== */
+
+.loader {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto;
+  border: 6px solid #dbeafe;
+  border-top: 6px solid #0f766e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ===========================
+   Animation
+=========================== */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

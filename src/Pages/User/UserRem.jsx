@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import "./UserRem.css";
 
 import toast from "react-hot-toast";
+import api from "../../api/axiosInstance";
 import {
   Plus,
   Clock,
@@ -19,7 +21,75 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
     year: "numeric",
   });
 
-const formatDate = (dateStr) => {
+  // ================= STATE FOR REAL REMINDER DATA =================
+  // pendingReminders -> shown as "Upcoming Today" cards
+  // historyReminders -> shown in the "Reminder History" table
+  const [pendingReminders, setPendingReminders] = useState([]);
+  const [historyReminders, setHistoryReminders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  // True once pending has been successfully fetched at least once. Needed
+  // because an empty array is a VALID state (all reminders taken) — it
+  // should not fall back to the medicines prop, which would bring back
+  // an already-taken reminder's Snooze button.
+  const [hasLoadedPending, setHasLoadedPending] = useState(false);
+
+  const fetchReminders = async () => {
+    setLoading(true);
+    try {
+      // ================= API CALL: PENDING REMINDERS =================
+      // Endpoint: GET /reminder/pending
+      const pendingRes = await api.get("/reminder/pending");
+      setPendingReminders(Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []);
+      setHasLoadedPending(true);
+      // ==================================================================
+
+      // ================= API CALL: REMINDER HISTORY =================
+      // Endpoint: GET /reminder/history
+      const historyRes = await api.get("/reminder/history");
+      setHistoryReminders(Array.isArray(historyRes.data) ? historyRes.data : historyRes.data?.reminders || []);
+      // ==================================================================
+    } catch (error) {
+      console.log("Fetch Reminders API Error:", error.message);
+      // Fall back to whatever was passed in via props (e.g. local state
+      // from UserDash) so the page still shows something useful if the
+      // backend call fails.
+      setPendingReminders(medicines);
+      setHistoryReminders(medicines);
+      setHasLoadedPending(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ================= API CALL: REFRESH HISTORY ONLY =================
+  // Endpoint: GET /reminder/history
+  // Used right after "taken" / "snooze" actions so the history table
+  // reflects the authoritative backend state (instead of guessing the
+  // new status locally).
+  const refreshHistory = async () => {
+    try {
+      const historyRes = await api.get("/reminder/history");
+      setHistoryReminders(
+        Array.isArray(historyRes.data) ? historyRes.data : historyRes.data?.reminders || []
+      );
+    } catch (error) {
+      console.log("Refresh History API Error:", error.message);
+    }
+  };
+  // ================================================================
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchReminders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Use backend data when available, otherwise fall back to the medicines
+  // prop (keeps the page working even before every screen is wired up).
+  const displayPending = hasLoadedPending ? pendingReminders : medicines;
+  const displayHistory = historyReminders.length > 0 ? historyReminders : medicines;
+
+  const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     return d.toLocaleDateString("en-US", {
@@ -38,6 +108,148 @@ const formatDate = (dateStr) => {
     return `${h12}:${minutes} ${ampm}`;
   };
 
+  const showTakenToast = (name) => {
+    toast.custom(
+      (t) => (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            background: "linear-gradient(135deg, #065F46, #0F766E)",
+            color: "#fff",
+            padding: "14px 24px",
+            borderRadius: "14px",
+            fontSize: "15px",
+            fontWeight: "600",
+            boxShadow: "0 8px 32px rgba(15, 118, 110, 0.35)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            animation: t.visible ? "slideInUp 0.4s ease-out" : "slideOutDown 0.3s ease-in",
+            transformOrigin: "top",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.2)",
+              fontSize: "18px",
+              animation: "popIn 0.5s ease-out",
+            }}
+          >
+            ✓
+          </span>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "16px", fontWeight: "700" }}>{name}</span>
+            <span style={{ fontSize: "12px", opacity: "0.85", fontWeight: "400" }}>
+              Medicine taken successfully! 💊
+            </span>
+          </div>
+        </div>
+      ),
+      { duration: 3000 }
+    );
+  };
+
+  const showSnoozeToast = (name, minutes) => {
+    toast.custom(
+      (t) => (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            background: "linear-gradient(135deg, #92400E, #D97706)",
+            color: "#fff",
+            padding: "14px 24px",
+            borderRadius: "14px",
+            fontSize: "15px",
+            fontWeight: "600",
+            boxShadow: "0 8px 32px rgba(217, 119, 6, 0.35)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            animation: t.visible ? "slideInUp 0.4s ease-out" : "slideOutDown 0.3s ease-in",
+            transformOrigin: "top",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.2)",
+              fontSize: "18px",
+              animation: "popIn 0.5s ease-out",
+            }}
+          >
+            ⏰
+          </span>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "16px", fontWeight: "700" }}>{name}</span>
+            <span style={{ fontSize: "12px", opacity: "0.85", fontWeight: "400" }}>
+              Snoozed for {minutes} minutes! 😴
+            </span>
+          </div>
+        </div>
+      ),
+      { duration: 3000 }
+    );
+  };
+
+  // ================= API CALL: MARK AS TAKEN =================
+  // Step 1: POST /reminder/{reminderId}/taken  -> marks as taken on backend
+  // Step 2: GET  /reminder/history              -> refresh table with fresh data
+  // NOTE: No body needed for the POST call — JWT goes automatically via the
+  // axiosInstance interceptor header. Only the URL (with reminderId) is
+  // required, as confirmed by the backend dev.
+  const handleMarkTaken = async (reminderId, medicineName) => {
+    try {
+      // Step 1: mark as taken
+      await api.post(`/reminder/${reminderId}/taken`);
+
+      showTakenToast(medicineName);
+
+      // Optimistic UI update: instantly remove this reminder from the
+      // "Upcoming Today" cards so the user sees immediate feedback.
+      setPendingReminders((prev) => prev.filter((m) => m.id !== reminderId));
+
+      // Step 2: refetch history so the table reflects the real backend
+      // status (instead of guessing "taken" locally).
+      await refreshHistory();
+    } catch (error) {
+      console.log("Mark Taken API Error:", error.message);
+      toast.error(error.response?.data?.message || "Failed to mark as taken. Please try again.");
+    }
+  };
+  // ================================================================
+
+  // ================= API CALL: SNOOZE REMINDER =================
+  // Step 1: POST /reminder/{reminderId}/snooze -> snoozes on backend
+  // Step 2: GET  /reminder/history               -> refresh table with fresh data
+  // NOTE: No body needed — confirmed by backend dev. Just the URL.
+  const handleSnooze = async (reminderId, medicineName) => {
+    try {
+      // Step 1: snooze
+      await api.post(`/reminder/${reminderId}/snooze`);
+
+      showSnoozeToast(medicineName, 15);
+
+      // Step 2: refetch history so the table reflects the real backend
+      // status (instead of guessing "snoozed" locally).
+      await refreshHistory();
+    } catch (error) {
+      console.log("Snooze API Error:", error.message);
+      toast.error(error.response?.data?.message || "Failed to snooze reminder. Please try again.");
+    }
+  };
+  // ================================================================
+
   return (
     <div className="rem-page">
       <div className="rem-header-section">
@@ -53,7 +265,13 @@ const formatDate = (dateStr) => {
         </div>
       </div>
 
-      {medicines.length === 0 ? (
+      {loading ? (
+        <div className="rem-card">
+          <div className="rem-empty">
+            <p>Loading reminders...</p>
+          </div>
+        </div>
+      ) : displayPending.length === 0 ? (
         <div className="rem-card">
           <div className="rem-empty">
             <div className="rem-illustration">
@@ -111,7 +329,7 @@ const formatDate = (dateStr) => {
           </div>
 
           <div className="rem-cards-grid">
-            {medicines.map((med) => (
+            {displayPending.map((med) => (
               <div key={med.id} className="rem-card-item">
                 <div className="rem-card-top-row">
                   <div className="rem-time-badge">
@@ -134,43 +352,18 @@ const formatDate = (dateStr) => {
                   <span>{dateStr}</span>
                 </div>
                 <div className="rem-card-actions-bar">
-                  <button className="rem-snooze-btn" type="button">
+                  <button
+                    className="rem-snooze-btn"
+                    type="button"
+                    onClick={() => handleSnooze(med.id, med.medicineName)}
+                  >
                     <Clock size={16} />
                     Snooze
                   </button>
-                  <button className="rem-taken-btn" type="button" onClick={() => toast.custom((t) => (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      background: 'linear-gradient(135deg, #065F46, #0F766E)',
-                      color: '#fff',
-                      padding: '14px 24px',
-                      borderRadius: '14px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      boxShadow: '0 8px 32px rgba(15, 118, 110, 0.35)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      animation: t.visible ? 'slideInUp 0.4s ease-out' : 'slideOutDown 0.3s ease-in',
-                      transformOrigin: 'top',
-                    }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.2)',
-                        fontSize: '18px',
-                        animation: 'popIn 0.5s ease-out',
-                      }}>✓</span>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '16px', fontWeight: '700' }}>{med.medicineName}</span>
-                        <span style={{ fontSize: '12px', opacity: '0.85', fontWeight: '400' }}>Medicine taken successfully! 💊</span>
-                      </div>
-                    </div>
-                  ), { duration: 3000 })}
+                  <button
+                    className="rem-taken-btn"
+                    type="button"
+                    onClick={() => handleMarkTaken(med.id, med.medicineName)}
                   >
                     ✓ Taken
                   </button>
@@ -197,7 +390,7 @@ const formatDate = (dateStr) => {
               </div>
 
               {/* Data Rows */}
-              {medicines.map((med) => (
+              {displayHistory.map((med) => (
                 <div key={med.id} className="rem-hl-row">
                   <div className="rem-hl-col rem-hl-col-name">
                     <span className="rem-hl-label">Medicine Name</span>
@@ -211,13 +404,25 @@ const formatDate = (dateStr) => {
                     <span className="rem-hl-label">Date</span>
                     <span className="rem-hl-value">{formatDate(med.date) || dateStr}</span>
                   </div>
-<div className="rem-hl-col rem-hl-col-time">
+                  <div className="rem-hl-col rem-hl-col-time">
                     <span className="rem-hl-label">Time</span>
                     <span className="rem-hl-value">{convertTo12Hour(med.timing)}</span>
                   </div>
                   <div className="rem-hl-col rem-hl-col-status">
                     <span className="rem-hl-label">Status</span>
-                    <span className="rem-status-badge rem-status-taken">Taken</span>
+                    <span
+                      className={`rem-status-badge ${
+                        med.status === "snoozed"
+                          ? "rem-status-snoozed"
+                          : med.status === "taken"
+                          ? "rem-status-taken"
+                          : med.status === "missed"
+                          ? "rem-status-missed"
+                          : "rem-status-upcoming"
+                      }`}
+                    >
+                      {med.status ? med.status.charAt(0).toUpperCase() + med.status.slice(1) : "Upcoming"}
+                    </span>
                   </div>
                   <div className="rem-hl-col rem-hl-col-action">
                     <button
@@ -233,27 +438,29 @@ const formatDate = (dateStr) => {
               ))}
             </div>
 
-            <div className="rem-history-empty">
-              <div className="rem-history-empty-illustration">
-                <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="All caught up illustration">
-                  <circle cx="75" cy="75" r="60" fill="#E6FAF8" />
-                  <rect x="45" y="30" width="60" height="80" rx="8" fill="white" stroke="#0F766E" strokeWidth="2.5" />
-                  <rect x="55" y="38" width="40" height="6" rx="3" fill="#0F766E" opacity=".3" />
-                  <rect x="55" y="50" width="30" height="4" rx="2" fill="#0F766E" opacity=".5" />
-                  <rect x="55" y="60" width="35" height="4" rx="2" fill="#0F766E" opacity=".5" />
-                  <rect x="55" y="70" width="25" height="4" rx="2" fill="#0F766E" opacity=".5" />
-                  <rect x="55" y="80" width="32" height="4" rx="2" fill="#0F766E" opacity=".5" />
-                  <path d="M52 42 L56 46 L62 38" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="95" cy="45" r="15" fill="#0F766E" opacity=".15" />
-                  <rect x="90" y="30" width="10" height="12" rx="5" fill="#0F766E" />
-                  <circle cx="95" cy="30" r="4" fill="#0F766E" />
-                  <line x1="86" y1="40" x2="104" y2="40" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" />
-                  <circle cx="95" cy="48" r="3" fill="#0F766E" />
-                </svg>
+            {displayHistory.length === 0 && (
+              <div className="rem-history-empty">
+                <div className="rem-history-empty-illustration">
+                  <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="All caught up illustration">
+                    <circle cx="75" cy="75" r="60" fill="#E6FAF8" />
+                    <rect x="45" y="30" width="60" height="80" rx="8" fill="white" stroke="#0F766E" strokeWidth="2.5" />
+                    <rect x="55" y="38" width="40" height="6" rx="3" fill="#0F766E" opacity=".3" />
+                    <rect x="55" y="50" width="30" height="4" rx="2" fill="#0F766E" opacity=".5" />
+                    <rect x="55" y="60" width="35" height="4" rx="2" fill="#0F766E" opacity=".5" />
+                    <rect x="55" y="70" width="25" height="4" rx="2" fill="#0F766E" opacity=".5" />
+                    <rect x="55" y="80" width="32" height="4" rx="2" fill="#0F766E" opacity=".5" />
+                    <path d="M52 42 L56 46 L62 38" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="95" cy="45" r="15" fill="#0F766E" opacity=".15" />
+                    <rect x="90" y="30" width="10" height="12" rx="5" fill="#0F766E" />
+                    <circle cx="95" cy="30" r="4" fill="#0F766E" />
+                    <line x1="86" y1="40" x2="104" y2="40" stroke="#0F766E" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="95" cy="48" r="3" fill="#0F766E" />
+                  </svg>
+                </div>
+                <h3 className="rem-history-empty-heading">That's it for now!</h3>
+                <p className="rem-history-empty-desc">Keep taking your medicines on time and stay healthy.</p>
               </div>
-              <h3 className="rem-history-empty-heading">That's it for now!</h3>
-              <p className="rem-history-empty-desc">Keep taking your medicines on time and stay healthy.</p>
-            </div>
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-
+import api from "../../api/axiosInstance";
 import "./UserDash.css";
 
 import CompleteProfileModal from "../../Component/ComProfile";
@@ -15,6 +15,7 @@ import UserLogout from "./UserLogout";
 import UserManage from "./UserManage";
 import UserProfiles from "./UserProfiles";
 import UserViewRep from "./UserViewRep";
+import UserNotifi from "./UserNotifi";
 
 import {
   Home,
@@ -46,10 +47,11 @@ const UserDash = ({ onLogout }) => {
     return stored === "true";
   });
   const [profileCompleted, setProfileCompleted] = useState(
-    localStorage.getItem("profileCompleted") !== "true"
+    localStorage.getItem("profileCompleted") === "true"
   );
   const [activeItem, setActiveItem] = useState("Home");
   const [showViewReport, setShowViewReport] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const myMedicineRef = useRef(null);
 
@@ -73,8 +75,22 @@ const UserDash = ({ onLogout }) => {
   while (calendarDays.length % 7 !== 0) {
     calendarDays.push("");
   }
-  const [medicines, setMedicines] = useState([]);
-  const [stockItems, setStockItems] = useState([]);
+  const [medicines, setMedicines] = useState(() => {
+    try {
+      const saved = localStorage.getItem("userMedicines");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [stockItems, setStockItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem("userStockItems");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [showProfile, setShowProfile] = useState(false);
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -124,6 +140,7 @@ const UserDash = ({ onLogout }) => {
 
   const handleMenuItemClick = (itemName) => {
     setActiveItem(itemName);
+    setShowNotifications(false);
     if (isMobile) {
       setSidebarOpen(false);
     }
@@ -152,27 +169,136 @@ const UserDash = ({ onLogout }) => {
     setShowAddMedicineModal(true);
   };
 
+  // Save medicines to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("userMedicines", JSON.stringify(medicines));
+  }, [medicines]);
+
+  // Save stock items to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("userStockItems", JSON.stringify(stockItems));
+  }, [stockItems]);
+
+  // Fetch medicines from backend on mount
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        // Only fetch if localStorage is empty (fresh load)
+        const localData = localStorage.getItem("userMedicines");
+        if (localData && JSON.parse(localData).length > 0) return;
+
+        const response = await api.get("/medicine");
+        if (response.data?.medicines && Array.isArray(response.data.medicines)) {
+          setMedicines(response.data.medicines);
+        } else if (response.data && Array.isArray(response.data)) {
+          setMedicines(response.data);
+        }
+      } catch {
+        // Silently fail - will show local data or empty state
+      }
+    };
+    fetchMedicines();
+  }, []);
+
+  // Fetch stock items from backend on mount to persist across refresh
+  useEffect(() => {
+    const fetchStockItems = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        // Only fetch if localStorage is empty (fresh load)
+        const localData = localStorage.getItem("userStockItems");
+        if (localData && JSON.parse(localData).length > 0) return;
+
+        const response = await api.get("/medicine/stock");
+        if (response.data?.stockItems && Array.isArray(response.data.stockItems)) {
+          setStockItems(response.data.stockItems);
+        }
+      } catch {
+        // Silently fail - will show local data or empty state
+      }
+    };
+    fetchStockItems();
+  }, []);
+
   const handleCloseMedicineModal = (medicineData) => {
     setShowAddMedicineModal(false);
 
     if (medicineData) {
+      // Extract first timing from timings array for display
+      const firstTiming = medicineData.timings?.[0]?.time || "";
+
       const newMedicine = {
         id: Date.now(),
+        status: "upcoming",
         ...medicineData,
+        timing: firstTiming, // Ensure timing (singular) is set for table display
       };
       setMedicines((prev) => [...prev, newMedicine]);
+
+      // Also add a notification for the new medicine
+      const notification = {
+        id: Date.now() + 1,
+        type: "success",
+        title: "Medicine Added",
+        message: `${medicineData.medicineName} ${medicineData.dosage} has been successfully added to your medicine list.`,
+        time: "Just now",
+        date: new Date().toLocaleDateString("en-GB"),
+        category: "system",
+        status: "unread",
+      };
+      try {
+        const existingNotifs = JSON.parse(localStorage.getItem("userNotifications") || "[]");
+        existingNotifs.unshift(notification);
+        localStorage.setItem("userNotifications", JSON.stringify(existingNotifs));
+      } catch {
+        // ignore
+      }
     }
   };
 
-  const handleAddStock = (stockData) => {
-    if (stockData) {
-      const newStock = {
-        id: Date.now(),
-        ...stockData,
-      };
-      setStockItems((prev) => [...prev, newStock]);
+  // Add stock — now expects the SERVER's saved item (with real id) from AddStockModal
+  const handleAddStock = (savedStockItem) => {
+    if (savedStockItem) {
+      setStockItems((prev) => [...prev, savedStockItem]);
     }
     setShowAddStockModal(false);
+  };
+
+  // Update stock — called by UserInvent after a successful PUT /medicine/{id}/stock
+  const handleUpdateStock = (id, updatedData) => {
+    setStockItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updatedData } : item))
+    );
+  };
+
+  // Delete stock — called by UserInvent after a successful DELETE /medicine/{id}
+  const handleDeleteStock = (id) => {
+    setStockItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Snooze reminder — add 10 minutes to the medicine timing
+  const handleSnoozeReminder = (medicineId) => {
+    setMedicines((prev) =>
+      prev.map((med) => {
+        if (med.id !== medicineId) return med;
+
+        // Calculate new time by adding 10 minutes
+        const [hours, minutes] = med.timing.split(":").map(Number);
+        const totalMinutes = hours * 60 + minutes + 10;
+        const newHours = Math.floor(totalMinutes / 60) % 24;
+        const newMinutes = totalMinutes % 60;
+        const newTiming = `${String(newHours).padStart(2, "0")}:${String(newMinutes).padStart(2, "0")}`;
+
+        return {
+          ...med,
+          timing: newTiming,
+          status: "snoozed",
+        };
+      })
+    );
   };
 
   return (
@@ -230,7 +356,17 @@ const UserDash = ({ onLogout }) => {
                 <Menu size={22} />
               </button>
             )}
-            <button type="button" className="notification-btn" aria-label="Notifications">
+            <button
+              type="button"
+              className="notification-btn"
+              aria-label="Notifications"
+              onClick={() => {
+                setShowNotifications(true);
+                setShowProfile(false);
+                setShowLogoutModal(false);
+                if (isMobile) setSidebarOpen(false);
+              }}
+            >
               <Bell className="top-icon" />
               <span className="notification-badge" />
             </button>
@@ -345,10 +481,17 @@ const UserDash = ({ onLogout }) => {
 
           {/* ================= MAIN ================= */}
           <main className="main-content">
-            {showViewReport ? (
+            {showNotifications ? (
+              <UserNotifi />
+            ) : showViewReport ? (
               <UserViewRep onBack={() => setShowViewReport(false)} />
             ) : activeItem === "Medicine Inventory" ? (
-              <UserInvent />
+              <UserInvent
+                stockItems={stockItems}
+                onAddStock={() => setShowAddStockModal(true)}
+                onUpdateStock={handleUpdateStock}
+                onDeleteStock={handleDeleteStock}
+              />
             ) : activeItem === "Reports" ? (
               <UserReport onViewReport={() => setShowViewReport(true)} />
             ) : activeItem === "Alerts" ? (
@@ -358,7 +501,7 @@ const UserDash = ({ onLogout }) => {
                 stockItems={stockItems}
               />
             ) : activeItem === "Reminders" ? (
-              <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} />
+              <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} onSnoozeReminder={handleSnoozeReminder} />
             ) : showLogoutModal ? (
               <UserLogout
                 onCancel={() => setShowLogoutModal(false)}
@@ -450,7 +593,7 @@ const UserDash = ({ onLogout }) => {
                                 {medicine.timing}
                               </div>
                               <div className="medicine-frequency-value">{medicine.frequency}</div>
-<div className="medicine-status">
+                              <div className="medicine-status">
                                 <span className="status-badge upcoming">Upcoming</span>
                               </div>
                             </div>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Package, Plus, Edit2, Save, X, ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { Package, Plus, Edit2, Save, X, ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown, Trash2, Loader2 } from "lucide-react";
+import api from "../../api/axiosInstance";
 import "./UserInvent.css";
 
 const StatusBadge = ({ status }) => {
@@ -13,22 +14,16 @@ const StatusBadge = ({ status }) => {
   return <span className={className}>{status}</span>;
 };
 
-const UserInvent = () => {
-  const [rows, setRows] = useState([
-    { id: 1, medicineName: "Paracetamol", currentStock: 120, minimumStock: 50, expiryDate: "2027-03-10" },
-    { id: 2, medicineName: "Amoxicillin", currentStock: 18, minimumStock: 30, expiryDate: "2026-10-22" },
-    { id: 3, medicineName: "Cetrizine", currentStock: 0, minimumStock: 10, expiryDate: "2026-08-01" },
-    { id: 4, medicineName: "Ibuprofen", currentStock: 200, minimumStock: 40, expiryDate: "2027-06-15" },
-    { id: 5, medicineName: "Omeprazole", currentStock: 5, minimumStock: 20, expiryDate: "2026-12-01" },
-    { id: 6, medicineName: "Loratadine", currentStock: 60, minimumStock: 15, expiryDate: "2027-01-20" },
-    { id: 7, medicineName: "Metformin", currentStock: 90, minimumStock: 25, expiryDate: "2026-09-30" },
-    { id: 8, medicineName: "Aspirin", currentStock: 0, minimumStock: 10, expiryDate: "2026-11-05" }
-  ]);
+const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock }) => {
+  const rows = stockItems;
 
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState({
     medicineName: "", currentStock: "", minimumStock: "", expiryDate: ""
   });
+  const [savingId, setSavingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [rowError, setRowError] = useState({ id: null, message: "" });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,8 +36,6 @@ const UserInvent = () => {
     return "In Stock";
   };
 
-  const statusOrder = { "In Stock": 1, "Low Stock": 2, "Out of Stock": 3 };
-
   const derived = useMemo(() => rows.map((r) => ({ ...r, status: getStatus(r) })), [rows]);
 
   const filteredRows = useMemo(() => {
@@ -54,6 +47,7 @@ const UserInvent = () => {
   }, [derived, searchQuery]);
 
   const sortedRows = useMemo(() => {
+    const statusOrder = { "In Stock": 1, "Low Stock": 2, "Out of Stock": 3 };
     if (!sortConfig.key) return filteredRows;
     const sorted = [...filteredRows];
     sorted.sort((a, b) => {
@@ -143,19 +137,43 @@ const UserInvent = () => {
   }, [derived]);
 
   const startEdit = (r) => {
+    setRowError({ id: null, message: "" });
     setEditingId(r.id);
     setEditDraft({ medicineName: r.medicineName, currentStock: r.currentStock, minimumStock: r.minimumStock, expiryDate: r.expiryDate });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
+    setRowError({ id: null, message: "" });
     setEditDraft({ medicineName: "", currentStock: "", minimumStock: "", expiryDate: "" });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingId == null) return;
-    setRows((prev) => prev.map((r) => r.id === editingId ? { ...r, ...editDraft } : r));
-    cancelEdit();
+    setSavingId(editingId);
+    setRowError({ id: null, message: "" });
+    try {
+      const res = await api.put(`/medicine/${editingId}/stock`, editDraft);
+      onUpdateStock && onUpdateStock(editingId, res.data || editDraft);
+      cancelEdit();
+    } catch (err) {
+      setRowError({ id: editingId, message: err.response?.data?.message || "Failed to save changes" });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    setDeletingId(id);
+    setRowError({ id: null, message: "" });
+    try {
+      await api.delete(`/medicine/${id}`);
+      onDeleteStock && onDeleteStock(id);
+    } catch (err) {
+      setRowError({ id, message: err.response?.data?.message || "Failed to delete item" });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -166,200 +184,223 @@ const UserInvent = () => {
           <h1>Inventory Management</h1>
         </div>
         <div className="header-right">
-          <button className="add-medicine-btn">
+          <button className="add-medicine-btn" onClick={onAddStock}>
             <Plus size={20} />
             <span>Add Medicine</span>
           </button>
         </div>
       </div>
 
-      <div className="inventory-table-wrapper">
-        <div className="inventory-table-header">
-          <div className="sort-controls-container">
-            <div className="sort-dropdown-wrapper">
-              <label className="sort-label">Sort by:</label>
-              <select
-                className="sort-select"
-                value={sortConfig.key || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val) {
-                    handleSort(val);
-                  } else {
-                    setSortConfig({ key: null, direction: "asc" });
-                    setCurrentPage(1);
-                  }
-                }}
-              >
-                <option value="">None</option>
-                <option value="medicineName">Medicine Name</option>
-                <option value="currentStock">Current Stock</option>
-                <option value="minimumStock">Minimum Stock</option>
-                <option value="expiryDate">Expiry Date</option>
-                <option value="status">Status</option>
-              </select>
-            </div>
-            {sortConfig.key && (
-              <button
-                className="sort-direction-btn"
-                onClick={() => {
-                  setSortConfig((prev) => ({
-                    ...prev,
-                    direction: prev.direction === "asc" ? "desc" : "asc"
-                  }));
-                  setCurrentPage(1);
-                }}
-                aria-label={`Sort ${sortConfig.direction === "asc" ? "descending" : "ascending"}`}
-              >
-                {sortConfig.direction === "asc" ? (
-                  <ArrowUp size={18} />
-                ) : (
-                  <ArrowDown size={18} />
-                )}
-                <span>{sortConfig.direction === "asc" ? "Asc" : "Desc"}</span>
-              </button>
-            )}
-          </div>
-          <div className="search-bar-container">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by medicine name..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
-            {searchQuery && (
-              <button className="search-clear-btn" onClick={() => { setSearchQuery(""); setCurrentPage(1); }} aria-label="Clear search">
-                <X size={16} />
-              </button>
-            )}
-          </div>
+      {rows.length === 0 ? (
+        <div className="inventory-empty">
+          <Package size={60} />
+          <h3>No stock items added yet</h3>
+          <p>Click "Add Medicine" button to add your first stock item.</p>
         </div>
-        <table className="inventory-table">
-          <thead>
-            <tr>
-              <th>Medicine</th>
-              <th>Current Stock</th>
-              <th>Minimum Stock</th>
-              <th>Expiry</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRows.map((r) => {
-              const isEditing = editingId === r.id;
-              return (
-                <tr key={r.id} className={isEditing ? "editing-row" : ""}>
-                  <td data-label="Medicine">
-                    <div className="medicine-name">
-                      <div className="medicine-icon" aria-hidden><span className="medicine-emoji">{String.fromCodePoint(0x1F48A)}</span></div>
-                      {isEditing ? (
-                        <input className="edit-input" value={editDraft.medicineName} onChange={(e) => setEditDraft((p) => ({ ...p, medicineName: e.target.value }))} />
-                      ) : <span>{r.medicineName}</span>}
-                    </div>
-                  </td>
-                  <td data-label="Current Stock">
-                    {isEditing ? (
-                      <input className="edit-input" type="number" value={editDraft.currentStock} onChange={(e) => setEditDraft((p) => ({ ...p, currentStock: e.target.value }))} />
-                    ) : r.currentStock}
-                  </td>
-                  <td data-label="Minimum Stock">
-                    {isEditing ? (
-                      <input className="edit-input" type="number" value={editDraft.minimumStock} onChange={(e) => setEditDraft((p) => ({ ...p, minimumStock: e.target.value }))} />
-                    ) : r.minimumStock}
-                  </td>
-                  <td data-label="Expiry">
-                    {isEditing ? (
-                      <input className="edit-input" type="date" value={editDraft.expiryDate} onChange={(e) => setEditDraft((p) => ({ ...p, expiryDate: e.target.value }))} />
-                    ) : r.expiryDate}
-                  </td>
-                  <td data-label="Status">
-                    <StatusBadge status={getStatus({ currentStock: isEditing ? editDraft.currentStock : r.currentStock, minimumStock: isEditing ? editDraft.minimumStock : r.minimumStock })} />
-                  </td>
-                  <td data-label="Action">
-                    {isEditing ? (
-                      <div className="edit-actions">
-                        <button type="button" className="save-btn" onClick={saveEdit} aria-label="Save"><Save size={18} /></button>
-                        <button type="button" className="cancel-btn" onClick={cancelEdit} aria-label="Cancel"><X size={18} /></button>
-                      </div>
-                    ) : <button type="button" className="edit-btn" onClick={() => startEdit(r)} aria-label="Edit"><Edit2 size={20} /></button>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {filteredRows.length > 0 && (
-          <div className="pagination-container">
-            <div className="pagination-info">
-              <span className="pagination-showing">Showing {startIndex + 1} to {endIndex} of {sortedRows.length} {sortedRows.length !== derived.length ? `(filtered from ${derived.length} total)` : ""} entries</span>
-              <div className="pagination-per-page">
-                <label htmlFor="itemsPerPage">Per page:</label>
-                <select id="itemsPerPage" className="pagination-select" value={itemsPerPage} onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}>
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
+      ) : (
+        <div className="inventory-table-wrapper">
+          <div className="inventory-table-header">
+            <div className="sort-controls-container">
+              <div className="sort-dropdown-wrapper">
+                <label className="sort-label">Sort by:</label>
+                <select
+                  className="sort-select"
+                  value={sortConfig.key || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      handleSort(val);
+                    } else {
+                      setSortConfig({ key: null, direction: "asc" });
+                      setCurrentPage(1);
+                    }
+                  }}
+                >
+                  <option value="">None</option>
+                  <option value="medicineName">Medicine Name</option>
+                  <option value="currentStock">Current Stock</option>
+                  <option value="minimumStock">Minimum Stock</option>
+                  <option value="expiryDate">Expiry Date</option>
+                  <option value="status">Status</option>
                 </select>
               </div>
-            </div>
-            <div className="pagination-controls">
-              <button className="page-nav-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label="Previous page">
-                <ChevronLeft size={18} />
-              </button>
-              {getPageNumbers().map((page, idx) =>
-                page === "..." ? (
-                  <span key={'ellipsis-' + idx} className="page-ellipsis">...</span>
-                ) : (
-                  <button key={page} className={'page-btn ' + (currentPage === page ? "active" : "")} onClick={() => setCurrentPage(page)}>{page}</button>
-                )
+              {sortConfig.key && (
+                <button
+                  className="sort-direction-btn"
+                  onClick={() => {
+                    setSortConfig((prev) => ({
+                      ...prev,
+                      direction: prev.direction === "asc" ? "desc" : "asc"
+                    }));
+                    setCurrentPage(1);
+                  }}
+                  aria-label={`Sort ${sortConfig.direction === "asc" ? "descending" : "ascending"}`}
+                >
+                  {sortConfig.direction === "asc" ? (
+                    <ArrowUp size={18} />
+                  ) : (
+                    <ArrowDown size={18} />
+                  )}
+                  <span>{sortConfig.direction === "asc" ? "Asc" : "Desc"}</span>
+                </button>
               )}
-              <button className="page-nav-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label="Next page">
-                <ChevronRight size={18} />
-              </button>
+            </div>
+            <div className="search-bar-container">
+              <Search size={18} className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search by medicine name..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+              {searchQuery && (
+                <button className="search-clear-btn" onClick={() => { setSearchQuery(""); setCurrentPage(1); }} aria-label="Clear search">
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </div>
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Current Stock</th>
+                <th>Minimum Stock</th>
+                <th>Expiry</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRows.map((r) => {
+                const isEditing = editingId === r.id;
+                const isSaving = savingId === r.id;
+                const isDeleting = deletingId === r.id;
+                const hasError = rowError.id === r.id;
+                return (
+                  <tr key={r.id} className={isEditing ? "editing-row" : ""}>
+                    <td data-label="Medicine">
+                      <div className="medicine-name">
+                        <div className="medicine-icon" aria-hidden><span className="medicine-emoji">{String.fromCodePoint(0x1F48A)}</span></div>
+                        {isEditing ? (
+                          <input className="edit-input" value={editDraft.medicineName} onChange={(e) => setEditDraft((p) => ({ ...p, medicineName: e.target.value }))} />
+                        ) : <span>{r.medicineName}</span>}
+                      </div>
+                    </td>
+                    <td data-label="Current Stock">
+                      {isEditing ? (
+                        <input className="edit-input" type="number" value={editDraft.currentStock} onChange={(e) => setEditDraft((p) => ({ ...p, currentStock: e.target.value }))} />
+                      ) : r.currentStock}
+                    </td>
+                    <td data-label="Minimum Stock">
+                      {isEditing ? (
+                        <input className="edit-input" type="number" value={editDraft.minimumStock} onChange={(e) => setEditDraft((p) => ({ ...p, minimumStock: e.target.value }))} />
+                      ) : r.minimumStock}
+                    </td>
+                    <td data-label="Expiry">
+                      {isEditing ? (
+                        <input className="edit-input" type="date" value={editDraft.expiryDate} onChange={(e) => setEditDraft((p) => ({ ...p, expiryDate: e.target.value }))} />
+                      ) : r.expiryDate}
+                    </td>
+                    <td data-label="Status">
+                      <StatusBadge status={getStatus({ currentStock: isEditing ? editDraft.currentStock : r.currentStock, minimumStock: isEditing ? editDraft.minimumStock : r.minimumStock })} />
+                    </td>
+                    <td data-label="Action">
+                      {isEditing ? (
+                        <div className="edit-actions">
+                          <button type="button" className="save-btn" onClick={saveEdit} disabled={isSaving} aria-label="Save">
+                            {isSaving ? <Loader2 size={18} className="spin" /> : <Save size={18} />}
+                          </button>
+                          <button type="button" className="cancel-btn" onClick={cancelEdit} disabled={isSaving} aria-label="Cancel"><X size={18} /></button>
+                        </div>
+                      ) : (
+                        <div className="edit-actions">
+                          <button type="button" className="edit-btn" onClick={() => startEdit(r)} aria-label="Edit"><Edit2 size={20} /></button>
+                          <button type="button" className="delete-btn" onClick={() => handleDelete(r.id)} disabled={isDeleting} aria-label="Delete">
+                            {isDeleting ? <Loader2 size={18} className="spin" /> : <Trash2 size={18} />}
+                          </button>
+                        </div>
+                      )}
+                      {hasError && <div className="row-error-text">{rowError.message}</div>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
-      <div className="stock-status-section">
-        <h2 className="stock-status-title">Stock Status Overview</h2>
-        <div className="title-underline-small" />
-        <div className="chart-container">
-          <div className="chart-legend" aria-label="Stock status legend">
-            <div className="legend-item"><span className="legend-color in-stock" aria-hidden /><span>In Stock</span></div>
-            <div className="legend-item"><span className="legend-color low-stock" aria-hidden /><span>Low Stock</span></div>
-            <div className="legend-item"><span className="legend-color out-of-stock" aria-hidden /><span>Out of Stock</span></div>
-          </div>
-          <div className="bar-chart" aria-label="Stock status chart">
-            <div className="y-axis" aria-hidden>
-              <span>{Math.ceil(chartCounts.maxCount / 3)}</span>
-              <span>{Math.ceil((chartCounts.maxCount * 2) / 3)}</span>
-              <span>{chartCounts.maxCount}</span>
+          {filteredRows.length > 0 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                <span className="pagination-showing">Showing {startIndex + 1} to {endIndex} of {sortedRows.length} {sortedRows.length !== derived.length ? `(filtered from ${derived.length} total)` : ""} entries</span>
+                <div className="pagination-per-page">
+                  <label htmlFor="itemsPerPage">Per page:</label>
+                  <select id="itemsPerPage" className="pagination-select" value={itemsPerPage} onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}>
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={20}>20</option>
+                  </select>
+                </div>
+              </div>
+              <div className="pagination-controls">
+                <button className="page-nav-btn" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} aria-label="Previous page">
+                  <ChevronLeft size={18} />
+                </button>
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <span key={'ellipsis-' + idx} className="page-ellipsis">...</span>
+                  ) : (
+                    <button key={page} className={'page-btn ' + (currentPage === page ? "active" : "")} onClick={() => setCurrentPage(page)}>{page}</button>
+                  )
+                )}
+                <button className="page-nav-btn" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} aria-label="Next page">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
-            <div className="chart-bars">
-              <div className="bar-group">
-                <div className="bar" style={{ height: chartCounts.inStockH + 'px', background: "linear-gradient(180deg, #7ec8c8 0%, #14a098 100%)" }} />
-                <div className="bar-label">In Stock ({chartCounts.inStockCount})</div>
+          )}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="stock-status-section">
+          <h2 className="stock-status-title">Stock Status Overview</h2>
+          <div className="title-underline-small" />
+          <div className="chart-container">
+            <div className="chart-legend" aria-label="Stock status legend">
+              <div className="legend-item"><span className="legend-color in-stock" aria-hidden /><span>In Stock</span></div>
+              <div className="legend-item"><span className="legend-color low-stock" aria-hidden /><span>Low Stock</span></div>
+              <div className="legend-item"><span className="legend-color out-of-stock" aria-hidden /><span>Out of Stock</span></div>
+            </div>
+            <div className="bar-chart" aria-label="Stock status chart">
+              <div className="y-axis" aria-hidden>
+                <span>{Math.ceil(chartCounts.maxCount / 3)}</span>
+                <span>{Math.ceil((chartCounts.maxCount * 2) / 3)}</span>
+                <span>{chartCounts.maxCount}</span>
               </div>
-              <div className="bar-group">
-                <div className="bar" style={{ height: chartCounts.lowStockH + 'px', background: "linear-gradient(180deg, #f4e7a6 0%, #f4d58d 100%)" }} />
-                <div className="bar-label">Low Stock ({chartCounts.lowStockCount})</div>
-              </div>
-              <div className="bar-group">
-                <div className="bar" style={{ height: chartCounts.outStockH + 'px', background: "linear-gradient(180deg, #f9c2ba 0%, #f5b7b1 100%)" }} />
-                <div className="bar-label">Out of Stock ({chartCounts.outStockCount})</div>
+              <div className="chart-bars">
+                <div className="bar-group">
+                  <div className="bar" style={{ height: chartCounts.inStockH + 'px', background: "linear-gradient(180deg, #7ec8c8 0%, #14a098 100%)" }} />
+                  <div className="bar-label">In Stock ({chartCounts.inStockCount})</div>
+                </div>
+                <div className="bar-group">
+                  <div className="bar" style={{ height: chartCounts.lowStockH + 'px', background: "linear-gradient(180deg, #f4e7a6 0%, #f4d58d 100%)" }} />
+                  <div className="bar-label">Low Stock ({chartCounts.lowStockCount})</div>
+                </div>
+                <div className="bar-group">
+                  <div className="bar" style={{ height: chartCounts.outStockH + 'px', background: "linear-gradient(180deg, #f9c2ba 0%, #f5b7b1 100%)" }} />
+                  <div className="bar-label">Out of Stock ({chartCounts.outStockCount})</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
