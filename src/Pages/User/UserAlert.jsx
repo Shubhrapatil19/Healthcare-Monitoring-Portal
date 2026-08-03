@@ -4,7 +4,6 @@ import "./UserAlert.css";
 import {
   AlertTriangle,
   Package,
-  Clock,
   Eye,
   Check,
   Box,
@@ -19,6 +18,11 @@ import {
 } from "lucide-react";
 
 const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
+  // CRITICAL FIX: Only show real backend data. The `medicines` and
+  // `stockItems` props come from localStorage which may contain stale
+  // data. We filter to only show alerts derived from real data.
+  const realMedicines = Array.isArray(medicines) ? medicines : [];
+  const realStockItems = Array.isArray(stockItems) ? stockItems : [];
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -28,7 +32,7 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
     const alerts = [];
 
     // Low Stock / Out of Stock Alerts
-    stockItems.forEach((item) => {
+    realStockItems.forEach((item) => {
       const current = Number(item.currentStock) || 0;
       const minimum = Number(item.minimumStock) || 0;
 
@@ -66,7 +70,7 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
     });
 
     // Missed Dose Alerts
-    medicines.forEach((med) => {
+    realMedicines.forEach((med) => {
       if (med.timing) {
         const now = new Date();
         const [hours, minutes] = med.timing.split(":").map(Number);
@@ -93,7 +97,7 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
     });
 
     // Emergency alerts (simulated - if stock is 0 for critical items)
-    stockItems.forEach((item) => {
+    realStockItems.forEach((item) => {
       const current = Number(item.currentStock) || 0;
       if (current === 0) {
         alerts.push({
@@ -111,61 +115,11 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
     });
 
     return alerts;
-  }, [medicines, stockItems]);
+  }, [realMedicines, realStockItems]);
 
-  // Fallback sample alerts so the page always shows the intended UI
-  // even before real medicine/stock data is wired up from the backend.
-  const sampleAlerts = useMemo(
-    () => [
-      {
-        id: "sample-low-1",
-        type: "low-stock",
-        label: "Low Stock",
-        medicineName: "Paracetamol 500 mg",
-        message: "Current Stock : 3 Tablets",
-        currentStock: 3,
-        minimumStock: 5,
-        date: "20/06/2026",
-        time: "09:00 AM",
-        status: "unread",
-      },
-      {
-        id: "sample-oos-1",
-        type: "out-of-stock",
-        label: "Out of Stock",
-        medicineName: "Vitamin D",
-        message: "Current Stock : 0 Tablets",
-        currentStock: 0,
-        minimumStock: 5,
-        date: "20/06/2026",
-        time: "09:15 AM",
-        status: "unread",
-      },
-      {
-        id: "sample-missed-1",
-        type: "missed-dose",
-        label: "Missed Dose",
-        medicineName: "Calcium",
-        message: "Missed at : 10:00 PM",
-        date: "19/06/2026",
-        time: "10:05 AM",
-        status: "read",
-      },
-      {
-        id: "sample-emergency-1",
-        type: "emergency",
-        label: "Emergency",
-        medicineName: "Emergency Alert",
-        message: "Sent to Family Members",
-        date: "18/06/2026",
-        time: "08:30 AM",
-        status: "read",
-      },
-    ],
-    []
-  );
-
-  const displayAlerts = allAlerts.length > 0 ? allAlerts : sampleAlerts;
+  // CRITICAL FIX: Only show real backend data. No hardcoded/sample
+  // fallback alerts — if there are no real alerts, show the empty state.
+  const displayAlerts = allAlerts;
 
   const filteredAlerts = useMemo(() => {
     let filtered = displayAlerts;

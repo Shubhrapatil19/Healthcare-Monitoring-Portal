@@ -488,6 +488,7 @@ const ComProfile = ({ onComplete }) => {
       </div>
 
     </div>
+
   );
 };
 

@@ -15,12 +15,14 @@ import {
 } from "react-icons/fa";
 
 const UserLogin = ({ onGoRegister }) => {
+  const rememberedEmail = localStorage.getItem("rememberEmail") || "";
+
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
   const [isForgetOpen, setIsForgetOpen] = useState(false);
 
   const [formData, setFormData] = useState({
-    email: "",
+    email: rememberedEmail,
     password: "",
   });
   const [errors, setErrors] = useState({});
@@ -28,7 +30,13 @@ const UserLogin = ({ onGoRegister }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "email"
+          ? value.trim().toLowerCase()
+          : value,
+    }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -37,11 +45,17 @@ const UserLogin = ({ onGoRegister }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!formData.email) {
       newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Enter a valid email";
     }
     if (!formData.password) {
       newErrors.password = "Password is required";
+    } else if (/\s/.test(formData.password)) {
+      newErrors.password = "Password cannot contain spaces";
     }
 
     setErrors(newErrors);
@@ -95,7 +109,20 @@ const UserLogin = ({ onGoRegister }) => {
       // Once ConfirmLogin (separate route/page) receives the JWT, that is
       // where onLoginSuccess()/redirect to dashboard should happen.
 
+      if (rememberMe) {
+        localStorage.setItem(
+          "rememberEmail",
+          formData.email
+        );
+      }
+
     } catch (error) {
+      if (!error.response) {
+        toast.error(
+          "Network Error. Please check your internet."
+        );
+        return;
+      }
       const errorMessage = error.response?.data?.message || "";
 
       if (errorMessage.toLowerCase().includes("password") || errorMessage.toLowerCase().includes("credential")) {

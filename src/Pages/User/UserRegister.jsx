@@ -60,6 +60,16 @@ const UserRegister = ({ onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+
+    if (!formData.mobile) {
+      newErrors.mobile = "Mobile number is required";
+    } else if (!/^[6-9]\d{9}$/.test(formData.mobile)) {
+      newErrors.mobile = "Enter a valid 10-digit mobile number";
+    }
+
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else {
@@ -95,6 +105,10 @@ const UserRegister = ({ onSuccess }) => {
       if (failedRequirements.length > 0) {
         newErrors.password = `Password must contain: ${failedRequirements.join(", ")}`;
       }
+    }
+
+    if (/\s/.test(formData.password)) {
+      newErrors.password = "Password cannot contain spaces";
     }
 
     if (!formData.confirmPassword) {
@@ -339,12 +353,19 @@ const UserRegister = ({ onSuccess }) => {
                     id="fullName"
                     name="fullName"
                     type="text"
-                    className="register-input"
+                    className={`register-input ${
+                      errors.fullName ? "register-input-error" : ""
+                    }`}
                     placeholder="Enter full name"
                     value={formData.fullName}
                     onChange={handleChange}
                   />
                 </div>
+                {errors.fullName && (
+                  <span className="register-error-text">
+                    {errors.fullName}
+                  </span>
+                )}
               </div>
 
               <div className="register-field">
@@ -372,12 +393,19 @@ const UserRegister = ({ onSuccess }) => {
                     id="mobile"
                     name="mobile"
                     type="tel"
-                    className="register-input"
+                    className={`register-input ${
+                      errors.mobile ? "register-input-error" : ""
+                    }`}
                     placeholder="Enter mobile number"
                     value={formData.mobile}
                     onChange={handleChange}
                   />
                 </div>
+                {errors.mobile && (
+                  <span className="register-error-text">
+                    {errors.mobile}
+                  </span>
+                )}
               </div>
 
               <div className="register-field">

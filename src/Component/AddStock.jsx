@@ -15,6 +15,10 @@ const AddStockModal = ({ onClose }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // Wraps onClose so accidental clicks (overlay backdrop, Cancel button)
+  // never pass a click event through as if it were a saved stock item.
+  const handleClose = () => onClose();
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -77,6 +81,9 @@ const AddStockModal = ({ onClose }) => {
       });
       // ==================================================================
 
+      // TEMP DEBUG: confirm the actual shape/fields the backend sends back.
+      console.log("Add Stock API response:", response.data);
+
       toast.success(response.data?.message || "Stock updated successfully!", {
         duration: 3000,
       });
@@ -102,7 +109,7 @@ const AddStockModal = ({ onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <h2>Add Medicine Stock</h2>
 
@@ -157,7 +164,7 @@ const AddStockModal = ({ onClose }) => {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>
+            <button type="button" className="btn-cancel" onClick={handleClose} disabled={loading}>
               Cancel
             </button>
             <button type="submit" className="btn-save" disabled={loading}>

@@ -12,7 +12,7 @@ import {
   Calendar,
 } from "lucide-react";
 
-const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
+const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) => {
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", {
     weekday: "short",
@@ -50,33 +50,17 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
       // ==================================================================
     } catch (error) {
       console.log("Fetch Reminders API Error:", error.message);
-      // Fall back to whatever was passed in via props (e.g. local state
-      // from UserDash) so the page still shows something useful if the
-      // backend call fails.
-      setPendingReminders(medicines);
-      setHistoryReminders(medicines);
-      setHasLoadedPending(false);
+      // CRITICAL FIX: Do NOT fall back to the medicines prop (which comes
+      // from localStorage). That stale data contains old reminder IDs that
+      // no longer exist on the backend, causing "Reminder not found" errors.
+      // Only show real backend data — if the API fails, show empty state.
+      setPendingReminders([]);
+      setHistoryReminders([]);
+      setHasLoadedPending(true);
     } finally {
       setLoading(false);
     }
   };
-
-  // ================= API CALL: REFRESH HISTORY ONLY =================
-  // Endpoint: GET /reminder/history
-  // Used right after "taken" / "snooze" actions so the history table
-  // reflects the authoritative backend state (instead of guessing the
-  // new status locally).
-  const refreshHistory = async () => {
-    try {
-      const historyRes = await api.get("/reminder/history");
-      setHistoryReminders(
-        Array.isArray(historyRes.data) ? historyRes.data : historyRes.data?.reminders || []
-      );
-    } catch (error) {
-      console.log("Refresh History API Error:", error.message);
-    }
-  };
-  // ================================================================
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -84,10 +68,15 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Use backend data when available, otherwise fall back to the medicines
-  // prop (keeps the page working even before every screen is wired up).
-  const displayPending = hasLoadedPending ? pendingReminders : medicines;
-  const displayHistory = historyReminders.length > 0 ? historyReminders : medicines;
+  // CRITICAL FIX: Only use real backend data. Never fall back to the
+  // medicines prop (localStorage) — it contains stale reminder IDs that
+  // no longer exist on the backend.
+  const displayHistory = historyReminders;
+
+  // Only show pending reminders that came from the backend. If the
+  // backend returned empty, show the empty state — do NOT derive from
+  // history or fall back to medicines prop.
+  const displayPending = hasLoadedPending ? pendingReminders : [];
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
@@ -202,50 +191,201 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
     );
   };
 
+  // ================= REMINDER ID RESOLUTION =================
+  // CRITICAL FIX: The backend expects the REMINDER ID, NOT the medicine
+  // ID. The reminder objects returned by /reminder/pending and
+  // /reminder/history may use different field names depending on the
+  // backend (MongoDB uses _id, some use reminderId, others use
+  // reminder_id). We must check ALL of these in priority order and
+  // NEVER fall back to med.id (which is the medicine ID) unless it's
+  // the ONLY identifier present on the object.
+  //
+  // Priority order:
+  //   1. med.reminderId      — explicit reminder ID (camelCase)
+  //   2. med.reminder_id     — explicit reminder ID (snake_case)
+  //   3. med._id             — MongoDB-style ID (the reminder's own _id)
+  //   4. med.id              — LAST RESORT only (could be medicine ID)
+  //
+  // We also log the full object so the developer can see exactly which
+  // field the backend actually returns, making debugging trivial.
+  const resolveReminderId = (med) => {
+    if (!med) return null;
+
+    // Explicit reminder ID fields first (these are unambiguous)
+    if (med.reminderId != null) return med.reminderId;
+    if (med.reminder_id != null) return med.reminder_id;
+
+    // MongoDB-style _id — this is the reminder's own document ID
+    if (med._id != null) return med._id;
+
+    // If the object has a separate medicineId field, then med.id is
+    // almost certainly the medicine ID, NOT the reminder ID. In that
+    // case we should NOT use med.id — return null so the caller can
+    // show a clear error instead of sending a wrong ID to the backend.
+    if (med.medicineId != null && med.id != null) {
+      console.log(
+        "resolveReminderId: object has both medicineId and id — id is the medicine ID, not the reminder ID. Cannot resolve reminder ID.",
+        med
+      );
+      return null;
+    }
+
+    // Last resort: only use med.id if it's the ONLY id-like field
+    return med.id != null ? med.id : null;
+  };
+
   // ================= API CALL: MARK AS TAKEN =================
-  // Step 1: POST /reminder/{reminderId}/taken  -> marks as taken on backend
-  // Step 2: GET  /reminder/history              -> refresh table with fresh data
-  // NOTE: No body needed for the POST call — JWT goes automatically via the
-  // axiosInstance interceptor header. Only the URL (with reminderId) is
-  // required, as confirmed by the backend dev.
-  const handleMarkTaken = async (reminderId, medicineName) => {
+  // Endpoint: POST /reminder/{reminderId}/taken
+  //
+  // Per spec:
+  // 1. Use resolveReminderId() to get the ACTUAL reminder ID — never
+  //    pass the medicine ID.
+  // 2. Log the object/ID/URL before calling, for debugging.
+  // 3. Never hardcode or optimistically set status to "taken" — wait for
+  //    the backend to confirm, then refetch pending + history fresh and
+  //    render exactly what the backend returns.
+  // 4. If the backend responds 200 OK but with a `{ success: false }`
+  //    body, treat that as a failure too: show the error toast, leave
+  //    pendingReminders/historyReminders completely untouched, and log
+  //    the details.
+  // 5. If the backend returns "Reminder not found", show a clear error
+  //    toast and log the request URL + reminderId for debugging.
+  const handleMarkTaken = async (med) => {
+    const reminderId = resolveReminderId(med);
+    const medicineName = med?.medicineName;
+
+    // ---- Debug logging before the call ----
+    console.log("Reminder Object:", med);
+    console.log("Resolved Reminder ID:", reminderId);
+    console.log("Request URL:", `/reminder/${reminderId}/taken`);
+
+    if (reminderId == null) {
+      console.log("Mark Taken aborted — no valid reminder ID found on:", med);
+      toast.error("Could not find a valid reminder ID for this item.");
+      return;
+    }
+
     try {
-      // Step 1: mark as taken
-      await api.post(`/reminder/${reminderId}/taken`);
+      // NOTE: if this POST — or any of the refetch GETs below — comes
+      // back 403 Forbidden, that's a backend JWT secret mismatch (the
+      // token this app sends doesn't validate against the server's
+      // current secret), not a frontend bug. No amount of refetch logic
+      // here will fix it; the backend/auth team needs to make sure
+      // JWT_SECRET is the same across the auth-issuing service and this
+      // API, and that the stored token hasn't expired/rotated.
+      const res = await api.post(`/reminder/${reminderId}/taken`);
+
+      // Some backends respond 200 OK with a success:false payload
+      // instead of an HTTP error status — handle that as a failure too.
+      if (res.data && res.data.success === false) {
+        console.log("Mark Taken API returned failure body:", res.data, "for reminderId:", reminderId);
+        toast.error(res.data.message || "Failed to mark as taken. Please try again.");
+        return; // leave pendingReminders/historyReminders exactly as-is
+      }
 
       showTakenToast(medicineName);
 
-      // Optimistic UI update: instantly remove this reminder from the
-      // "Upcoming Today" cards so the user sees immediate feedback.
-      setPendingReminders((prev) => prev.filter((m) => m.id !== reminderId));
+      // ---- Backend confirmed success: pull fresh truth, don't guess ----
+      // Refresh BOTH pending reminders AND history so the UI updates
+      // immediately (Upcoming → Taken).
+      const [pendingRes, historyRes] = await Promise.all([
+        api.get("/reminder/pending"),
+        api.get("/reminder/history"),
+      ]);
 
-      // Step 2: refetch history so the table reflects the real backend
-      // status (instead of guessing "taken" locally).
-      await refreshHistory();
+      setPendingReminders(
+        Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []
+      );
+      setHasLoadedPending(true);
+
+      const freshHistory = Array.isArray(historyRes.data)
+        ? historyRes.data
+        : historyRes.data?.reminders || historyRes.data?.data?.reminders || [];
+      setHistoryReminders(freshHistory);
+
+      // Let the parent (UserDash) refresh fetchMyMedicines() +
+      // fetchTodaySchedule() + fetchDashboardSummary() against its own
+      // state, so those screens reflect this change too.
+      onReminderActionComplete && onReminderActionComplete();
     } catch (error) {
-      console.log("Mark Taken API Error:", error.message);
-      toast.error(error.response?.data?.message || "Failed to mark as taken. Please try again.");
+      console.log("Mark Taken API Error:", error.message, error.response?.data);
+      console.log("Reminder ID that failed:", reminderId, "Full reminder object:", med);
+      console.log("Request URL that failed:", `/reminder/${reminderId}/taken`);
+
+      // Specific handling for "Reminder not found" — this means the ID
+      // we sent doesn't match any reminder on the backend. Show a clear
+      // error and DO NOT update the UI status.
+      const errorMsg = error.response?.data?.message || "";
+      if (errorMsg.toLowerCase().includes("reminder not found")) {
+        toast.error("Reminder not found. The reminder may have been deleted or the ID is incorrect.");
+      } else {
+        toast.error(errorMsg || "Failed to mark as taken. Please try again.");
+      }
+
+      // Do NOT touch pendingReminders/historyReminders — status stays
+      // exactly as it was before the click.
     }
   };
   // ================================================================
 
   // ================= API CALL: SNOOZE REMINDER =================
-  // Step 1: POST /reminder/{reminderId}/snooze -> snoozes on backend
-  // Step 2: GET  /reminder/history               -> refresh table with fresh data
-  // NOTE: No body needed — confirmed by backend dev. Just the URL.
-  const handleSnooze = async (reminderId, medicineName) => {
+  // Endpoint: POST /reminder/{reminderId}/snooze
+  // Same rules as handleMarkTaken above: correct ID resolution via
+  // resolveReminderId(), debug logging, no optimistic/hardcoded status,
+  // refetch fresh data only after backend confirms success,
+  // success:false treated as failure.
+  const handleSnooze = async (med) => {
+    const reminderId = resolveReminderId(med);
+    const medicineName = med?.medicineName;
+
+    console.log("Reminder Object:", med);
+    console.log("Resolved Reminder ID:", reminderId);
+    console.log("Request URL:", `/reminder/${reminderId}/snooze`);
+
+    if (reminderId == null) {
+      console.log("Snooze aborted — no valid reminder ID found on:", med);
+      toast.error("Could not find a valid reminder ID for this item.");
+      return;
+    }
+
     try {
-      // Step 1: snooze
-      await api.post(`/reminder/${reminderId}/snooze`);
+      const res = await api.post(`/reminder/${reminderId}/snooze`);
+
+      if (res.data && res.data.success === false) {
+        console.log("Snooze API returned failure body:", res.data, "for reminderId:", reminderId);
+        toast.error(res.data.message || "Failed to snooze reminder. Please try again.");
+        return; // leave pendingReminders/historyReminders exactly as-is
+      }
 
       showSnoozeToast(medicineName, 15);
 
-      // Step 2: refetch history so the table reflects the real backend
-      // status (instead of guessing "snoozed" locally).
-      await refreshHistory();
+      const [pendingRes, historyRes] = await Promise.all([
+        api.get("/reminder/pending"),
+        api.get("/reminder/history"),
+      ]);
+
+      setPendingReminders(
+        Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []
+      );
+      setHasLoadedPending(true);
+
+      const freshHistory = Array.isArray(historyRes.data)
+        ? historyRes.data
+        : historyRes.data?.reminders || historyRes.data?.data?.reminders || [];
+      setHistoryReminders(freshHistory);
+
+      onReminderActionComplete && onReminderActionComplete();
     } catch (error) {
-      console.log("Snooze API Error:", error.message);
-      toast.error(error.response?.data?.message || "Failed to snooze reminder. Please try again.");
+      console.log("Snooze API Error:", error.message, error.response?.data);
+      console.log("Reminder ID that failed:", reminderId, "Full reminder object:", med);
+      console.log("Request URL that failed:", `/reminder/${reminderId}/snooze`);
+
+      const errorMsg = error.response?.data?.message || "";
+      if (errorMsg.toLowerCase().includes("reminder not found")) {
+        toast.error("Reminder not found. The reminder may have been deleted or the ID is incorrect.");
+      } else {
+        toast.error(errorMsg || "Failed to snooze reminder. Please try again.");
+      }
     }
   };
   // ================================================================
@@ -271,108 +411,113 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
             <p>Loading reminders...</p>
           </div>
         </div>
-      ) : displayPending.length === 0 ? (
-        <div className="rem-card">
-          <div className="rem-empty">
-            <div className="rem-illustration">
-              <svg width="300" height="260" viewBox="0 0 300 260" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Reminder illustration">
-                <rect x="80" y="20" width="140" height="200" rx="16" fill="#DFF6F4" stroke="#0F766E" strokeWidth="3"/>
-                <rect x="110" y="8" width="80" height="24" rx="8" fill="#0F766E"/>
-                <rect x="120" y="16" width="60" height="8" rx="4" fill="#DFF6F4"/>
-                <rect x="130" y="60" width="40" height="55" rx="6" fill="#0F766E" opacity=".85"/>
-                <rect x="135" y="52" width="30" height="14" rx="4" fill="#115E59"/>
-                <circle cx="150" cy="80" r="5" fill="#DFF6F4"/>
-                <circle cx="150" cy="95" r="5" fill="#DFF6F4"/>
-                <ellipse cx="185" cy="120" rx="18" ry="10" fill="#0F766E" transform="rotate(-30 185 120)"/>
-                <ellipse cx="115" cy="130" rx="14" ry="8" fill="#DFF6F4" stroke="#0F766E" strokeWidth="1.5"/>
-                <rect x="100" y="150" width="100" height="55" rx="8" fill="#fff" stroke="#0F766E" strokeWidth="1.5" strokeDasharray="4 3"/>
-                <line x1="115" y1="165" x2="170" y2="165" stroke="#0F766E" strokeWidth="2" strokeLinecap="round"/>
-                <line x1="115" y1="178" x2="155" y2="178" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" opacity=".6"/>
-                <line x1="115" y1="191" x2="140" y2="191" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" opacity=".4"/>
-                <circle cx="220" cy="170" r="20" fill="#DFF6F4"/>
-                <path d="M212 170 L218 177 L228 164" stroke="#0F766E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="60" cy="50" r="4" fill="#DFF6F4"/>
-                <circle cx="240" cy="40" r="3" fill="#DFF6F4"/>
-                <circle cx="55" cy="190" r="3" fill="#DFF6F4"/>
-                <circle cx="245" cy="200" r="4" fill="#DFF6F4"/>
-              </svg>
-            </div>
-            <h2 className="rem-empty-heading">No Reminders Scheduled Yet</h2>
-            <p className="rem-empty-desc">
-              You haven't added any medicines or set any reminder times.
-              <br />
-              Add your medicines and schedule times to stay on track and never miss a dose.
-            </p>
-            <button className="rem-add-btn" onClick={() => onAddMedicine && onAddMedicine()}>
-              <Plus size={24} />
-              Add Medicine
-            </button>
-            <div className="rem-banner">
-              <div className="rem-banner-icon"><Lightbulb size={24} /></div>
-              <div className="rem-banner-text">
-                <h3>Stay on track, every day!</h3>
-                <p>Set your reminders and we'll help you never miss a dose.</p>
-              </div>
-              <div className="rem-banner-decoration">
-                <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 40 Q30 10 60 30 Q75 40 70 55" stroke="#0F766E" strokeWidth="2" strokeDasharray="4 3" opacity=".25" fill="none"/>
-                  <g transform="translate(65,50) rotate(30)"><path d="M0 0 L12-4 L10 4 Z" fill="#0F766E" opacity=".25"/></g>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
       ) : (
-        <div className="rem-content">
-          <div className="rem-section-header">
-            <span className="rem-section-title">UPCOMING TODAY</span>
-          </div>
-
-          <div className="rem-cards-grid">
-            {displayPending.map((med) => (
-              <div key={med.id} className="rem-card-item">
-                <div className="rem-card-top-row">
-                  <div className="rem-time-badge">
-                    <Clock size={16} />
-                    <span>{convertTo12Hour(med.timing)}</span>
-                  </div>
-                  <span className="rem-next-dose-label">NEXT DOSE</span>
+        <>
+          {/* ============ UPCOMING TODAY (own empty state) ============ */}
+          {displayPending.length === 0 ? (
+            <div className="rem-card">
+              <div className="rem-empty">
+                <div className="rem-illustration">
+                  <svg width="300" height="260" viewBox="0 0 300 260" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Reminder illustration">
+                    <rect x="80" y="20" width="140" height="200" rx="16" fill="#DFF6F4" stroke="#0F766E" strokeWidth="3"/>
+                    <rect x="110" y="8" width="80" height="24" rx="8" fill="#0F766E"/>
+                    <rect x="120" y="16" width="60" height="8" rx="4" fill="#DFF6F4"/>
+                    <rect x="130" y="60" width="40" height="55" rx="6" fill="#0F766E" opacity=".85"/>
+                    <rect x="135" y="52" width="30" height="14" rx="4" fill="#115E59"/>
+                    <circle cx="150" cy="80" r="5" fill="#DFF6F4"/>
+                    <circle cx="150" cy="95" r="5" fill="#DFF6F4"/>
+                    <ellipse cx="185" cy="120" rx="18" ry="10" fill="#0F766E" transform="rotate(-30 185 120)"/>
+                    <ellipse cx="115" cy="130" rx="14" ry="8" fill="#DFF6F4" stroke="#0F766E" strokeWidth="1.5"/>
+                    <rect x="100" y="150" width="100" height="55" rx="8" fill="#fff" stroke="#0F766E" strokeWidth="1.5" strokeDasharray="4 3"/>
+                    <line x1="115" y1="165" x2="170" y2="165" stroke="#0F766E" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="115" y1="178" x2="155" y2="178" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" opacity=".6"/>
+                    <line x1="115" y1="191" x2="140" y2="191" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" opacity=".4"/>
+                    <circle cx="220" cy="170" r="20" fill="#DFF6F4"/>
+                    <path d="M212 170 L218 177 L228 164" stroke="#0F766E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="60" cy="50" r="4" fill="#DFF6F4"/>
+                    <circle cx="240" cy="40" r="3" fill="#DFF6F4"/>
+                    <circle cx="55" cy="190" r="3" fill="#DFF6F4"/>
+                    <circle cx="245" cy="200" r="4" fill="#DFF6F4"/>
+                  </svg>
                 </div>
-                <div className="rem-card-middle">
-                  <div className="rem-pill-icon-wrap">
-                    <Pill size={28} />
+                <h2 className="rem-empty-heading">No Reminders Scheduled Yet</h2>
+                <p className="rem-empty-desc">
+                  You haven't added any medicines or set any reminder times.
+                  <br />
+                  Add your medicines and schedule times to stay on track and never miss a dose.
+                </p>
+                <button className="rem-add-btn" onClick={() => onAddMedicine && onAddMedicine()}>
+                  <Plus size={24} />
+                  Add Medicine
+                </button>
+                <div className="rem-banner">
+                  <div className="rem-banner-icon"><Lightbulb size={24} /></div>
+                  <div className="rem-banner-text">
+                    <h3>Stay on track, every day!</h3>
+                    <p>Set your reminders and we'll help you never miss a dose.</p>
                   </div>
-                  <div className="rem-card-info">
-                    <div className="rem-card-name">{med.medicineName}</div>
-                    <div className="rem-card-dose">{med.dosage}</div>
+                  <div className="rem-banner-decoration">
+                    <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 40 Q30 10 60 30 Q75 40 70 55" stroke="#0F766E" strokeWidth="2" strokeDasharray="4 3" opacity=".25" fill="none"/>
+                      <g transform="translate(65,50) rotate(30)"><path d="M0 0 L12-4 L10 4 Z" fill="#0F766E" opacity=".25"/></g>
+                    </svg>
                   </div>
-                </div>
-                <div className="rem-card-date-row">
-                  <Calendar size={16} />
-                  <span>{dateStr}</span>
-                </div>
-                <div className="rem-card-actions-bar">
-                  <button
-                    className="rem-snooze-btn"
-                    type="button"
-                    onClick={() => handleSnooze(med.id, med.medicineName)}
-                  >
-                    <Clock size={16} />
-                    Snooze
-                  </button>
-                  <button
-                    className="rem-taken-btn"
-                    type="button"
-                    onClick={() => handleMarkTaken(med.id, med.medicineName)}
-                  >
-                    ✓ Taken
-                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="rem-content">
+              <div className="rem-section-header">
+                <span className="rem-section-title">UPCOMING TODAY</span>
+              </div>
 
+              <div className="rem-cards-grid">
+                {displayPending.map((med) => (
+                  <div key={med.reminderId ?? med.id} className="rem-card-item">
+                    <div className="rem-card-top-row">
+                      <div className="rem-time-badge">
+                        <Clock size={16} />
+                        <span>{convertTo12Hour(med.timing)}</span>
+                      </div>
+                      <span className="rem-next-dose-label">NEXT DOSE</span>
+                    </div>
+                    <div className="rem-card-middle">
+                      <div className="rem-pill-icon-wrap">
+                        <Pill size={28} />
+                      </div>
+                      <div className="rem-card-info">
+                        <div className="rem-card-name">{med.medicineName}</div>
+                        <div className="rem-card-dose">{med.dosage}</div>
+                      </div>
+                    </div>
+                    <div className="rem-card-date-row">
+                      <Calendar size={16} />
+                      <span>{dateStr}</span>
+                    </div>
+                    <div className="rem-card-actions-bar">
+                      <button
+                        className="rem-snooze-btn"
+                        type="button"
+                        onClick={() => handleSnooze(med)}
+                      >
+                        <Clock size={16} />
+                        Snooze
+                      </button>
+                      <button
+                        className="rem-taken-btn"
+                        type="button"
+                        onClick={() => handleMarkTaken(med)}
+                      >
+                        ✓ Taken
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
+          {/* ============ REMINDER HISTORY (always rendered, independent of pending) ============ */}
           <div className="rem-history-card">
             <div className="rem-history-header">
               <h3>Reminder History</h3>
@@ -391,7 +536,7 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
 
               {/* Data Rows */}
               {displayHistory.map((med) => (
-                <div key={med.id} className="rem-hl-row">
+                <div key={med.reminderId ?? med.id} className="rem-hl-row">
                   <div className="rem-hl-col rem-hl-col-name">
                     <span className="rem-hl-label">Medicine Name</span>
                     <span className="rem-hl-value rem-hl-value-name">{med.medicineName}</span>
@@ -429,7 +574,7 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
                       className="rem-delete-btn"
                       type="button"
                       aria-label="Delete reminder"
-                      onClick={() => onDeleteReminder && onDeleteReminder(med.id)}
+                      onClick={() => onDeleteReminder && onDeleteReminder(med.reminderId ?? med.id)}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -462,7 +607,7 @@ const UserRem = ({ medicines = [], onAddMedicine, onDeleteReminder }) => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

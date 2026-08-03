@@ -20,7 +20,7 @@ import "./UserManage.css";
 
 const ITEMS_PER_PAGE = 3;
 
-const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine }) => {
+const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine, loading }) => {
   const [showAddMedicineModal, setShowAddMedicineModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,16 +136,23 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
     return pages;
   };
 
+  // ===== FIX: safe default is "upcoming", not "taken" =====
+  // Previously this defaulted to "taken" whenever status was missing,
+  // null, empty, or any unexpected value — which made brand-new
+  // medicines (with no status yet) show up as already "Taken".
+  // Also normalizes case so "Taken" / "TAKEN" / "taken" all match.
   const getStatusBadgeClass = (status) => {
-    if (status === "missed") return "missed";
-    if (status === "upcoming") return "upcoming";
-    return "taken";
+    const normalized = (status || "").toString().trim().toLowerCase();
+    if (normalized === "missed") return "missed";
+    if (normalized === "taken") return "taken";
+    return "upcoming";
   };
 
   const getStatusIcon = (status) => {
-    if (status === "missed") return <><XCircle size={14} /> Missed</>;
-    if (status === "upcoming") return <><CalendarClock size={14} /> Upcoming</>;
-    return <><CheckCircle2 size={14} /> Taken</>;
+    const normalized = (status || "").toString().trim().toLowerCase();
+    if (normalized === "missed") return <><XCircle size={14} /> Missed</>;
+    if (normalized === "taken") return <><CheckCircle2 size={14} /> Taken</>;
+    return <><CalendarClock size={14} /> Upcoming</>;
   };
 
   return (
@@ -172,7 +179,12 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
           </div>
         </div>
 
-        {medicines && medicines.length === 0 ? (
+        {loading ? (
+          <div className="empty-card">
+            <Pill size={60} />
+            <h4>Loading your medicines...</h4>
+          </div>
+        ) : medicines && medicines.length === 0 ? (
           <div className="empty-card">
             <Pill size={60} />
             <h4>No medicine added yet</h4>

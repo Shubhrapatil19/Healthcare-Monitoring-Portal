@@ -75,24 +75,38 @@ const UserDash = ({ onLogout }) => {
   while (calendarDays.length % 7 !== 0) {
     calendarDays.push("");
   }
-  const [medicines, setMedicines] = useState(() => {
+  // CRITICAL FIX: Start with empty arrays — never initialize from
+  // localStorage. Stale cached data contains old IDs that no longer
+  // exist on the backend. Only real backend data should be shown.
+  const [medicines, setMedicines] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
+
+  // CRITICAL FIX: Clear stale localStorage cache on mount so old
+  // reminder/medicine IDs that no longer exist on the backend are
+  // never used again.
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem("userMedicines");
-      return saved ? JSON.parse(saved) : [];
+      localStorage.removeItem("userMedicines");
+      localStorage.removeItem("userStockItems");
     } catch {
-      return [];
+      // ignore
     }
-  });
-  const [stockItems, setStockItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem("userStockItems");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  }, []);
   const [showProfile, setShowProfile] = useState(false);
   const [showAddStockModal, setShowAddStockModal] = useState(false);
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [myMedicines, setMyMedicines] = useState([]);
+  const [myMedicinesLoading, setMyMedicinesLoading] = useState(false);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [dashboardSummary, setDashboardSummary] = useState({
+    todayMedicines: 0,
+    taken: 0,
+    missed: 0,
+    lowStock: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const currentUserName = useMemo(() => {
     try {
@@ -179,48 +193,184 @@ const UserDash = ({ onLogout }) => {
     localStorage.setItem("userStockItems", JSON.stringify(stockItems));
   }, [stockItems]);
 
-  // Fetch medicines from backend on mount
-  useEffect(() => {
-    const fetchMedicines = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        // Only fetch if localStorage is empty (fresh load)
-        const localData = localStorage.getItem("userMedicines");
-        if (localData && JSON.parse(localData).length > 0) return;
+  // ================= REUSABLE FETCH FUNCTIONS =================
+  // Pulled out of useEffect bodies so they can be called both on mount
+  // AND again right after an add/update action (e.g. after adding a
+  // medicine, so "Today's Schedule" / "My Medicine" / summary cards
+  // reflect the new data immediately instead of staying stale until a
+  // manual page refresh).
 
-        const response = await api.get("/medicine");
-        if (response.data?.medicines && Array.isArray(response.data.medicines)) {
-          setMedicines(response.data.medicines);
-        } else if (response.data && Array.isArray(response.data)) {
-          setMedicines(response.data);
-        }
-      } catch {
-        // Silently fail - will show local data or empty state
+  const fetchMedicines = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const response = await api.get("/medicine");
+      if (response.data?.medicines && Array.isArray(response.data.medicines)) {
+        setMedicines(response.data.medicines);
+      } else if (response.data && Array.isArray(response.data)) {
+        setMedicines(response.data);
       }
-    };
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchMedicines API Error:', err.response?.status, err.response?.data || err.message);
+    }
+  };
+
+  const fetchStockItemsFromServer = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const response = await api.get("/medicine/stock");
+      if (response.data?.stockItems && Array.isArray(response.data.stockItems)) {
+        setStockItems(response.data.stockItems);
+      }
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchStockItemsFromServer API Error:', err.response?.status, err.response?.data || err.message);
+    }
+  };
+
+  // Endpoint: GET /medicine/today-schedule
+  const fetchTodaySchedule = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setScheduleLoading(true);
+      const response = await api.get("/medicine/today-schedule");
+      if (response.data && Array.isArray(response.data)) {
+        setTodaySchedule(response.data);
+      } else if (response.data?.schedules && Array.isArray(response.data.schedules)) {
+        setTodaySchedule(response.data.schedules);
+      } else if (response.data?.medicines && Array.isArray(response.data.medicines)) {
+        setTodaySchedule(response.data.medicines);
+      }
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchTodaySchedule API Error:', err.response?.status, err.response?.data || err.message);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  // Endpoint: GET /medicine/inventory
+  const fetchInventory = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setInventoryLoading(true);
+      const response = await api.get("/medicine/inventory");
+      if (response.data && Array.isArray(response.data)) {
+        setInventoryData(response.data);
+      } else if (response.data?.inventory && Array.isArray(response.data.inventory)) {
+        setInventoryData(response.data.inventory);
+      } else if (response.data?.items && Array.isArray(response.data.items)) {
+        setInventoryData(response.data.items);
+      }
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchInventory API Error:', err.response?.status, err.response?.data || err.message);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+  // Endpoint: GET /medicine/dashboard-summary
+  const fetchDashboardSummary = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setSummaryLoading(true);
+      const response = await api.get("/medicine/dashboard-summary");
+      if (response.data && typeof response.data === "object") {
+        setDashboardSummary((prev) => ({
+          ...prev,
+          ...response.data,
+        }));
+      }
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchDashboardSummary API Error:', err.response?.status, err.response?.data || err.message);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  // Endpoint: GET /medicine/my-medicines
+  const fetchMyMedicines = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setMyMedicinesLoading(true);
+      const response = await api.get("/medicine/my-medicines");
+      if (response.data && Array.isArray(response.data)) {
+        setMyMedicines(response.data);
+      } else if (response.data?.medicines && Array.isArray(response.data.medicines)) {
+        setMyMedicines(response.data.medicines);
+      }
+    } catch (err) {
+      // TEMP DEBUG
+      console.log('fetchMyMedicines API Error:', err.response?.status, err.response?.data || err.message);
+    } finally {
+      setMyMedicinesLoading(false);
+    }
+  };
+
+  // Called after a medicine is successfully added, to refresh every card
+  // on the Home dashboard that depends on medicine data.
+  const refreshAfterMedicineAdded = () => {
+    fetchTodaySchedule();
+    fetchMyMedicines();
+    fetchDashboardSummary();
+  };
+
+  // Called after stock is successfully added, to refresh the Inventory
+  // card and the low-stock count on the summary cards.
+  const refreshAfterStockAdded = () => {
+    fetchInventory();
+    fetchDashboardSummary();
+  };
+  // ================================================================
+
+  // CRITICAL FIX: Always fetch medicines from backend on mount — never
+  // skip based on localStorage. This ensures only real backend data is
+  // shown, not stale cached data with old IDs.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMedicines();
   }, []);
 
-  // Fetch stock items from backend on mount to persist across refresh
+  // CRITICAL FIX: Always fetch stock items from backend on mount.
   useEffect(() => {
-    const fetchStockItems = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        // Only fetch if localStorage is empty (fresh load)
-        const localData = localStorage.getItem("userStockItems");
-        if (localData && JSON.parse(localData).length > 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchStockItemsFromServer();
+  }, []);
 
-        const response = await api.get("/medicine/stock");
-        if (response.data?.stockItems && Array.isArray(response.data.stockItems)) {
-          setStockItems(response.data.stockItems);
-        }
-      } catch {
-        // Silently fail - will show local data or empty state
-      }
-    };
-    fetchStockItems();
+  // Fetch today's schedule from backend
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTodaySchedule();
+  }, []);
+
+  // Fetch inventory from backend
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchInventory();
+  }, []);
+
+  // Fetch dashboard summary from backend
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDashboardSummary();
+  }, []);
+
+  // Fetch my medicines from backend
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMyMedicines();
   }, []);
 
   const handleCloseMedicineModal = (medicineData) => {
@@ -256,6 +406,12 @@ const UserDash = ({ onLogout }) => {
       } catch {
         // ignore
       }
+
+      // The medicine was already saved on the backend by AddMedicineModal
+      // (POST /medicine/add). Refresh the server-driven cards so the new
+      // medicine shows up in "Today's Schedule", "My Medicine", and the
+      // summary counters right away.
+      refreshAfterMedicineAdded();
     }
   };
 
@@ -263,6 +419,8 @@ const UserDash = ({ onLogout }) => {
   const handleAddStock = (savedStockItem) => {
     if (savedStockItem) {
       setStockItems((prev) => [...prev, savedStockItem]);
+      // Refresh the Inventory Overview card + summary counters.
+      refreshAfterStockAdded();
     }
     setShowAddStockModal(false);
   };
@@ -272,11 +430,13 @@ const UserDash = ({ onLogout }) => {
     setStockItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updatedData } : item))
     );
+    refreshAfterStockAdded();
   };
 
   // Delete stock — called by UserInvent after a successful DELETE /medicine/{id}
   const handleDeleteStock = (id) => {
     setStockItems((prev) => prev.filter((item) => item.id !== id));
+    refreshAfterStockAdded();
   };
 
   // Snooze reminder — add 10 minutes to the medicine timing
@@ -501,7 +661,11 @@ const UserDash = ({ onLogout }) => {
                 stockItems={stockItems}
               />
             ) : activeItem === "Reminders" ? (
-              <UserRem medicines={medicines} onAddMedicine={handleAddMedicine} onSnoozeReminder={handleSnoozeReminder} />
+              <UserRem
+                onAddMedicine={handleAddMedicine}
+                onSnoozeReminder={handleSnoozeReminder}
+                onReminderActionComplete={refreshAfterMedicineAdded}
+              />
             ) : showLogoutModal ? (
               <UserLogout
                 onCancel={() => setShowLogoutModal(false)}
@@ -521,7 +685,7 @@ const UserDash = ({ onLogout }) => {
                   <div className="stat-card">
                     <CalendarDays />
                     <div>
-                      <h1>0</h1>
+                      <h1>{summaryLoading ? "..." : dashboardSummary.todayMedicines}</h1>
                       <p>Today's Medicines</p>
                     </div>
                   </div>
@@ -529,7 +693,7 @@ const UserDash = ({ onLogout }) => {
                   <div className="stat-card">
                     <CircleCheck />
                     <div>
-                      <h1>0</h1>
+                      <h1>{summaryLoading ? "..." : dashboardSummary.taken}</h1>
                       <p>Taken</p>
                     </div>
                   </div>
@@ -537,7 +701,7 @@ const UserDash = ({ onLogout }) => {
                   <div className="stat-card">
                     <CircleX />
                     <div>
-                      <h1>0</h1>
+                      <h1>{summaryLoading ? "..." : dashboardSummary.missed}</h1>
                       <p>Missed</p>
                     </div>
                   </div>
@@ -545,7 +709,7 @@ const UserDash = ({ onLogout }) => {
                   <div className="stat-card">
                     <ArrowDownCircle />
                     <div>
-                      <h1>0</h1>
+                      <h1>{summaryLoading ? "..." : dashboardSummary.lowStock}</h1>
                       <p>Low Stock Alerts</p>
                     </div>
                   </div>
@@ -560,7 +724,12 @@ const UserDash = ({ onLogout }) => {
                     </div>
 
                     <div className="schedule-content">
-                      {medicines.length === 0 ? (
+                      {scheduleLoading ? (
+                        <div className="empty-card">
+                          <CalendarDays size={60} />
+                          <h4>Loading today's schedule...</h4>
+                        </div>
+                      ) : todaySchedule.length === 0 ? (
                         <div className="empty-card">
                           <CalendarDays size={60} />
                           <h4>No medicine scheduled for today</h4>
@@ -582,19 +751,21 @@ const UserDash = ({ onLogout }) => {
                             <span className="medicine-col medicine-frequency-col">Frequency</span>
                             <span className="medicine-col medicine-status-col">Status</span>
                           </div>
-                          {medicines.map((medicine) => (
-                            <div key={medicine.id} className="medicine-item">
+                          {todaySchedule.map((medicine, index) => (
+                            <div key={medicine.id || index} className="medicine-item">
                               <div className="medicine-info">
                                 <h5>{medicine.medicineName}</h5>
                               </div>
                               <div className="medicine-dosage-value">{medicine.dosage}</div>
                               <div className="medicine-time-value">
                                 <Clock size={14} />
-                                {medicine.timing}
+                                {medicine.timing || medicine.time}
                               </div>
                               <div className="medicine-frequency-value">{medicine.frequency}</div>
                               <div className="medicine-status">
-                                <span className="status-badge upcoming">Upcoming</span>
+                                <span className={`status-badge ${medicine.status || "upcoming"}`}>
+                                  {medicine.status ? medicine.status.charAt(0).toUpperCase() + medicine.status.slice(1) : "Upcoming"}
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -613,7 +784,12 @@ const UserDash = ({ onLogout }) => {
                       Inventory Overview
                     </div>
 
-                    {stockItems.length === 0 ? (
+                    {inventoryLoading ? (
+                      <div className="empty-card">
+                        <Package size={60} />
+                        <h4>Loading inventory...</h4>
+                      </div>
+                    ) : inventoryData.length === 0 ? (
                       <div className="empty-card">
                         <Package size={60} />
                         <h4>No inventory data available</h4>
@@ -634,8 +810,8 @@ const UserDash = ({ onLogout }) => {
                           <span>Min Stock</span>
                           <span>Expiry Date</span>
                         </div>
-                        {stockItems.map((item) => (
-                          <div key={item.id} className="stock-table-row">
+                        {inventoryData.map((item, index) => (
+                          <div key={item.id || index} className="stock-table-row">
                             <span className="stock-medicine-name">{item.medicineName}</span>
                             <span>{item.currentStock}</span>
                             <span>{item.minimumStock}</span>
@@ -656,7 +832,7 @@ const UserDash = ({ onLogout }) => {
 
                 {/* ================= ROW 2 ================= */}
                 <div className="card-row" ref={myMedicineRef}>
-                  <UserManage medicines={medicines} onAddMedicine={handleCloseMedicineModal} />
+                  <UserManage medicines={myMedicines} loading={myMedicinesLoading} onAddMedicine={handleCloseMedicineModal} />
 
                   <div className="dashboard-card calendar-card">
                     <div className="card-header">

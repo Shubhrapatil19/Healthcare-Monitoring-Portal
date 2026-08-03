@@ -15,7 +15,14 @@ const StatusBadge = ({ status }) => {
 };
 
 const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock }) => {
-  const rows = stockItems;
+  // Defensive guard: silently drop any malformed entries (e.g. missing
+  // medicineName) instead of letting a single bad item crash the whole
+  // page. This can happen if a non-item value (like a click event) ever
+  // gets appended to stockItems by mistake elsewhere in the app.
+  const rows = useMemo(
+    () => stockItems.filter((r) => r && typeof r.medicineName === "string"),
+    [stockItems]
+  );
 
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState({
@@ -193,9 +200,13 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
 
       {rows.length === 0 ? (
         <div className="inventory-empty">
-          <Package size={60} />
+          <div className="empty-icon-wrapper">
+            <Package size={60} />
+          </div>
           <h3>No stock items added yet</h3>
           <p>Click "Add Medicine" button to add your first stock item.</p>
+          <div className="corner-deco tl" />
+          <div className="corner-deco br" />
         </div>
       ) : (
         <div className="inventory-table-wrapper">
