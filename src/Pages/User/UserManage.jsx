@@ -33,6 +33,10 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
     timing: "",
     frequency: "",
   });
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    visible: false,
+    medicine: null,
+  });
 
   const filteredMedicines = useMemo(() => {
     if (!medicines) return [];
@@ -114,12 +118,18 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
   };
 
   const handleDeleteMedicine = (medicine) => {
-    const confirmDelete = window.confirm(
-      `Kya aap "${medicine.medicineName}" ko delete karna chahte hain?`
-    );
-    if (confirmDelete && onDeleteMedicine) {
-      onDeleteMedicine(medicine.id);
+    setDeleteConfirmation({ visible: true, medicine });
+  };
+
+  const confirmDeleteMedicine = () => {
+    if (deleteConfirmation.medicine && onDeleteMedicine) {
+      onDeleteMedicine(deleteConfirmation.medicine.id);
     }
+    setDeleteConfirmation({ visible: false, medicine: null });
+  };
+
+  const cancelDeleteMedicine = () => {
+    setDeleteConfirmation({ visible: false, medicine: null });
   };
 
   const getPageNumbers = () => {
@@ -295,7 +305,7 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
                           <div className="medicine-dosage-value">{medicine.dosage}</div>
                           <div className="medicine-time-value">
                             <Clock size={14} />
-                            {medicine.timing}
+                            {medicine.timing || medicine.time || "—"}
                           </div>
                           <div className="medicine-frequency-value">{medicine.frequency}</div>
                           <div className="medicine-status">
@@ -371,6 +381,25 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
           </div>
         )}
       </div>
+
+      {deleteConfirmation.visible && (
+        <div className="confirm-modal-overlay">
+          <div className="confirm-modal">
+            <h2>Confirm deletion</h2>
+            <p>
+              Are you sure you want to delete "{deleteConfirmation.medicine?.medicineName}"?
+            </p>
+            <div className="confirm-modal-actions">
+              <button className="confirm-btn cancel" onClick={cancelDeleteMedicine}>
+                Cancel
+              </button>
+              <button className="confirm-btn delete" onClick={confirmDeleteMedicine}>
+                Yes, delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

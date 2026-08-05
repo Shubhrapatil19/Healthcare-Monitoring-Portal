@@ -418,25 +418,73 @@
   cursor: not-allowed;
 }
 
-/* ===== GHOST BUTTON STYLE - ADD MORE MEDICINE ===== */
-.user-manage-card .medicine-list--my-medicine .add-more-btn {
-  padding: 14px 24px;
-  background: transparent !important;
-  border: 2px solid #0f766e !important;
-  border-radius: 14px !important;
-  color: #0f766e !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.03em !important;
-  cursor: pointer;
+/* ===== DELETE CONFIRMATION MODAL ===== */
+.user-manage-card .confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.user-manage-card .confirm-modal {
+  width: min(420px, calc(100% - 32px));
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.18);
+  padding: 28px 26px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.user-manage-card .confirm-modal h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: #111827;
+}
+
+.user-manage-card .confirm-modal p {
+  margin: 0 0 22px;
+  color: #475569;
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.user-manage-card .confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
   gap: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  box-shadow: none !important;
+}
+
+.user-manage-card .confirm-modal-actions .confirm-btn {
+  min-width: 108px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-manage-card .confirm-modal-actions .confirm-btn.cancel {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.user-manage-card .confirm-modal-actions .confirm-btn.cancel:hover {
+  background: #eef2ff;
+}
+
+.user-manage-card .confirm-modal-actions .confirm-btn.delete {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.user-manage-card .confirm-modal-actions .confirm-btn.delete:hover {
+  background: #b91c1c;
 }
 
 .user-manage-card .medicine-list--my-medicine .add-more-btn:hover {
@@ -521,6 +569,34 @@
   .user-manage-card .medicine-list--my-medicine .medicine-actions {
     justify-content: flex-start;
     margin-top: 6px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    width: 100%;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-info,
+  .user-manage-card .medicine-list--my-medicine .medicine-dosage-value,
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value,
+  .user-manage-card .medicine-list--my-medicine .medicine-frequency-value,
+  .user-manage-card .medicine-list--my-medicine .medicine-status,
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    width: 100%;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-status {
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-status::before {
+    content: "Status: ";
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 13px;
+    margin-right: 4px;
   }
 
   .user-manage-card .medicine-list--my-medicine .medicine-item.editing {

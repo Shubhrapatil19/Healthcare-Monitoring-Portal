@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import api from "../../api/axiosInstance";
+import toast from "react-hot-toast";
 import "./UserDash.css";
 
 import CompleteProfileModal from "../../Component/ComProfile";
@@ -60,12 +61,21 @@ const UserDash = ({ onLogout }) => {
   const todayDate = today.getDate();
   const todayMonth = today.getMonth();
   const todayYear = today.getFullYear();
-  const monthLabel = today.toLocaleString("en-US", {
+
+  // ===== CALENDAR STATE =====
+  // Displayed month/year (defaults to current month, navigable via arrows)
+  const [calendarMonth, setCalendarMonth] = useState(todayMonth);
+  const [calendarYear, setCalendarYear] = useState(todayYear);
+  // Reminder data fetched from GET /reminder/calendar?startDate=...&endDate=...
+  const [calendarData, setCalendarData] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
+  const monthLabel = new Date(calendarYear, calendarMonth, 1).toLocaleString("en-US", {
     month: "long",
     year: "numeric",
   });
-  const daysInMonth = new Date(todayYear, todayMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(todayYear, todayMonth, 1).getDay();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
 
   const calendarDays = [
     ...Array(firstDayOfMonth).fill(""),
@@ -75,6 +85,116 @@ const UserDash = ({ onLogout }) => {
   while (calendarDays.length % 7 !== 0) {
     calendarDays.push("");
   }
+
+  // ================= API CALL: GET REMINDER CALENDAR =================
+  // Endpoint: GET /reminder/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+  // Fetches reminders for the currently displayed month range.
+  const fetchCalendarData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setCalendarLoading(true);
+
+      // Build start/end dates for the displayed month (YYYY-MM-DD)
+      const startDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-01`;
+      const endDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(
+        daysInMonth
+      ).padStart(2, "0")}`;
+
+      const response = await api.get("/reminder/calendar", {
+        params: { startDate, endDate },
+      });
+
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.reminders || response.data?.data || [];
+      setCalendarData(data);
+    } catch (err) {
+      // TEMP DEBUG
+      console.log("fetchCalendarData API Error:", err.response?.status, err.response?.data || err.message);
+      setCalendarData([]);
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  // Fetch calendar data on mount
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCalendarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refetch when the displayed month/year changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCalendarData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarMonth, calendarYear]);
+
+  // Navigate to previous month
+  const handlePrevMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 0) {
+        setCalendarYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  };
+
+  // Navigate to next month
+  const handleNextMonth = () => {
+    setCalendarMonth((prev) => {
+      if (prev === 11) {
+        setCalendarYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  };
+
+  // Build a lookup map: "YYYY-MM-DD" -> reminder status(es) for that date
+  const calendarStatusMap = useMemo(() => {
+    const map = {};
+    calendarData.forEach((item) => {
+      const dateStr = item.date || item.reminderDate || item.scheduledDate;
+      if (!dateStr) return;
+      // Normalize to YYYY-MM-DD
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+      if (!map[key]) map[key] = [];
+      map[key].push(item.status || "upcoming");
+    });
+    return map;
+  }, [calendarData]);
+
+  // Determine the status class for a given calendar date
+  const getCalendarDateClass = (day) => {
+    const dateValue = Number(day);
+    if (!dateValue) return "";
+
+    const key = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(
+      dateValue
+    ).padStart(2, "0")}`;
+
+    const statuses = calendarStatusMap[key];
+    const isToday = dateValue === todayDate && calendarMonth === todayMonth && calendarYear === todayYear;
+
+    let statusClass = "";
+    if (statuses && statuses.length > 0) {
+      if (statuses.includes("missed")) statusClass = " missed";
+      else if (statuses.includes("taken")) statusClass = " taken";
+      else if (statuses.includes("snoozed")) statusClass = " snoozed";
+      else statusClass = " upcoming";
+    }
+
+    return `${isToday ? " today" : ""}${statusClass}`;
+  };
   // CRITICAL FIX: Start with empty arrays — never initialize from
   // localStorage. Stale cached data contains old IDs that no longer
   // exist on the backend. Only real backend data should be shown.
@@ -204,7 +324,7 @@ const UserDash = ({ onLogout }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const response = await api.get("/medicine");
+      const response = await api.get("/medicine/my-medicines");
       if (response.data?.medicines && Array.isArray(response.data.medicines)) {
         setMedicines(response.data.medicines);
       } else if (response.data && Array.isArray(response.data)) {
@@ -220,7 +340,7 @@ const UserDash = ({ onLogout }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const response = await api.get("/medicine/stock");
+      const response = await api.get("/medicine/inventory");
       if (response.data?.stockItems && Array.isArray(response.data.stockItems)) {
         setStockItems(response.data.stockItems);
       }
@@ -335,6 +455,91 @@ const UserDash = ({ onLogout }) => {
   };
   // ================================================================
 
+  // ================= MEDICINE EDIT (My Medicine card) =================
+  // Endpoint: PUT /medicine/{id}
+  // Updates the medicine on the backend, then refreshes both the local
+  // medicine lists and the server-driven dashboard cards.
+  const handleEditMedicine = async (updatedMedicine) => {
+    if (!updatedMedicine?.id) return;
+
+    // Backend expects frequency in backend format (e.g. "ONCE_DAILY").
+    // Map display labels back, and pass through already-backend values.
+    const backendFrequency = (freq) => {
+      const map = {
+        "Once a day": "ONCE_DAILY",
+        "Twice a day": "TWICE_DAILY",
+        "Three times a day": "THRICE_DAILY",
+      };
+      if (freq && /^[A-Z_]+$/.test(freq)) return freq;
+      return map[freq] || freq;
+    };
+
+    const timing = updatedMedicine.timing || updatedMedicine.time || "";
+    const payload = {
+      medicineName: updatedMedicine.medicineName,
+      dosage: updatedMedicine.dosage,
+      startTiming: timing ? `${timing}:00` : "",
+      frequency: backendFrequency(updatedMedicine.frequency),
+    };
+
+    try {
+      const response = await api.put(`/medicine/${updatedMedicine.id}`, payload);
+      const saved = response.data || updatedMedicine;
+
+      // Update both medicine lists with the saved/updated item
+      setMyMedicines((prev) =>
+        prev.map((med) => (med.id === updatedMedicine.id ? { ...med, ...saved } : med))
+      );
+      setMedicines((prev) =>
+        prev.map((med) => (med.id === updatedMedicine.id ? { ...med, ...saved } : med))
+      );
+
+      toast.success("Medicine updated successfully!", { duration: 3000 });
+
+      // Refresh server-driven cards (schedule, my-medicines, summary)
+      refreshAfterMedicineAdded();
+      refreshAfterStockAdded();
+    } catch (err) {
+      // TEMP DEBUG
+      console.log("Edit Medicine API Error:", err.response?.status, err.response?.data || err.message);
+      toast.error(
+        err.response?.data?.message || "Failed to update medicine. Please try again.",
+        { duration: 4000 }
+      );
+    }
+  };
+
+  // ================= MEDICINE DELETE (My Medicine card) =================
+  // Endpoint: DELETE /medicine/{id}
+  // Deletes the medicine on the backend, removes it from the local lists,
+  // and refreshes the server-driven dashboard cards.
+  const handleDeleteMedicine = async (id) => {
+    if (!id) return;
+
+    try {
+      await api.delete(`/medicine/${id}`);
+
+      // Remove from medicine + stock lists
+      setMyMedicines((prev) => prev.filter((med) => med.id !== id));
+      setMedicines((prev) => prev.filter((med) => med.id !== id));
+      setStockItems((prev) => prev.filter((item) => item.id !== id));
+
+      toast.success("Medicine deleted successfully!", { duration: 3000 });
+
+      // Refresh server-driven cards (schedule, my-medicines, inventory, summary)
+      refreshAfterMedicineAdded();
+      refreshAfterStockAdded();
+    } catch (err) {
+      // TEMP DEBUG
+      console.log("Delete Medicine API Error:", err.response?.status, err.response?.data || err.message);
+      toast.error(
+        err.response?.data?.message || "Failed to delete medicine. Please try again.",
+        { duration: 4000 }
+      );
+    }
+  };
+  // ================================================================
+
   // CRITICAL FIX: Always fetch medicines from backend on mount — never
   // skip based on localStorage. This ensures only real backend data is
   // shown, not stale cached data with old IDs.
@@ -428,14 +633,16 @@ const UserDash = ({ onLogout }) => {
   // Update stock — called by UserInvent after a successful PUT /medicine/{id}/stock
   const handleUpdateStock = (id, updatedData) => {
     setStockItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updatedData } : item))
+      prev.map((item) =>
+        String(item.id) === String(id) ? { ...item, ...updatedData } : item
+      )
     );
     refreshAfterStockAdded();
   };
 
   // Delete stock — called by UserInvent after a successful DELETE /medicine/{id}
   const handleDeleteStock = (id) => {
-    setStockItems((prev) => prev.filter((item) => item.id !== id));
+    setStockItems((prev) => prev.filter((item) => String(item.id) !== String(id)));
     refreshAfterStockAdded();
   };
 
@@ -655,11 +862,7 @@ const UserDash = ({ onLogout }) => {
             ) : activeItem === "Reports" ? (
               <UserReport onViewReport={() => setShowViewReport(true)} />
             ) : activeItem === "Alerts" ? (
-              <UserAlert
-                onAddMedicine={handleAddMedicine}
-                medicines={medicines}
-                stockItems={stockItems}
-              />
+              <UserAlert onAddMedicine={handleAddMedicine} />
             ) : activeItem === "Reminders" ? (
               <UserRem
                 onAddMedicine={handleAddMedicine}
@@ -832,7 +1035,13 @@ const UserDash = ({ onLogout }) => {
 
                 {/* ================= ROW 2 ================= */}
                 <div className="card-row" ref={myMedicineRef}>
-                  <UserManage medicines={myMedicines} loading={myMedicinesLoading} onAddMedicine={handleCloseMedicineModal} />
+                  <UserManage
+                    medicines={myMedicines}
+                    loading={myMedicinesLoading}
+                    onAddMedicine={handleCloseMedicineModal}
+                    onEditMedicine={handleEditMedicine}
+                    onDeleteMedicine={handleDeleteMedicine}
+                  />
 
                   <div className="dashboard-card calendar-card">
                     <div className="card-header">
@@ -842,7 +1051,7 @@ const UserDash = ({ onLogout }) => {
 
                     <div className="calendar-container">
                       <div className="calendar-header">
-                        <button className="calendar-nav-btn">
+                        <button className="calendar-nav-btn" onClick={handlePrevMonth}>
                           <svg
                             width="20"
                             height="20"
@@ -855,7 +1064,7 @@ const UserDash = ({ onLogout }) => {
                           </svg>
                         </button>
                         <h3>{monthLabel}</h3>
-                        <button className="calendar-nav-btn">
+                        <button className="calendar-nav-btn" onClick={handleNextMonth}>
                           <svg
                             width="20"
                             height="20"
@@ -869,25 +1078,24 @@ const UserDash = ({ onLogout }) => {
                         </button>
                       </div>
 
+                      {calendarLoading && (
+                        <div className="calendar-loading">Loading...</div>
+                      )}
+
                       <div className="calendar-grid">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                           <div key={day} className="calendar-day-header">
                             {day}
                           </div>
                         ))}
-                        {calendarDays.map((d, i) => {
-                          const dateValue = Number(d);
-                          const isToday = d && dateValue === todayDate;
-
-                          return (
-                            <div
-                              key={i}
-                              className={`calendar-date${isToday ? " today" : ""}`}
-                            >
-                              {d}
-                            </div>
-                          );
-                        })}
+                        {calendarDays.map((d, i) => (
+                          <div
+                            key={i}
+                            className={`calendar-date${getCalendarDateClass(d)}`}
+                          >
+                            {d}
+                          </div>
+                        ))}
                       </div>
 
                       <div className="calendar-footer">

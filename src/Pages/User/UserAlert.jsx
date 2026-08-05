@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
+import api from "../../api/axiosInstance";
 import "./UserAlert.css";
 
 import {
@@ -15,128 +17,161 @@ import {
   Bell,
   Plus,
   Megaphone,
+  Loader2,
 } from "lucide-react";
 
-const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
-  // CRITICAL FIX: Only show real backend data. The `medicines` and
-  // `stockItems` props come from localStorage which may contain stale
-  // data. We filter to only show alerts derived from real data.
-  const realMedicines = Array.isArray(medicines) ? medicines : [];
-  const realStockItems = Array.isArray(stockItems) ? stockItems : [];
+// ===== ALERTS API CONFIG =====
+// Maps UI tab ids to the backend alert type query values.
+const API_TYPE_MAP = {
+  "low-stock": "LOW_STOCK",
+  "out-of-stock": "OUT_OF_STOCK",
+  "missed-dose": "MISSED_DOSE",
+  "emergency": "EMERGENCY",
+};
+
+// UI label for each alert type.
+const UI_LABEL_MAP = {
+  "low-stock": "Low Stock",
+  "out-of-stock": "Out of Stock",
+  "missed-dose": "Missed Dose",
+  "emergency": "Emergency",
+};
+
+// Safely extracts an array of alerts from various backend response shapes.
+const extractAlertList = (responseData) => {
+  if (!responseData) return [];
+  if (Array.isArray(responseData)) return responseData;
+  if (Array.isArray(responseData.alerts)) return responseData.alerts;
+  if (Array.isArray(responseData.data)) return responseData.data;
+  if (Array.isArray(responseData.items)) return responseData.items;
+  return [];
+};
+
+// Formats a backend date/time value (ISO string or already formatted) into
+// the { date, time } display shape used by the UI.
+const formatAlertDateTime = (value) => {
+  if (!value) {
+    return {
+      date: new Date().toLocaleDateString("en-GB"),
+      time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    };
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    return { date: String(value), time: "" };
+  }
+  return {
+    date: d.toLocaleDateString("en-GB"),
+    time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+  };
+};
+
+// Maps a backend alert object into the UI alert shape used by the table,
+// detail card, and emergency card.
+const normalizeAlert = (a) => {
+  if (!a) return null;
+
+  const rawType = String(a?.type || a?.alertType || "").toUpperCase();
+  let type = "low-stock";
+  if (rawType === "OUT_OF_STOCK") type = "out-of-stock";
+  else if (rawType === "MISSED_DOSE") type = "missed-dose";
+  else if (rawType === "EMERGENCY") type = "emergency";
+
+  const rawStatus = a?.status ?? a?.isRead;
+  let status = "unread";
+  if (
+    rawStatus === "READ" ||
+    rawStatus === "read" ||
+    rawStatus === true ||
+    rawStatus === "true"
+  ) {
+    status = "read";
+  }
+
+  const { date, time } = formatAlertDateTime(
+    a?.createdAt || a?.timestamp || a?.alertDate
+  );
+
+  return {
+    id: a?.id ?? a?.alertId,
+    type,
+    label: UI_LABEL_MAP[type],
+    medicineName: a?.medicineName || a?.medicine || "Alert",
+    message: a?.message || a?.description || "",
+    currentStock: a?.currentStock ?? a?.current_stock ?? a?.stock,
+    minimumStock: a?.minimumStock ?? a?.minimum_stock ?? a?.minStock,
+    expiryDate: a?.expiryDate,
+    dosage: a?.dosage,
+    timing: a?.timing,
+    sentTo: a?.sentTo || a?.sent_to,
+    date,
+    time,
+    status,
+  };
+};
+
+const UserAlert = ({ onAddMedicine }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const itemsPerPage = 4;
 
-  const allAlerts = useMemo(() => {
-    const alerts = [];
+  // ===== API STATE =====
+  const [alerts, setAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [emergencyAlerts, setEmergencyAlerts] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [triggering, setTriggering] = useState(false);
 
-    // Low Stock / Out of Stock Alerts
-    realStockItems.forEach((item) => {
-      const current = Number(item.currentStock) || 0;
-      const minimum = Number(item.minimumStock) || 0;
+  // Endpoint: GET /api/alerts (supports ?type=LOW_STOCK | OUT_OF_STOCK |
+  // MISSED_DOSE | EMERGENCY). Refetches whenever the active tab changes so
+  // the type filter is applied on the server.
+  const fetchAlerts = useCallback(async (tab) => {
+    setAlertsLoading(true);
+    try {
+      const params = {};
+      const apiType = API_TYPE_MAP[tab];
+      if (apiType) params.type = apiType;
 
-      if (current === 0) {
-        alerts.push({
-          id: `oos-${item.id}`,
-          type: "out-of-stock",
-          severity: "critical",
-          label: "Out of Stock",
-          medicineName: item.medicineName,
-          message: `Current Stock : ${current} Tablets`,
-          currentStock: current,
-          minimumStock: minimum,
-          expiryDate: item.expiryDate,
-          date: new Date().toLocaleDateString("en-GB"),
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          status: "unread",
-        });
-      } else if (current <= minimum) {
-        alerts.push({
-          id: `stock-${item.id}`,
-          type: "low-stock",
-          severity: "warning",
-          label: "Low Stock",
-          medicineName: item.medicineName,
-          message: `Current Stock : ${current} Tablets`,
-          currentStock: current,
-          minimumStock: minimum,
-          expiryDate: item.expiryDate,
-          date: new Date().toLocaleDateString("en-GB"),
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          status: "unread",
-        });
-      }
-    });
-
-    // Missed Dose Alerts
-    realMedicines.forEach((med) => {
-      if (med.timing) {
-        const now = new Date();
-        const [hours, minutes] = med.timing.split(":").map(Number);
-        const medTime = new Date();
-        medTime.setHours(hours, minutes, 0, 0);
-        const diffMins = Math.floor((now - medTime) / (1000 * 60));
-
-        if (diffMins > 30 && diffMins < 1440) {
-          alerts.push({
-            id: `missed-${med.id}`,
-            type: "missed-dose",
-            severity: "info",
-            label: "Missed Dose",
-            medicineName: med.medicineName,
-            message: `Missed at : ${med.timing}`,
-            dosage: med.dosage,
-            timing: med.timing,
-            date: new Date().toLocaleDateString("en-GB"),
-            time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-            status: "unread",
-          });
-        }
-      }
-    });
-
-    // Emergency alerts (simulated - if stock is 0 for critical items)
-    realStockItems.forEach((item) => {
-      const current = Number(item.currentStock) || 0;
-      if (current === 0) {
-        alerts.push({
-          id: `emergency-${item.id}`,
-          type: "emergency",
-          severity: "emergency",
-          label: "Emergency",
-          medicineName: "Emergency Alert",
-          message: "Sent to Family Members",
-          date: new Date().toLocaleDateString("en-GB"),
-          time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        });
-      }
-    });
-
-    return alerts;
-  }, [realMedicines, realStockItems]);
-
-  // CRITICAL FIX: Only show real backend data. No hardcoded/sample
-  // fallback alerts — if there are no real alerts, show the empty state.
-  const displayAlerts = allAlerts;
-
-  const filteredAlerts = useMemo(() => {
-    let filtered = displayAlerts;
-    if (activeTab === "low-stock") {
-      filtered = filtered.filter((a) => a.type === "low-stock");
-    } else if (activeTab === "out-of-stock") {
-      filtered = filtered.filter((a) => a.type === "out-of-stock");
-    } else if (activeTab === "missed-dose") {
-      filtered = filtered.filter((a) => a.type === "missed-dose");
-    } else if (activeTab === "emergency") {
-      filtered = filtered.filter((a) => a.type === "emergency");
+      const response = await api.get("/alerts", { params });
+      const list = extractAlertList(response.data)
+        .map(normalizeAlert)
+        .filter(Boolean);
+      setAlerts(list);
+    } catch (err) {
+      console.log("fetchAlerts API Error:", err.response?.status, err.response?.data || err.message);
+      setAlerts([]);
+    } finally {
+      setAlertsLoading(false);
     }
-    return filtered;
-  }, [displayAlerts, activeTab]);
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage));
-  const paginatedAlerts = filteredAlerts.slice(
+  // Endpoint: GET /api/alerts/emergency
+  const fetchEmergencyAlerts = useCallback(async () => {
+    try {
+      const response = await api.get("/alerts/emergency");
+      const list = extractAlertList(response.data)
+        .map(normalizeAlert)
+        .filter(Boolean);
+      setEmergencyAlerts(list);
+    } catch (err) {
+      console.log("fetchEmergencyAlerts API Error:", err.response?.status, err.response?.data || err.message);
+      setEmergencyAlerts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAlerts(activeTab);
+  }, [activeTab, fetchAlerts]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchEmergencyAlerts();
+  }, [fetchEmergencyAlerts]);
+
+  const totalPages = Math.max(1, Math.ceil(alerts.length / itemsPerPage));
+  const paginatedAlerts = alerts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -166,18 +201,65 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
     return <span className="al-status-badge al-status-read">Read</span>;
   };
 
-  const handleViewAlert = (alert) => {
+  // Endpoint: GET /api/alerts/{alertId}
+  const handleViewAlert = async (alert) => {
     setSelectedAlert(alert);
-  };
-
-  const handleMarkAsRead = () => {
-    if (selectedAlert) {
-      setSelectedAlert({ ...selectedAlert, status: "read" });
+    setDetailLoading(true);
+    try {
+      const response = await api.get(`/alerts/${alert.id}`);
+      let data = response.data;
+      if (data && data.alert) data = data.alert;
+      if (data && typeof data === "object") {
+        setSelectedAlert(normalizeAlert({ ...alert, ...data }));
+      }
+    } catch (err) {
+      console.log("fetchAlertDetail API Error:", err.response?.status, err.response?.data || err.message);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
-  // Emergency alerts for bottom right card
-  const emergencyAlerts = displayAlerts.filter((a) => a.type === "emergency");
+  // Endpoint: PUT /api/alerts/{alertId}/read
+  const handleMarkAsRead = async () => {
+    if (!selectedAlert) return;
+    try {
+      await api.put(`/alerts/${selectedAlert.id}/read`);
+      setSelectedAlert({ ...selectedAlert, status: "read" });
+      setAlerts((prev) =>
+        prev.map((a) =>
+          a.id === selectedAlert.id ? { ...a, status: "read" } : a
+        )
+      );
+      toast.success("Alert marked as read");
+    } catch (err) {
+      console.log("markAlertRead API Error:", err.response?.status, err.response?.data || err.message);
+      if (!err.response) {
+        toast.error("Network Error. Please check your internet.");
+      } else {
+        toast.error("Failed to mark alert as read. Please try again.");
+      }
+    }
+  };
+
+  // Endpoint: POST /api/alerts/emergency
+  const handleTriggerEmergency = async () => {
+    setTriggering(true);
+    try {
+      await api.post("/alerts/emergency");
+      toast.success("Emergency alert triggered! Family members have been notified.");
+      fetchEmergencyAlerts();
+      fetchAlerts(activeTab);
+    } catch (err) {
+      console.log("triggerEmergency API Error:", err.response?.status, err.response?.data || err.message);
+      if (!err.response) {
+        toast.error("Network Error. Please check your internet.");
+      } else {
+        toast.error("Failed to trigger emergency alert. Please try again.");
+      }
+    } finally {
+      setTriggering(false);
+    }
+  };
 
   return (
     <div className="al-page">
@@ -190,6 +272,14 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
               Stay updated with important alerts about your medicines and health.
             </p>
           </div>
+          <button
+            className="al-emergency-trigger-btn"
+            onClick={handleTriggerEmergency}
+            disabled={triggering}
+          >
+            <Megaphone size={18} />
+            {triggering ? "Triggering..." : "Trigger Emergency Alert"}
+          </button>
         </div>
 
         {/* Filter Tabs */}
@@ -213,7 +303,17 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
         </div>
       </div>
 
-      {filteredAlerts.length === 0 ? (
+      {alertsLoading ? (
+        <div className="al-card">
+          <div className="al-empty">
+            <div className="al-empty-icon">
+              <Loader2 size={48} className="al-spinner" />
+            </div>
+            <h2 className="al-empty-heading">Loading Alerts...</h2>
+            <p className="al-empty-desc">Fetching the latest alerts from the server.</p>
+          </div>
+        </div>
+      ) : alerts.length === 0 ? (
         <div className="al-card">
           <div className="al-empty">
             <div className="al-empty-icon">
@@ -308,8 +408,8 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
           <div className="al-bottom-bar">
             <span className="al-record-count">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, filteredAlerts.length)} of{" "}
-              {filteredAlerts.length} alerts
+              {Math.min(currentPage * itemsPerPage, alerts.length)} of{" "}
+              {alerts.length} alerts
             </span>
             <div className="al-pagination">
               <button
@@ -347,6 +447,9 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
               <h3 className="al-detail-heading">
                 <Eye size={20} />
                 Alert Details
+                {detailLoading && (
+                  <Loader2 size={16} className="al-spinner al-detail-spinner" />
+                )}
               </h3>
               {selectedAlert ? (
                 <div className="al-detail-content">
@@ -408,13 +511,14 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
                     <div className="al-detail-row al-detail-row-msg">
                       <span className="al-detail-key">Message</span>
                       <span className="al-detail-value">
-                        {selectedAlert.type === "low-stock"
-                          ? "Stock is running low. Please refill medicine."
-                          : selectedAlert.type === "out-of-stock"
-                          ? "Medicine is out of stock. Order immediately."
-                          : selectedAlert.type === "missed-dose"
-                          ? "Patient missed their scheduled dose. Please check."
-                          : "Emergency alert! Immediate attention required."}
+                        {selectedAlert.message ||
+                          (selectedAlert.type === "low-stock"
+                            ? "Stock is running low. Please refill medicine."
+                            : selectedAlert.type === "out-of-stock"
+                            ? "Medicine is out of stock. Order immediately."
+                            : selectedAlert.type === "missed-dose"
+                            ? "Patient missed their scheduled dose. Please check."
+                            : "Emergency alert! Immediate attention required.")}
                       </span>
                     </div>
                   </div>
@@ -466,7 +570,7 @@ const UserAlert = ({ onAddMedicine, medicines = [], stockItems = [] }) => {
                       </span>
                       <span className="al-ecol al-ecol-sentto">
                         <Phone size={12} />
-                        Anita (Wife), Rohit (Son)
+                        {alert.sentTo || "Family Members"}
                       </span>
                     </div>
                   ))}

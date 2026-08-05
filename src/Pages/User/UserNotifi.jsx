@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import "./UserNotifi.css";
 
+import toast from "react-hot-toast";
+import api from "../../api/axiosInstance";
 import {
   Bell,
   Search,
   CheckCheck,
   Clock,
-  X,
   Info,
   AlertTriangle,
   AlertCircle,
@@ -14,28 +15,184 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle2,
+  Inbox,
+  Filter,
+  MailOpen,
+  Mail,
+  Trash2,
 } from "lucide-react";
+
+const formatCreatedAt = (createdAt) => {
+  if (!createdAt) return { date: "No date", time: "—" };
+  const dt = new Date(createdAt);
+  if (Number.isNaN(dt.getTime())) return { date: "Invalid date", time: "—" };
+
+  const date = dt.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const time = dt.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return { date, time };
+};
+
+const normalizeStatus = (status) => String(status || "Unseen").toLowerCase();
 
 const UserNotifi = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState("all"); // "all" | "unread" | "read"
+  const itemsPerPage = 6;
 
   // Notification data — starts empty to show empty state
   const [notifications, setNotifications] = useState([]);
 
-  // Filtered and searched notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await api.get("/notifications");
+      const rawData = Array.isArray(res.data) ? res.data : res.data?.notifications || res.data?.data || [];
+      const data = rawData.map((item) => {
+        const { date, time } = formatCreatedAt(item.createdAt);
+        return {
+          ...item,
+          status: String(item.status || "Unread"),
+          normalizedStatus: normalizeStatus(item.status),
+          formattedDate: date,
+          formattedTime: time,
+        };
+      });
+      setNotifications(data);
+    } catch (error) {
+      console.log("Fetch Notifications API Error:", error.message, error.response?.data);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      setLoading(true);
+      await fetchNotifications();
+    };
+
+    void Promise.resolve().then(loadNotifications);
+  }, [fetchNotifications]);
+
+  // ================= API CALL: MARK AS READ (SINGLE) =================
+  // Endpoint: PUT /notifications/{notificationId}/read
+  const handleMarkAsRead = async (notification) => {
+    const notificationId = notification?.id ?? notification?._id ?? notification?.notificationId;
+
+    if (notificationId == null) {
+      console.log("Mark Read aborted — no valid notification ID found on:", notification);
+      toast.error("Could not find a valid notification ID for this item.");
+      return;
+    }
+
+    const currentStatus = normalizeStatus(notification.status);
+    if (currentStatus !== "unread") {
+      return;
+    }
+
+    try {
+      const res = await api.put(`/notifications/${notificationId}/read`);
+
+      if (res.data && res.data.success === false) {
+        console.log("Mark Read API returned failure body:", res.data, "for id:", notificationId);
+        toast.error(res.data.message || "Failed to mark as read. Please try again.");
+        return;
+      }
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          (n.id === notificationId || n._id === notificationId) && normalizeStatus(n.status) === "unread"
+            ? { ...n, status: "Read", normalizedStatus: "read" }
+            : n
+        )
+      );
+    } catch (error) {
+      console.log("Mark Read API Error:", error.message, error.response?.data);
+      const errorMsg = error.response?.data?.message || "";
+      toast.error(errorMsg || "Failed to mark as read. Please try again.");
+    }
+  };
+
+  // ================= API CALL: MARK ALL AS READ =================
+  // Endpoint: PUT /notifications/{notificationId}/read (for each unread)
+  const handleMarkAllRead = async () => {
+    const unread = notifications.filter((n) => normalizeStatus(n.status) === "unread");
+
+    if (unread.length === 0) return;
+
+    setNotifications((prev) =>
+      prev.map((n) =>
+        normalizeStatus(n.status) === "unread"
+          ? { ...n, status: "Read", normalizedStatus: "read" }
+          : n
+      )
+    );
+
+    try {
+      await Promise.all(
+        unread.map((notification) => {
+          const notificationId = notification?.id ?? notification?._id ?? notification?.notificationId;
+          if (notificationId == null) return Promise.resolve();
+          return api.put(`/notifications/${notificationId}/read`);
+        })
+      );
+    } catch (error) {
+      console.log("Mark All Read API Error:", error.message, error.response?.data);
+      toast.error("Some notifications could not be marked as read.");
+      fetchNotifications();
+    }
+  };
+
+  // Dismiss a notification (local only)
+  const handleDismiss = (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id && n._id !== id));
+  };
+
+  // Mark single as read on click
+  const handleNotificationClick = (notification) => {
+    handleMarkAsRead(notification);
+  };
+
+  // Unread count
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => normalizeStatus(n.status) === "unread").length,
+    [notifications]
+  );
+
+  // Filtered by status filter + search query
   const filteredNotifications = useMemo(() => {
+    let result = notifications;
+
+    // Status filter
+    if (filter === "unread") {
+      result = result.filter((n) => normalizeStatus(n.status) === "unread");
+    } else if (filter === "read") {
+      result = result.filter((n) => normalizeStatus(n.status) === "read");
+    }
+
+    // Search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      return notifications.filter(
+      result = result.filter(
         (n) =>
-          n.title.toLowerCase().includes(query) ||
-          n.message.toLowerCase().includes(query)
+          (n.title || n.message || "").toLowerCase().includes(query) ||
+          (n.message || "").toLowerCase().includes(query)
       );
     }
-    return notifications;
-  }, [notifications, searchQuery]);
+
+    return result;
+  }, [notifications, searchQuery, filter]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / itemsPerPage));
@@ -78,25 +235,6 @@ const UserNotifi = () => {
 
   const getTypeConfig = (type) => typeConfig[type] || typeConfig.info;
 
-  // Mark all as read
-  const handleMarkAllRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.status === "unread" ? { ...n, status: "read" } : n))
-    );
-  };
-
-  // Dismiss a notification
-  const handleDismiss = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  // Mark single as read on click
-  const handleNotificationClick = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id && n.status === "unread" ? { ...n, status: "read" } : n))
-    );
-  };
-
   return (
     <div className="nt-page">
       {/* ===== HEADER ===== */}
@@ -128,21 +266,98 @@ const UserNotifi = () => {
           </div>
         </div>
 
+        {/* ===== STATUS SUMMARY BAR ===== */}
+        <div className="nt-summary-bar">
+          <div className="nt-summary-info">
+            <span className="nt-summary-total">
+              <Inbox size={16} />
+              <strong>{notifications.length}</strong> Total
+            </span>
+            <span className="nt-summary-unread">
+              <Bell size={16} />
+              <strong>{unreadCount}</strong> Unread
+            </span>
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="nt-filter-tabs">
+            <button
+              className={`nt-filter-tab ${filter === "all" ? "active" : ""}`}
+              onClick={() => {
+                setFilter("all");
+                setCurrentPage(1);
+              }}
+            >
+              <Filter size={14} />
+              All
+            </button>
+            <button
+              className={`nt-filter-tab ${filter === "unread" ? "active" : ""}`}
+              onClick={() => {
+                setFilter("unread");
+                setCurrentPage(1);
+              }}
+            >
+              <Bell size={14} />
+              Unread
+              {unreadCount > 0 && <span className="nt-filter-count">{unreadCount}</span>}
+            </button>
+            <button
+              className={`nt-filter-tab ${filter === "read" ? "active" : ""}`}
+              onClick={() => {
+                setFilter("read");
+                setCurrentPage(1);
+              }}
+            >
+              <CheckCheck size={14} />
+              Read
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* ===== NOTIFICATION LIST ===== */}
-      {filteredNotifications.length === 0 ? (
+      {/* ===== NOTIFICATION TABLE ===== */}
+      {loading ? (
+        /* Loading skeleton */
+        <div className="nt-card">
+          <div className="nt-skeleton-list">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="nt-skeleton-item">
+                <div className="nt-skeleton-icon"></div>
+                <div className="nt-skeleton-lines">
+                  <div className="nt-skeleton-line short"></div>
+                  <div className="nt-skeleton-line"></div>
+                  <div className="nt-skeleton-line medium"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : filteredNotifications.length === 0 ? (
         <div className="nt-card">
           <div className="nt-empty">
             <div className="nt-empty-icon">
-              <Bell size={40} />
+              {searchQuery || filter !== "all" ? <Search size={40} /> : <Bell size={40} />}
             </div>
-            <h3>No Notifications Yet</h3>
+            <h3>{searchQuery ? "No Search Results" : filter !== "all" ? `No ${filter} Notifications` : "No Notifications Yet"}</h3>
             <p>
               {searchQuery
                 ? "No notifications match your search. Try a different keyword."
+                : filter !== "all"
+                ? `You don't have any ${filter} notifications right now.`
                 : "You're all caught up! When new notifications arrive, they will appear here."}
             </p>
+            {(searchQuery || filter !== "all") && (
+              <button
+                className="nt-clear-filter-btn"
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilter("all");
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
             <div className="nt-empty-decoration">
               <div className="nt-empty-dot"></div>
               <div className="nt-empty-dot"></div>
@@ -153,51 +368,83 @@ const UserNotifi = () => {
       ) : (
         <>
           <div className="nt-card">
-            <div className="nt-list">
+            {/* Table Header */}
+            <div className="nt-table-header">
+              <div className="nt-th nt-th-type">Type</div>
+              <div className="nt-th nt-th-message">Notification</div>
+              <div className="nt-th nt-th-date">Date</div>
+              <div className="nt-th nt-th-time">Time</div>
+              <div className="nt-th nt-th-status">Status</div>
+              <div className="nt-th nt-th-actions">Actions</div>
+            </div>
+
+            {/* Table Body */}
+            <div className="nt-table-body">
               {paginatedNotifications.map((notification) => {
                 const config = getTypeConfig(notification.type);
                 const TypeIcon = config.icon;
-                const isUnread = notification.status === "unread";
+                const isUnread = normalizeStatus(notification.status) === "unread";
+                const notifId = notification.id ?? notification._id ?? notification.notificationId;
 
                 return (
                   <div
-                    key={notification.id}
-                    className={`nt-item ${isUnread ? "nt-unread" : ""}`}
-                    onClick={() => handleNotificationClick(notification.id)}
+                    key={notifId}
+                    className={`nt-table-row ${isUnread ? "nt-row-unread" : ""}`}
+                    onClick={() => handleNotificationClick(notification)}
                   >
-                    <div
-                      className="nt-item-icon"
-                      style={{ backgroundColor: config.bg }}
-                    >
-                      <TypeIcon size={20} style={{ color: config.color }} />
+                    {/* Type */}
+                    <div className="nt-td nt-td-type">
+                      <div
+                        className="nt-type-icon"
+                        style={{ backgroundColor: config.bg, color: config.color }}
+                      >
+                        <TypeIcon size={18} />
+                      </div>
+                      <span className={`nt-type-label ${config.badge}`}>{config.label}</span>
                     </div>
 
-                    <div className="nt-item-content">
-                      <div className="nt-item-header">
-                        <span className="nt-item-title">{notification.title}</span>
-                        <span className={`nt-item-badge ${config.badge}`}>
-                          {config.label}
+                    {/* Message */}
+                    <div className="nt-td nt-td-message">
+                      <div className="nt-msg-title">
+                        {isUnread && <span className="nt-unread-dot"></span>}
+                        <span className={isUnread ? "nt-msg-title-text unread" : "nt-msg-title-text"}>
+                          {notification.title || notification.message}
                         </span>
                       </div>
-                      <p className="nt-item-msg">{notification.message}</p>
-                      <div className="nt-item-time">
-                        <Calendar size={12} />
-                        {notification.date}
-                        <Clock size={12} style={{ marginLeft: 8 }} />
-                        {notification.time}
-                      </div>
+                      <p className="nt-msg-desc">{notification.message || ""}</p>
                     </div>
 
-                    <div className="nt-item-actions">
+                    {/* Date */}
+                    <div className="nt-td nt-td-date">
+                      <Calendar size={14} />
+                      <span>{notification.formattedDate || "No date"}</span>
+                    </div>
+
+                    {/* Time */}
+                    <div className="nt-td nt-td-time">
+                      <Clock size={14} />
+                      <span>{notification.formattedTime || "—"}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="nt-td nt-td-status">
+                      <span className={`nt-status-pill ${isUnread ? "unread" : "read"}`}>
+                        {isUnread ? <Mail size={12} /> : <MailOpen size={12} />}
+                        {isUnread ? "Unread" : "Read"}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="nt-td nt-td-actions">
                       <button
                         className="nt-dismiss-btn"
                         title="Dismiss"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDismiss(notification.id);
+                          handleDismiss(notifId);
                         }}
                       >
-                        <X size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>

@@ -8,6 +8,16 @@
   box-sizing:border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  background: #eef3fb;
 }

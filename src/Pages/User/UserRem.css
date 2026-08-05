@@ -114,7 +114,7 @@
   width: 100%;
   min-height: 100%;
   background: linear-gradient(135deg, #F6F8FC 0%, #F0F4FA 50%, #EDF1F7 100%);
-  padding: 32px;
+  padding: clamp(16px, 2.8vw, 32px);
   box-sizing: border-box;
   font-family: "Inter", "Poppins", sans-serif;
 }
@@ -646,17 +646,23 @@
   padding-top: 6px;
   position: relative;
   z-index: 1;
+  flex-wrap: wrap;
+}
+
+.rem-snooze-btn,
+.rem-taken-btn {
+  flex: 1 1 140px;
 }
 
 .rem-snooze-btn {
   flex: 1;
   height: 46px;
-  border: 1.5px solid #E2E8F0;
+  border: 1.5px solid #FACC15;
   border-radius: 12px;
-  background: #FFFFFF;
+  background: linear-gradient(135deg, #FDE047 0%, #FACC15 100%);
   font-size: 15px;
   font-weight: 600;
-  color: #64748B;
+  color: #78350F;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.25s ease;
@@ -664,26 +670,31 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 14px rgba(250, 204, 21, 0.3);
 }
 
 .rem-snooze-btn svg {
   width: 16px;
   height: 16px;
-  color: #94A3B8;
+  color: #78350F;
   transition: all 0.25s ease;
 }
 
 .rem-snooze-btn:hover {
-  background: #F8FAFC;
-  border-color: #94A3B8;
-  color: #334155;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  background: linear-gradient(135deg, #FDE047 0%, #FBBF24 100%);
+  border-color: #FBBF24;
+  color: #451A03;
+  box-shadow: 0 6px 18px rgba(250, 204, 21, 0.45);
   transform: translateY(-1px);
 }
 
 .rem-snooze-btn:hover svg {
-  color: #0F766E;
+  color: #451A03;
+}
+
+.rem-snooze-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(250, 204, 21, 0.3);
 }
 
 .rem-taken-btn {
@@ -895,23 +906,37 @@
   display: inline-block;
 }
 
-.rem-status-taken {
-  background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
-  color: #15803D;
+.rem-status-upcoming {
+  background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
 }
-.rem-status-taken::before { background: #15803D; }
+.rem-status-upcoming::before { background: #FFFFFF; }
+
+.rem-status-taken {
+  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(15, 118, 110, 0.4);
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25);
+}
+.rem-status-taken::before { background: #FFFFFF; }
 
 .rem-status-snoozed {
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-  color: #D97706;
+  background: linear-gradient(135deg, #FDE047 0%, #FACC15 100%);
+  color: #78350F;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  box-shadow: 0 2px 6px rgba(250, 204, 21, 0.25);
 }
-.rem-status-snoozed::before { background: #D97706; }
+.rem-status-snoozed::before { background: #78350F; }
 
 .rem-status-missed {
-  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-  color: #DC2626;
+  background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
 }
-.rem-status-missed::before { background: #DC2626; }
+.rem-status-missed::before { background: #FFFFFF; }
 
 /* Delete Button — Premium */
 .rem-delete-btn {
@@ -1129,6 +1154,48 @@
   .rem-history-empty-illustration svg { width: 120px; height: 120px; }
   .rem-history-empty-heading { font-size: 20px; }
   .rem-history-empty-desc { font-size: 15px; }
+}
+
+@media (max-width: 640px) {
+  .rem-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rem-header-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rem-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rem-card {
+    padding: 20px;
+  }
+
+  .rem-card-item {
+    padding: 16px 14px 14px;
+  }
+
+  .rem-card-actions-bar {
+    flex-direction: column;
+  }
+
+  .rem-snooze-btn,
+  .rem-taken-btn {
+    width: 100%;
+  }
+
+  .rem-history-header {
+    padding: 18px;
+  }
+
+  .rem-history-list {
+    padding: 12px;
+  }
 }
 
 @media (max-width: 480px) {

@@ -62,8 +62,9 @@ body{
     display: flex;
     align-items: center;
     gap: 16px;
-    flex-shrink: 0;
+    flex-shrink: 1;
     min-width: 0;
+    max-width: 100%;
 }
 
 .logo {
@@ -81,6 +82,7 @@ body{
     flex-direction: column;
     justify-content: center;
     min-width: 0;
+    overflow: hidden;
 }
 
 .logo-section h2 {
@@ -89,6 +91,7 @@ body{
     font-weight: 700;
     line-height: 1.1;
     margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .logo-section h2 span {
@@ -199,6 +202,10 @@ body{
     font-weight: 600;
     color: #0f5660;
     transition: color 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
 }
 
 .profile-box:hover span {
@@ -210,6 +217,9 @@ body{
 .dashboard-body{
     display:flex;
     min-height: calc(100vh - 82px);
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 /* ================= SIDEBAR ================= */
@@ -603,17 +613,14 @@ body{
 /* ================= MAIN ================= */
 
 .main-content{
-
-    flex:1;
-
+    flex: 1 1 auto;
+    min-width: 0;
     padding:24px;
-
     margin-left:270px;
-
     width:calc(100% - 270px);
-
+    max-width:100%;
+    overflow-x:hidden;
     transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 .page-title{
@@ -1769,8 +1776,44 @@ body{
     }
 
     .stock-table-row{
-        grid-template-columns: 1fr;
-        gap:6px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        padding: 14px 16px;
+        align-items: start;
+    }
+
+    .stock-table-row span{
+        text-align: left;
+        white-space: normal;
+        word-break: break-word;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .stock-table-row span:nth-child(1)::before{
+        content: "Medicine: ";
+        font-weight: 700;
+        color: #0f766e;
+    }
+
+    .stock-table-row span:nth-child(2)::before{
+        content: "Current: ";
+        font-weight: 600;
+        color: #0f4758;
+    }
+
+    .stock-table-row span:nth-child(3)::before{
+        content: "Min: ";
+        font-weight: 600;
+        color: #0f4758;
+    }
+
+    .stock-table-row span:nth-child(4)::before{
+        content: "Expiry: ";
+        font-weight: 600;
+        color: #0f4758;
     }
 
     .stock-table-row span:nth-child(1){
@@ -1867,19 +1910,25 @@ body{
 @media(max-width:768px){
 
     .medicine-table-header{
-
         display:none;
-
     }
 
     .medicine-table-row{
-
         grid-template-columns: 1fr;
-
         gap:8px;
-
         padding:14px;
+    }
 
+    .medicine-col {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .medicine-table-header span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .medicine-name-cell{
@@ -2072,6 +2121,39 @@ body{
 
 .calendar-date.has-event{
     border:2px solid #14b8a6;
+    color:#0f766e;
+    font-weight:600;
+}
+
+/* Calendar date status colors (from /reminder/calendar API) */
+.calendar-date.taken{
+    background:#d1fae5;
+    color:#065f46;
+    font-weight:600;
+}
+
+.calendar-date.missed{
+    background:#fee2e2;
+    color:#b91c1c;
+    font-weight:600;
+}
+
+.calendar-date.snoozed{
+    background:#fef3c7;
+    color:#92400e;
+    font-weight:600;
+}
+
+.calendar-date.upcoming{
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-weight:600;
+}
+
+.calendar-loading{
+    text-align:center;
+    padding:8px;
+    font-size:13px;
     color:#0f766e;
     font-weight:600;
 }
@@ -2389,21 +2471,24 @@ body{
     /* Header adjustments */
     .topbar{
         padding: 8px 10px;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
+        align-items: center;
         height: auto;
-        gap: 6px;
-        min-height: 50px;
+        gap: 8px;
+        min-height: 56px;
     }
 
     .logo-section {
-        flex: 1;
+        flex: 0 1 auto;
         min-width: 0;
-        gap: 6px;
+        gap: 8px;
+        width: auto;
+        max-width: 190px;
     }
 
     .logo{
-        width: 36px;
-        height: 28px;
+        width: 38px;
+        height: 30px;
         padding: 3px;
     }
 
@@ -2412,15 +2497,18 @@ body{
     }
 
     .logo-section h2 {
-        font-size: 13px;
+        font-size: 14px;
+        line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 100%;
     }
 
     .profile-box {
         padding: 4px 8px;
         gap: 6px;
+        max-width: 100%;
     }
 
     .avatar {
@@ -2434,12 +2522,21 @@ body{
     }
 
     .profile-box span {
-        display: none;
+        display: inline-block;
+        font-size: 12px;
+        max-width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .top-right {
-        gap: 6px;
+        gap: 8px;
         flex-shrink: 0;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
     }
 
     /* Fix: Use fixed overlay sidebar on mobile instead of relative block */
@@ -2527,6 +2624,14 @@ body{
     .card-header{
         padding:12px 14px;
         font-size:14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .card-header svg {
+        flex-shrink: 0;
     }
 
     /* Empty cards */
@@ -2615,6 +2720,13 @@ body{
     /* Medicine tables */
     .medicine-list-container{
         padding:12px;
+    }
+
+    .medicine-table-header span {
+        display: inline-block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .medicine-table-header{

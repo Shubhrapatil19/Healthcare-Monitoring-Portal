@@ -63,9 +63,11 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchReminders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const loadReminders = async () => {
+      await fetchReminders();
+    };
+
+    void Promise.resolve().then(loadReminders);
   }, []);
 
   // CRITICAL FIX: Only use real backend data. Never fall back to the
@@ -88,13 +90,40 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
     });
   };
 
+  const getReminderTime = (med) => {
+    return med?.timing || med?.time || med?.reminderTime || med?.scheduledTime || "";
+  };
+
   const convertTo12Hour = (time24) => {
     if (!time24) return "";
-    const [hours, minutes] = time24.split(":");
+
+    let hours = "";
+    let minutes = "00";
+
+    if (typeof time24 === "string") {
+      const trimmed = time24.trim();
+      if (trimmed.includes("T")) {
+        const parsed = new Date(trimmed);
+        if (!Number.isNaN(parsed.getTime())) {
+          hours = String(parsed.getHours()).padStart(2, "0");
+          minutes = String(parsed.getMinutes()).padStart(2, "0");
+        }
+      } else if (trimmed.includes(":")) {
+        [hours, minutes] = trimmed.split(":");
+      } else {
+        const numeric = trimmed.match(/(\d{1,2})(\d{2})$/);
+        if (numeric) {
+          hours = numeric[1];
+          minutes = numeric[2];
+        }
+      }
+    }
+
     const h = parseInt(hours, 10);
+    if (Number.isNaN(h)) return "";
     const ampm = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 || 12;
-    return `${h12}:${minutes} ${ampm}`;
+    return `${h12}:${String(minutes).padStart(2, "0")} ${ampm}`;
   };
 
   const showTakenToast = (name) => {
@@ -477,7 +506,7 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
                     <div className="rem-card-top-row">
                       <div className="rem-time-badge">
                         <Clock size={16} />
-                        <span>{convertTo12Hour(med.timing)}</span>
+                        <span>{convertTo12Hour(getReminderTime(med)) || "—"}</span>
                       </div>
                       <span className="rem-next-dose-label">NEXT DOSE</span>
                     </div>
@@ -551,7 +580,7 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
                   </div>
                   <div className="rem-hl-col rem-hl-col-time">
                     <span className="rem-hl-label">Time</span>
-                    <span className="rem-hl-value">{convertTo12Hour(med.timing)}</span>
+                    <span className="rem-hl-value">{convertTo12Hour(getReminderTime(med)) || "—"}</span>
                   </div>
                   <div className="rem-hl-col rem-hl-col-status">
                     <span className="rem-hl-label">Status</span>

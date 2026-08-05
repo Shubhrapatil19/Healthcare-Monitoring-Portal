@@ -6,7 +6,7 @@
   width: 100%;
   min-height: 100%;
   background: #F8FAFC;
-  padding: 32px;
+  padding: clamp(16px, 2.8vw, 32px);
   box-sizing: border-box;
   font-family: "Inter", "Poppins", sans-serif;
 }
@@ -133,6 +133,10 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   margin-bottom: 20px;
+}
+
+.al-table {
+  min-width: 760px;
 }
 
 .al-table-wrap {
@@ -837,6 +841,53 @@
   font-weight: 500;
 }
 
+/* ===== EMERGENCY TRIGGER BUTTON ===== */
+.al-emergency-trigger-btn {
+  height: 44px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+  flex-shrink: 0;
+}
+
+.al-emergency-trigger-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.al-emergency-trigger-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== LOADING SPINNER ===== */
+.al-spinner {
+  animation: al-rotate 1s linear infinite;
+}
+
+.al-detail-spinner {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+@keyframes al-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ==============================================
    RESPONSIVE
    ============================================== */
@@ -861,6 +912,9 @@
   .al-add-btn {
     width: 100%;
   }
+  .al-emergency-trigger-btn {
+    width: 100%;
+  }
   .al-tabs {
     overflow-x: auto;
     flex-wrap: nowrap;
@@ -881,6 +935,39 @@
   }
   .al-bottom-cards {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .al-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .al-add-btn,
+  .al-emergency-trigger-btn {
+    width: 100%;
+  }
+
+  .al-tabs {
+    padding-bottom: 6px;
+  }
+
+  .al-card {
+    border-radius: 14px;
+  }
+
+  .al-med-cell {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .al-med-info {
+    flex: 1 1 100%;
+  }
+
+  .al-bottom-cards {
+    gap: 16px;
   }
 }
 

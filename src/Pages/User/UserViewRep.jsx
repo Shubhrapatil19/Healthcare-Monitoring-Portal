@@ -1,83 +1,128 @@
-import { useRef, useState } from "react";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
+import { useEffect, useMemo, useRef, useState } from "react";
+import api from "../../api/axiosInstance";
 import "./UserViewRep.css";
+
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultDateRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  return {
+    startDate: formatDate(start),
+    endDate: formatDate(end),
+  };
+};
 
 const UserViewRep = ({ onBack }) => {
   const reportRef = useRef(null);
+  const [reportData, setReportData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [dateRange] = useState(getDefaultDateRange);
 
-  // FIX: UserDash.jsx saves medicines under "userMedicines" and stock
-  // under "userStockItems" — this component was reading the wrong keys
-  // ("medicines"), which is why the report always showed as empty.
-  const [medicines] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("userMedicines") || "[]");
-    } catch {
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+
+        const response = await api.get("/reminder/compliance-report", {
+          params: {
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+          },
+        });
+
+        const payload = response.data?.data ?? response.data;
+        const summary = payload?.summary ?? payload?.report?.summary ?? payload?.data?.summary ?? {};
+        const details = payload?.details ?? payload?.report?.details ?? payload?.data?.details ?? [];
+        const inventory = payload?.inventory ?? payload?.report?.inventory ?? payload?.data?.inventory ?? [];
+
+        const totalScheduled = Number(summary.totalScheduled ?? summary.total ?? summary.scheduled ?? payload?.totalScheduled ?? payload?.scheduled ?? 0);
+        const taken = Number(summary.taken ?? summary.totalTaken ?? payload?.taken ?? payload?.totalTaken ?? 0);
+        const missed = Number(summary.missed ?? summary.totalMissed ?? payload?.missed ?? payload?.totalMissed ?? 0);
+        const compliance = Number(
+          summary.compliance ?? summary.compliancePercentage ?? payload?.compliance ?? payload?.compliancePercentage ?? (totalScheduled > 0 ? Math.round((taken / totalScheduled) * 100) : 0)
+        );
+        const lowStock = Number(summary.lowStock ?? summary.lowStockCount ?? payload?.lowStock ?? payload?.lowStockCount ?? 0);
+
+        setReportData({
+          summary,
+          details,
+          inventory,
+          totalScheduled,
+          taken,
+          missed,
+          compliance,
+          lowStock,
+          startDate: payload?.startDate ?? dateRange.startDate,
+          endDate: payload?.endDate ?? dateRange.endDate,
+        });
+      } catch (err) {
+        console.error("Compliance report fetch failed:", err);
+        setError("Unable to load compliance report right now.");
+        setReportData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, [dateRange.endDate, dateRange.startDate]);
+
+  const medicineData = useMemo(() => {
+    if (!reportData?.details?.length) {
       return [];
     }
-  });
 
-  const [stockItems] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("userStockItems") || "[]");
-    } catch {
+    return reportData.details.map((item) => ({
+      name: item.medicineName || item.name || item.medicationName || "Unknown",
+      totalScheduled: Number(item.totalScheduled ?? item.scheduled ?? item.total ?? 0),
+      taken: Number(item.taken ?? item.completed ?? 0),
+      missed: Number(item.missed ?? item.pending ?? 0),
+      compliance: Number(item.compliance ?? item.compliancePercentage ?? 0),
+    }));
+  }, [reportData]);
+
+  const inventoryData = useMemo(() => {
+    if (!reportData?.inventory?.length) {
       return [];
     }
-  });
 
-  const hasMedicines = medicines.length > 0;
+    return reportData.inventory.map((item) => {
+      const currentStock = Number(item.currentStock ?? item.stock ?? 0);
+      const minimumStock = Number(item.minimumStock ?? item.minStock ?? 0);
+      return {
+        name: item.medicineName || item.name || "Unknown",
+        currentStock,
+        minimumStock,
+        status: currentStock >= minimumStock ? "In Stock" : "Low Stock",
+      };
+    });
+  }, [reportData]);
 
-  // Build medicine compliance data from real stored medicines.
-  // No hardcoded fallback numbers — if the backend/tracking data for
-  // taken/missed/scheduled doesn't exist yet, we show 0 rather than a
-  // fake placeholder like "30".
-  const medicineData = medicines.map((m) => {
-    const totalScheduled = m.totalScheduled ?? 0;
-    const taken = m.taken ?? 0;
-    const missed = m.missed ?? 0;
-    const compliance =
-      totalScheduled > 0 ? Math.round((taken / totalScheduled) * 100) : 0;
-
-    return {
-      name: m.medicineName || m.name || "Unknown",
-      totalScheduled,
-      taken,
-      missed,
-      compliance,
-    };
-  });
-
-  // Build inventory data from real stock items (added via Add Stock),
-  // not from the medicines list, and with no hardcoded minimum stock.
-  const inventoryData = stockItems.map((item) => {
-    const currentStock = Number(item.currentStock) || 0;
-    const minimumStock = Number(item.minimumStock) || 0;
-    return {
-      name: item.medicineName || "Unknown",
-      currentStock,
-      minimumStock,
-      status: currentStock >= minimumStock ? "In Stock" : "Low Stock",
-    };
-  });
-
-  // ── Summary stats computed from real data (no hardcoded 0s) ──
-  const totalTaken = medicineData.reduce((sum, m) => sum + m.taken, 0);
-  const totalMissed = medicineData.reduce((sum, m) => sum + m.missed, 0);
-  const totalScheduledSum = medicineData.reduce((sum, m) => sum + m.totalScheduled, 0);
-  const overallCompliance =
-    totalScheduledSum > 0 ? Math.round((totalTaken / totalScheduledSum) * 100) : 0;
+  const hasReportData = medicineData.length > 0 || inventoryData.length > 0 || reportData?.summary;
+  const totalTaken = reportData?.taken ?? 0;
+  const totalMissed = reportData?.missed ?? 0;
+  const totalScheduledSum = reportData?.totalScheduled ?? 0;
+  const overallCompliance = reportData?.compliance ?? 0;
   const lowStockCount = inventoryData.filter((i) => i.status === "Low Stock").length;
 
-  // ── Dynamic dates instead of hardcoded "June 2026" ──
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const dateFormatter = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
-  const periodLabel = `${dateFormatter.format(monthStart)} - ${dateFormatter.format(monthEnd)}`;
+
+  const periodLabel = `${dateFormatter.format(new Date(reportData?.startDate || dateRange.startDate))} - ${dateFormatter.format(new Date(reportData?.endDate || dateRange.endDate))}`;
+  const now = new Date();
   const generatedLabel = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
@@ -90,26 +135,27 @@ const UserViewRep = ({ onBack }) => {
 
   const handleDownloadPDF = async () => {
     try {
-      const input = reportRef.current;
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
+      const response = await api.get("/reminder/compliance-report/download", {
+        params: {
+          startDate: reportData?.startDate || dateRange.startDate,
+          endDate: reportData?.endDate || dateRange.endDate,
+        },
+        responseType: "blob",
       });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save("Compliance_Report.pdf");
+
+      const contentType = response.headers?.["content-type"] || "application/pdf";
+      const blob = new Blob([response.data], { type: contentType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `Compliance_Report_${reportData?.startDate || dateRange.startDate}_to_${reportData?.endDate || dateRange.endDate}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
-      console.error("PDF generation error:", err);
+      console.error("Compliance report PDF download failed:", err);
+      setError("Unable to download compliance report PDF right now.");
     }
   };
 
@@ -124,7 +170,7 @@ const UserViewRep = ({ onBack }) => {
           Back
         </button>
         <h2 className="rep-top-title">Medical Compliance Report</h2>
-        <button className="rep-download-btn" onClick={handleDownloadPDF} disabled={!hasMedicines}>
+        <button className="rep-download-btn" onClick={handleDownloadPDF} disabled={isLoading || !hasReportData}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -136,7 +182,17 @@ const UserViewRep = ({ onBack }) => {
 
       {/* ===== REPORT CONTENT ===== */}
       <div className="rep-content" ref={reportRef}>
-        {!hasMedicines ? (
+        {isLoading ? (
+          <div className="rep-empty-state">
+            <h3 className="rep-empty-title">Loading report…</h3>
+            <p className="rep-empty-text">Fetching your compliance details from the server.</p>
+          </div>
+        ) : error ? (
+          <div className="rep-empty-state">
+            <h3 className="rep-empty-title">Report unavailable</h3>
+            <p className="rep-empty-text">{error}</p>
+          </div>
+        ) : !hasReportData ? (
           <div className="rep-empty-state">
             <div className="rep-empty-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="64" height="64">
@@ -389,7 +445,7 @@ const UserViewRep = ({ onBack }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div> 
           </>
         )}
       </div>

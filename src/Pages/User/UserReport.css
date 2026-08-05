@@ -153,6 +153,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.report-state {
+  padding: 1rem 0;
+  color: #475569;
+  font-weight: 500;
+}
+
+.report-error {
+  color: #dc2626;
+}
+
 /* View Report Section */
 .view-report-section {
   display: flex;

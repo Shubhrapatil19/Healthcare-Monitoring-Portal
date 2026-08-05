@@ -1,33 +1,83 @@
 import { useEffect, useMemo, useState } from 'react';
+import api from '../../api/axiosInstance';
 import './UserReport.css';
 
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultDateRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  return {
+    startDate: formatDate(start),
+    endDate: formatDate(end),
+  };
+};
+
 const UserReport = ({ onViewReport }) => {
-  const [medicines, setMedicines] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('medicines') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [reportData, setReportData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [dateRange] = useState(getDefaultDateRange);
 
   useEffect(() => {
-    const syncMedicines = () => {
+    const fetchComplianceReport = async () => {
       try {
-        setMedicines(JSON.parse(localStorage.getItem('medicines') || '[]'));
-      } catch {
-        setMedicines([]);
+        setIsLoading(true);
+        setError('');
+
+        const response = await api.get('/reminder/compliance-report', {
+          params: {
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+          },
+        });
+
+        const payload = response.data?.data ?? response.data;
+        const summary = payload?.summary ?? payload?.report?.summary ?? payload?.data?.summary ?? {};
+        const details = payload?.details ?? payload?.report?.details ?? payload?.data?.details ?? [];
+        const inventory = payload?.inventory ?? payload?.report?.inventory ?? payload?.data?.inventory ?? [];
+
+        const totalScheduled = Number(summary.totalScheduled ?? summary.total ?? summary.scheduled ?? payload?.totalScheduled ?? payload?.scheduled ?? 0);
+        const taken = Number(summary.taken ?? summary.totalTaken ?? payload?.taken ?? payload?.totalTaken ?? 0);
+        const missed = Number(summary.missed ?? summary.totalMissed ?? payload?.missed ?? payload?.totalMissed ?? 0);
+        const compliance = Number(
+          summary.compliance ?? summary.compliancePercentage ?? payload?.compliance ?? payload?.compliancePercentage ?? (totalScheduled > 0 ? Math.round((taken / totalScheduled) * 100) : 0)
+        );
+        const lowStock = Number(summary.lowStock ?? summary.lowStockCount ?? payload?.lowStock ?? payload?.lowStockCount ?? 0);
+
+        setReportData({
+          summary,
+          details,
+          inventory,
+          totalScheduled,
+          taken,
+          missed,
+          compliance,
+          lowStock,
+          startDate: payload?.startDate ?? dateRange.startDate,
+          endDate: payload?.endDate ?? dateRange.endDate,
+        });
+      } catch (err) {
+        console.error('Compliance report fetch failed:', err);
+        setError('Unable to load compliance report right now.');
+        setReportData(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    syncMedicines();
-    window.addEventListener('storage', syncMedicines);
-    return () => window.removeEventListener('storage', syncMedicines);
-  }, []);
+    fetchComplianceReport();
+  }, [dateRange.endDate, dateRange.startDate]);
 
   const reportStats = useMemo(() => {
-    const totalMedicines = medicines.length;
-
-    if (totalMedicines === 0) {
+    if (!reportData) {
       return {
         compliance: '0%',
         taken: 0,
@@ -37,18 +87,14 @@ const UserReport = ({ onViewReport }) => {
       };
     }
 
-    const taken = medicines.filter((medicine) => medicine.status === 'taken').length;
-    const missed = medicines.filter((medicine) => medicine.status === 'missed').length;
-    const compliance = Math.round((taken / totalMedicines) * 100);
-
     return {
-      compliance: `${compliance}%`,
-      taken,
-      missed,
-      lowStock: 0,
+      compliance: `${reportData.compliance}%`,
+      taken: reportData.taken,
+      missed: reportData.missed,
+      lowStock: reportData.lowStock,
       outOfStock: 0,
     };
-  }, [medicines]);
+  }, [reportData]);
 
   return (
     <div className="reports-container">
@@ -69,20 +115,30 @@ const UserReport = ({ onViewReport }) => {
             <h2 className="report-name">Compliance Report</h2>
           </div>
 
-          <div className="report-details">
-            <div className="report-item">
-              <span className="report-label">Compliance Percentage</span>
-              <span className="report-value">{reportStats.compliance}</span>
+          {isLoading ? (
+            <div className="report-state">Loading compliance report…</div>
+          ) : error ? (
+            <div className="report-state report-error">{error}</div>
+          ) : (
+            <div className="report-details">
+              <div className="report-item">
+                <span className="report-label">Compliance Percentage</span>
+                <span className="report-value">{reportStats.compliance}</span>
+              </div>
+              <div className="report-item">
+                <span className="report-label">Taken Medicines</span>
+                <span className="report-value">{reportStats.taken}</span>
+              </div>
+              <div className="report-item">
+                <span className="report-label">Missed Medicines</span>
+                <span className="report-value">{reportStats.missed}</span>
+              </div>
+              <div className="report-item">
+                <span className="report-label">Low Stock Medicines</span>
+                <span className="report-value">{reportStats.lowStock}</span>
+              </div>
             </div>
-            <div className="report-item">
-              <span className="report-label">Taken Medicines</span>
-              <span className="report-value">{reportStats.taken}</span>
-            </div>
-            <div className="report-item">
-              <span className="report-label">Missed Medicines</span>
-              <span className="report-value">{reportStats.missed}</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Inventory Report Card */}

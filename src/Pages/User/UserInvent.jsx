@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Package, Plus, Edit2, Save, X, ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown, Trash2, Loader2 } from "lucide-react";
 import api from "../../api/axiosInstance";
 import "./UserInvent.css";
@@ -14,15 +14,75 @@ const StatusBadge = ({ status }) => {
   return <span className={className}>{status}</span>;
 };
 
+const normalizeInventoryItem = (item) => {
+  if (!item || typeof item !== "object") return null;
+
+  const id = item.id ?? item._id ?? item.medicineId ?? item.medicine_id ?? item.stockId ?? item.stock_id ?? item.inventoryId ?? item.inventory_id;
+  const medicineName = item.medicineName ?? item.name ?? item.medicine?.name ?? "";
+  const currentStock = item.currentStock ?? item.stock ?? item.current_stock ?? 0;
+  const minimumStock = item.minimumStock ?? item.minStock ?? item.minimum_stock ?? 0;
+  const expiryDate = item.expiryDate ?? item.expiry ?? item.expiry_date ?? "";
+
+  return {
+    ...item,
+    id,
+    medicineName,
+    currentStock,
+    minimumStock,
+    expiryDate,
+  };
+};
+
+const extractInventoryList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.stockItems)) return payload.stockItems;
+  if (Array.isArray(payload?.inventory)) return payload.inventory;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+
+  if (payload?.stockItem) return [payload.stockItem];
+  if (payload?.data && typeof payload.data === "object") {
+    if (Array.isArray(payload.data)) return payload.data;
+    if (payload.data.stockItem) return [payload.data.stockItem];
+    if (Array.isArray(payload.data.inventory)) return payload.data.inventory;
+    if (Array.isArray(payload.data.items)) return payload.data.items;
+  }
+
+  return [];
+};
+
 const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock }) => {
-  // Defensive guard: silently drop any malformed entries (e.g. missing
-  // medicineName) instead of letting a single bad item crash the whole
-  // page. This can happen if a non-item value (like a click event) ever
-  // gets appended to stockItems by mistake elsewhere in the app.
-  const rows = useMemo(
-    () => stockItems.filter((r) => r && typeof r.medicineName === "string"),
-    [stockItems]
-  );
+  const [inventoryRows, setInventoryRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  const normalizedPropRows = useMemo(() => {
+    return (Array.isArray(stockItems) ? stockItems : [])
+      .map(normalizeInventoryItem)
+      .filter(Boolean);
+  }, [stockItems]);
+
+  const rows = useMemo(() => {
+    const hasFetchedRows = inventoryRows.length > 0;
+    const sourceRows = hasFetchedRows ? inventoryRows : normalizedPropRows;
+
+    const shouldUsePropRows = normalizedPropRows.length > 0 && (
+      !hasFetchedRows ||
+      normalizedPropRows.length !== sourceRows.length ||
+      normalizedPropRows.some((row, index) => {
+        const current = sourceRows[index];
+        return !current ||
+          String(current.id ?? "") !== String(row.id ?? "") ||
+          String(current.medicineName ?? "") !== String(row.medicineName ?? "") ||
+          Number(current.currentStock ?? 0) !== Number(row.currentStock ?? 0) ||
+          Number(current.minimumStock ?? 0) !== Number(row.minimumStock ?? 0) ||
+          String(current.expiryDate ?? "") !== String(row.expiryDate ?? "");
+      })
+    );
+
+    const finalRows = shouldUsePropRows ? normalizedPropRows : sourceRows;
+    return finalRows.filter((r) => r && typeof r.medicineName === "string");
+  }, [inventoryRows, normalizedPropRows]);
 
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState({
@@ -33,6 +93,29 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
   const [rowError, setRowError] = useState({ id: null, message: "" });
 
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        setLoadError("");
+
+        const response = await api.get("/medicine/inventory");
+        const normalized = extractInventoryList(response.data)
+          .map(normalizeInventoryItem)
+          .filter(Boolean);
+
+        setInventoryRows(normalized);
+      } catch (err) {
+        console.error("Inventory fetch failed:", err);
+        setLoadError(err.response?.data?.message || "Failed to load inventory.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, []);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -160,8 +243,35 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
     setSavingId(editingId);
     setRowError({ id: null, message: "" });
     try {
-      const res = await api.put(`/medicine/${editingId}/stock`, editDraft);
-      onUpdateStock && onUpdateStock(editingId, res.data || editDraft);
+      const payload = {
+        medicineName: editDraft.medicineName,
+        currentStock: Number(editDraft.currentStock),
+        minimumStock: Number(editDraft.minimumStock),
+        expiryDate: editDraft.expiryDate,
+      };
+
+      const response = await api.put(`/medicine/${editingId}/stock`, payload);
+      const savedItem = normalizeInventoryItem(
+        response.data?.stockItem || response.data?.data || response.data || {
+          ...rows.find((item) => String(item.id) === String(editingId)),
+          ...payload,
+        }
+      );
+
+      const updatedItem = {
+        ...(rows.find((item) => String(item.id) === String(editingId)) || {}),
+        ...(savedItem || {}),
+        id: editingId,
+        medicineName: String(payload.medicineName || savedItem?.medicineName || ""),
+        currentStock: Number(payload.currentStock),
+        minimumStock: Number(payload.minimumStock),
+        expiryDate: payload.expiryDate,
+      };
+
+      setInventoryRows((prev) =>
+        prev.map((item) => (String(item.id) === String(editingId) ? updatedItem : item))
+      );
+      onUpdateStock && onUpdateStock(editingId, updatedItem);
       cancelEdit();
     } catch (err) {
       setRowError({ id: editingId, message: err.response?.data?.message || "Failed to save changes" });
@@ -175,6 +285,7 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
     setRowError({ id: null, message: "" });
     try {
       await api.delete(`/medicine/${id}`);
+      setInventoryRows((prev) => prev.filter((item) => String(item.id) !== String(id)));
       onDeleteStock && onDeleteStock(id);
     } catch (err) {
       setRowError({ id, message: err.response?.data?.message || "Failed to delete item" });
@@ -198,7 +309,11 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
         </div>
       </div>
 
-      {rows.length === 0 ? (
+      {loadError && (
+        <div className="row-error-text" style={{ marginBottom: "1rem" }}>{loadError}</div>
+      )}
+
+      {rows.length === 0 && !loading ? (
         <div className="inventory-empty">
           <div className="empty-icon-wrapper">
             <Package size={60} />
@@ -207,6 +322,14 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
           <p>Click "Add Medicine" button to add your first stock item.</p>
           <div className="corner-deco tl" />
           <div className="corner-deco br" />
+        </div>
+      ) : loading && rows.length === 0 ? (
+        <div className="inventory-empty">
+          <div className="empty-icon-wrapper">
+            <Loader2 size={60} className="spin" />
+          </div>
+          <h3>Loading inventory…</h3>
+          <p>Please wait while we fetch your stock items.</p>
         </div>
       ) : (
         <div className="inventory-table-wrapper">
