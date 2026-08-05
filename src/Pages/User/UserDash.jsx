@@ -1111,10 +1111,18 @@ const UserDash = ({ onLogout }) => {
                         </div>
 
                         <div className="calendar-actions">
-                          <button className="calendar-action-btn alert-btn">
+                          <button
+                            type="button"
+                            className="calendar-action-btn alert-btn"
+                            onClick={() => handleMenuItemClick("Alerts")}
+                          >
                             Alert
                           </button>
-                          <button className="calendar-action-btn reminder-btn">
+                          <button
+                            type="button"
+                            className="calendar-action-btn reminder-btn"
+                            onClick={() => handleMenuItemClick("Reminders")}
+                          >
                             Reminder
                           </button>
                         </div>
