@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   User,
   Calendar,
@@ -25,6 +25,30 @@ const UserProfiles = () => {
     return savedProfile ? JSON.parse(savedProfile) : null;
   });
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/profile");
+
+        setProfileData(res.data);
+
+        localStorage.setItem("profileData", JSON.stringify(res.data));
+
+        localStorage.setItem(
+          "registeredUser",
+          JSON.stringify({
+            fullName: res.data.fullName,
+            email: res.data.email,
+          })
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const registeredUser = useMemo(() => {
     try {
       const saved = localStorage.getItem("registeredUser");
@@ -45,11 +69,11 @@ const UserProfiles = () => {
     return {
       age: parsed.age || "",
       gender: parsed.gender || "",
-      disease: parsed.disease || "",
-      relation1: parsed.relation1 || "",
-      contact1: parsed.contact1 || "",
-      relation2: parsed.relation2 || "",
-      contact2: parsed.contact2 || "",
+      disease: parsed.diseases?.[0] || "",
+      relation1: parsed.familyContacts?.[0]?.relation || "",
+      contact1: parsed.familyContacts?.[0]?.phoneNumber || "",
+      relation2: parsed.familyContacts?.[1]?.relation || "",
+      contact2: parsed.familyContacts?.[1]?.phoneNumber || "",
     };
   });
 
@@ -65,7 +89,7 @@ const UserProfiles = () => {
   }
 
   const getInitials = () => {
-    const name = registeredUser?.fullName || "User";
+    const name = profileData.fullName || "User";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -80,11 +104,11 @@ const UserProfiles = () => {
     setEditFormData({
       age: profileData.age || "",
       gender: profileData.gender || "",
-      disease: profileData.disease || "",
-      relation1: profileData.relation1 || "",
-      contact1: profileData.contact1 || "",
-      relation2: profileData.relation2 || "",
-      contact2: profileData.contact2 || "",
+      disease: profileData.diseases?.[0] || "",
+      relation1: profileData.familyContacts?.[0]?.relation || "",
+      contact1: profileData.familyContacts?.[0]?.phoneNumber || "",
+      relation2: profileData.familyContacts?.[1]?.relation || "",
+      contact2: profileData.familyContacts?.[1]?.phoneNumber || "",
     });
     setIsEditing(true);
   };
@@ -181,14 +205,21 @@ const UserProfiles = () => {
       // regardless of exactly what the backend response shape looks like,
       // since the rest of this component reads profileData in the flat form.
       const nextProfile = {
-        ...profileData,
+        fullName: registeredUser?.fullName,
+        email: registeredUser?.email,
         age: editFormData.age,
         gender: editFormData.gender,
-        disease: editFormData.disease,
-        relation1: editFormData.relation1,
-        contact1: editFormData.contact1,
-        relation2: editFormData.relation2,
-        contact2: editFormData.contact2,
+        diseases: [editFormData.disease],
+        familyContacts: [
+          {
+            relation: editFormData.relation1,
+            phoneNumber: editFormData.contact1,
+          },
+          {
+            relation: editFormData.relation2,
+            phoneNumber: editFormData.contact2,
+          },
+        ],
         completed: true,
         ...(res.data && typeof res.data === "object" ? res.data : {}),
       };
@@ -209,11 +240,11 @@ const UserProfiles = () => {
     setEditFormData({
       age: profileData.age || "",
       gender: profileData.gender || "",
-      disease: profileData.disease || "",
-      relation1: profileData.relation1 || "",
-      contact1: profileData.contact1 || "",
-      relation2: profileData.relation2 || "",
-      contact2: profileData.contact2 || "",
+      disease: profileData.diseases?.[0] || "",
+      relation1: profileData.familyContacts?.[0]?.relation || "",
+      contact1: profileData.familyContacts?.[0]?.phoneNumber || "",
+      relation2: profileData.familyContacts?.[1]?.relation || "",
+      contact2: profileData.familyContacts?.[1]?.phoneNumber || "",
     });
     setSaveError("");
     setSaveSuccess("");
@@ -277,11 +308,11 @@ const UserProfiles = () => {
           </div>
           <p className="up-avatar-email">
             <Mail size={12} />
-            {registeredUser?.email || "Not specified"}
+            {profileData.email || "Not specified"}
           </p>
         </div>
         <div className="up-profile-header-info">
-          <p className="up-profile-name">{registeredUser?.fullName || "User"}</p>
+          <p className="up-profile-name">{profileData.fullName || "User"}</p>
           <div className="up-profile-badge">
             <Shield size={12} />
             <span>Profile {profileData.completed ? "Completed" : "Incomplete"}</span>
@@ -396,7 +427,7 @@ const UserProfiles = () => {
           <div className="up-info-grid up-info-grid--full">
             {renderField(
               "Disease / Condition",
-              profileData.disease,
+              profileData.diseases?.[0],
               <Stethoscope size={20} />,
               isEditing,
               "disease",
@@ -435,7 +466,7 @@ const UserProfiles = () => {
               <div className="up-contact-card-body">
                 {renderField(
                   "Relation",
-                  profileData.relation1,
+                  profileData.familyContacts?.[0]?.relation,
                   <Users size={18} />,
                   isEditing,
                   "relation1",
@@ -444,7 +475,7 @@ const UserProfiles = () => {
                 )}
                 {renderField(
                   "Phone Number",
-                  profileData.contact1,
+                  profileData.familyContacts?.[0]?.phoneNumber,
                   <Phone size={18} />,
                   isEditing,
                   "contact1",
@@ -461,7 +492,7 @@ const UserProfiles = () => {
               <div className="up-contact-card-body">
                 {renderField(
                   "Relation",
-                  profileData.relation2,
+                  profileData.familyContacts?.[1]?.relation,
                   <Users size={18} />,
                   isEditing,
                   "relation2",
@@ -470,7 +501,7 @@ const UserProfiles = () => {
                 )}
                 {renderField(
                   "Phone Number",
-                  profileData.contact2,
+                  profileData.familyContacts?.[1]?.phoneNumber,
                   <Phone size={18} />,
                   isEditing,
                   "contact2",
