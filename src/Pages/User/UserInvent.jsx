@@ -304,7 +304,7 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
         <div className="header-right">
           <button className="add-medicine-btn" onClick={onAddStock}>
             <Plus size={20} />
-            <span>Add Medicine</span>
+            <span>Add Stock</span>
           </button>
         </div>
       </div>

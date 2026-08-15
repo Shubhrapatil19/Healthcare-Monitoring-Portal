@@ -179,7 +179,21 @@ const UserDash = ({ onLogout }) => {
     ).padStart(2, "0")}`;
 
     const statuses = calendarStatusMap[key];
-    const isToday = dateValue === todayDate && calendarMonth === todayMonth && calendarYear === todayYear;
+
+    // Create date objects without time so comparison is date-only.
+    const currentDate = new Date(calendarYear, calendarMonth, dateValue);
+    const todayOnly = new Date(todayYear, todayMonth, todayDate);
+
+    const isPastDate = currentDate < todayOnly;
+    const isToday =
+      dateValue === todayDate &&
+      calendarMonth === todayMonth &&
+      calendarYear === todayYear;
+
+    // Past dates remain visible, but use a faded/blurred disabled style.
+    if (isPastDate) {
+      return " past-date";
+    }
 
     let statusClass = "";
     if (statuses && statuses.length > 0) {

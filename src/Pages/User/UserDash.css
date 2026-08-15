@@ -3845,3 +3845,30 @@ body{
     background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%) !important;
     color:#ffffff !important;
 }
+
+/* ============================================================
+   CALENDAR - PAST DATES
+   Past dates stay visible but are softly faded/blurred.
+   Appended at the end so this overrides status/hover styles.
+============================================================ */
+.calendar-date.past-date {
+    color: #94a3b8 !important;
+    background: #f1f5f9 !important;
+    border-color: transparent !important;
+    opacity: 0.42;
+    filter: blur(0.35px);
+    pointer-events: none;
+    cursor: default;
+    box-shadow: none !important;
+    transform: none !important;
+    font-weight: 500 !important;
+}
+
+.calendar-date.past-date:hover {
+    color: #94a3b8 !important;
+    background: #f1f5f9 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
