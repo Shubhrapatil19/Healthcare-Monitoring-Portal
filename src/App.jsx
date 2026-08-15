@@ -5,24 +5,55 @@ import { Toaster } from "react-hot-toast";
 import UserRegister from "./Pages/User/UserRegister";
 import UserLogin from "./Pages/User/UserLogin";
 import UserDash from "./Pages/User/UserDash";
-import ConfirmLogin from "./Pages/User/ConfirmLogin"; // ✅ NEW: Import ConfirmLogin page
+import ConfirmLogin from "./Pages/User/ConfirmLogin";
 
 function App() {
-  // ✅ Determine initial view from URL token or localStorage
+  // =========================================================
+  // INITIAL VIEW
+  // =========================================================
+
   const getInitialView = () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+
+    // Email confirmation link case
     if (token) {
       return "confirmLogin";
     }
+
+    // Already logged in case
     const savedToken = localStorage.getItem("token");
+
     if (savedToken) {
       return "dashboard";
     }
+
     return "login";
   };
 
   const [view, setView] = useState(getInitialView);
+
+  // =========================================================
+  // LOGIN SUCCESS
+  // =========================================================
+
+  const handleLoginSuccess = () => {
+    localStorage.setItem("isLoggedIn", "true");
+
+    // Login ke baad dashboard render hoga
+    setView("dashboard");
+  };
+
+  // =========================================================
+  // LOGOUT
+  // =========================================================
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("isLoggedIn");
+
+    setView("login");
+  };
 
   return (
     <>
@@ -40,31 +71,49 @@ function App() {
         }}
       />
 
-      {/* ================= REGISTER PAGE ================= */}
+      {/* =====================================================
+          REGISTER PAGE
+      ===================================================== */}
+
       {view === "register" ? (
-        <UserRegister onSuccess={() => setView("login")} />
+        <UserRegister
+          onSuccess={() => setView("login")}
+        />
 
       ) : view === "login" ? (
 
-        /* ================= LOGIN PAGE ================= */
+        /* =====================================================
+            LOGIN PAGE
+        ===================================================== */
+
         <UserLogin
-          // ❌ Email confirmation flow me yahan dashboard open nahi hoga.
-          // Dashboard email verification ke baad hi open hoga.
           onGoRegister={() => setView("register")}
+
+          // IMPORTANT:
+          // Successful login ke baad dashboard open karega
+          onLoginSuccess={handleLoginSuccess}
         />
 
       ) : view === "confirmLogin" ? (
 
-        /* ================= EMAIL CONFIRMATION PAGE ================= */
+        /* =====================================================
+            EMAIL CONFIRMATION PAGE
+        ===================================================== */
+
         <ConfirmLogin
-          // ✅ JWT verify hone ke baad dashboard open karega
-          onLoginSuccess={() => setView("dashboard")}
+          onLoginSuccess={handleLoginSuccess}
         />
 
       ) : (
 
-        /* ================= DASHBOARD ================= */
-        <UserDash onLogout={() => setView("login")} />
+        /* =====================================================
+            DASHBOARD
+        ===================================================== */
+
+        <UserDash
+          onLogout={handleLogout}
+        />
+
       )}
     </>
   );

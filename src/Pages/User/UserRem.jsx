@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import "./UserRem.css";
 
 import toast from "react-hot-toast";
-import api from "../../api/axiosInstance";
+import { Plus, Clock, Lightbulb, Trash2, Pill, Calendar } from "lucide-react";
 import {
-  Plus,
-  Clock,
-  Lightbulb,
-  Trash2,
-  Pill,
-  Calendar,
-} from "lucide-react";
+  getPendingReminders,
+  getReminderHistory,
+  markReminderTaken,
+  snoozeReminder,
+  deleteReminder,
+} from "../../api/MockApi";
 
 const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) => {
   const today = new Date();
@@ -21,109 +20,51 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
     year: "numeric",
   });
 
-  // ================= STATE FOR REAL REMINDER DATA =================
-  // pendingReminders -> shown as "Upcoming Today" cards
-  // historyReminders -> shown in the "Reminder History" table
   const [pendingReminders, setPendingReminders] = useState([]);
   const [historyReminders, setHistoryReminders] = useState([]);
   const [loading, setLoading] = useState(true);
-  // True once pending has been successfully fetched at least once. Needed
-  // because an empty array is a VALID state (all reminders taken) — it
-  // should not fall back to the medicines prop, which would bring back
-  // an already-taken reminder's Snooze button.
-  const [hasLoadedPending, setHasLoadedPending] = useState(false);
 
   const fetchReminders = async () => {
     setLoading(true);
     try {
-      // ================= API CALL: PENDING REMINDERS =================
-      // Endpoint: GET /reminder/pending
-      const pendingRes = await api.get("/reminder/pending");
-      setPendingReminders(Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []);
-      setHasLoadedPending(true);
-      // ==================================================================
+      const pendingRes = await getPendingReminders();
+      setPendingReminders(pendingRes.data || []);
 
-      // ================= API CALL: REMINDER HISTORY =================
-      // Endpoint: GET /reminder/history
-      const historyRes = await api.get("/reminder/history");
-      setHistoryReminders(Array.isArray(historyRes.data) ? historyRes.data : historyRes.data?.reminders || []);
-      // ==================================================================
+      const historyRes = await getReminderHistory();
+      setHistoryReminders(historyRes.data || []);
     } catch (error) {
-      console.log("Fetch Reminders API Error:", error.message);
-      // CRITICAL FIX: Do NOT fall back to the medicines prop (which comes
-      // from localStorage). That stale data contains old reminder IDs that
-      // no longer exist on the backend, causing "Reminder not found" errors.
-      // Only show real backend data — if the API fails, show empty state.
+      console.log("Fetch Reminders Error:", error.message);
       setPendingReminders([]);
       setHistoryReminders([]);
-      setHasLoadedPending(true);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const loadReminders = async () => {
-      await fetchReminders();
-    };
-
-    void Promise.resolve().then(loadReminders);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchReminders();
   }, []);
 
-  // CRITICAL FIX: Only use real backend data. Never fall back to the
-  // medicines prop (localStorage) — it contains stale reminder IDs that
-  // no longer exist on the backend.
   const displayHistory = historyReminders;
-
-  // Only show pending reminders that came from the backend. If the
-  // backend returned empty, show the empty state — do NOT derive from
-  // history or fall back to medicines prop.
-  const displayPending = hasLoadedPending ? pendingReminders : [];
+  const displayPending = pendingReminders;
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   };
 
-  const getReminderTime = (med) => {
-    return med?.timing || med?.time || med?.reminderTime || med?.scheduledTime || "";
-  };
+  const getReminderTime = (med) => med?.timing || med?.time || "";
 
   const convertTo12Hour = (time24) => {
     if (!time24) return "";
-
-    let hours = "";
-    let minutes = "00";
-
-    if (typeof time24 === "string") {
-      const trimmed = time24.trim();
-      if (trimmed.includes("T")) {
-        const parsed = new Date(trimmed);
-        if (!Number.isNaN(parsed.getTime())) {
-          hours = String(parsed.getHours()).padStart(2, "0");
-          minutes = String(parsed.getMinutes()).padStart(2, "0");
-        }
-      } else if (trimmed.includes(":")) {
-        [hours, minutes] = trimmed.split(":");
-      } else {
-        const numeric = trimmed.match(/(\d{1,2})(\d{2})$/);
-        if (numeric) {
-          hours = numeric[1];
-          minutes = numeric[2];
-        }
-      }
-    }
-
-    const h = parseInt(hours, 10);
+    const [hoursRaw, minutesRaw = "00"] = String(time24).split(":");
+    const h = parseInt(hoursRaw, 10);
     if (Number.isNaN(h)) return "";
     const ampm = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 || 12;
-    return `${h12}:${String(minutes).padStart(2, "0")} ${ampm}`;
+    return `${h12}:${String(minutesRaw).padStart(2, "0")} ${ampm}`;
   };
 
   const showTakenToast = (name) => {
@@ -220,204 +161,62 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
     );
   };
 
-  // ================= REMINDER ID RESOLUTION =================
-  // CRITICAL FIX: The backend expects the REMINDER ID, NOT the medicine
-  // ID. The reminder objects returned by /reminder/pending and
-  // /reminder/history may use different field names depending on the
-  // backend (MongoDB uses _id, some use reminderId, others use
-  // reminder_id). We must check ALL of these in priority order and
-  // NEVER fall back to med.id (which is the medicine ID) unless it's
-  // the ONLY identifier present on the object.
-  //
-  // Priority order:
-  //   1. med.reminderId      — explicit reminder ID (camelCase)
-  //   2. med.reminder_id     — explicit reminder ID (snake_case)
-  //   3. med._id             — MongoDB-style ID (the reminder's own _id)
-  //   4. med.id              — LAST RESORT only (could be medicine ID)
-  //
-  // We also log the full object so the developer can see exactly which
-  // field the backend actually returns, making debugging trivial.
-  const resolveReminderId = (med) => {
-    if (!med) return null;
-
-    // Explicit reminder ID fields first (these are unambiguous)
-    if (med.reminderId != null) return med.reminderId;
-    if (med.reminder_id != null) return med.reminder_id;
-
-    // MongoDB-style _id — this is the reminder's own document ID
-    if (med._id != null) return med._id;
-
-    // If the object has a separate medicineId field, then med.id is
-    // almost certainly the medicine ID, NOT the reminder ID. In that
-    // case we should NOT use med.id — return null so the caller can
-    // show a clear error instead of sending a wrong ID to the backend.
-    if (med.medicineId != null && med.id != null) {
-      console.log(
-        "resolveReminderId: object has both medicineId and id — id is the medicine ID, not the reminder ID. Cannot resolve reminder ID.",
-        med
-      );
-      return null;
-    }
-
-    // Last resort: only use med.id if it's the ONLY id-like field
-    return med.id != null ? med.id : null;
-  };
-
-  // ================= API CALL: MARK AS TAKEN =================
-  // Endpoint: POST /reminder/{reminderId}/taken
-  //
-  // Per spec:
-  // 1. Use resolveReminderId() to get the ACTUAL reminder ID — never
-  //    pass the medicine ID.
-  // 2. Log the object/ID/URL before calling, for debugging.
-  // 3. Never hardcode or optimistically set status to "taken" — wait for
-  //    the backend to confirm, then refetch pending + history fresh and
-  //    render exactly what the backend returns.
-  // 4. If the backend responds 200 OK but with a `{ success: false }`
-  //    body, treat that as a failure too: show the error toast, leave
-  //    pendingReminders/historyReminders completely untouched, and log
-  //    the details.
-  // 5. If the backend returns "Reminder not found", show a clear error
-  //    toast and log the request URL + reminderId for debugging.
   const handleMarkTaken = async (med) => {
-    const reminderId = resolveReminderId(med);
-    const medicineName = med?.medicineName;
-
-    // ---- Debug logging before the call ----
-    console.log("Reminder Object:", med);
-    console.log("Resolved Reminder ID:", reminderId);
-    console.log("Request URL:", `/reminder/${reminderId}/taken`);
-
+    const reminderId = med?.id;
     if (reminderId == null) {
-      console.log("Mark Taken aborted — no valid reminder ID found on:", med);
       toast.error("Could not find a valid reminder ID for this item.");
       return;
     }
 
     try {
-      // NOTE: if this POST — or any of the refetch GETs below — comes
-      // back 403 Forbidden, that's a backend JWT secret mismatch (the
-      // token this app sends doesn't validate against the server's
-      // current secret), not a frontend bug. No amount of refetch logic
-      // here will fix it; the backend/auth team needs to make sure
-      // JWT_SECRET is the same across the auth-issuing service and this
-      // API, and that the stored token hasn't expired/rotated.
-      const res = await api.post(`/reminder/${reminderId}/taken`);
+      await markReminderTaken(reminderId);
+      showTakenToast(med.medicineName);
 
-      // Some backends respond 200 OK with a success:false payload
-      // instead of an HTTP error status — handle that as a failure too.
-      if (res.data && res.data.success === false) {
-        console.log("Mark Taken API returned failure body:", res.data, "for reminderId:", reminderId);
-        toast.error(res.data.message || "Failed to mark as taken. Please try again.");
-        return; // leave pendingReminders/historyReminders exactly as-is
-      }
+      const [pendingRes, historyRes] = await Promise.all([getPendingReminders(), getReminderHistory()]);
+      setPendingReminders(pendingRes.data || []);
+      setHistoryReminders(historyRes.data || []);
 
-      showTakenToast(medicineName);
-
-      // ---- Backend confirmed success: pull fresh truth, don't guess ----
-      // Refresh BOTH pending reminders AND history so the UI updates
-      // immediately (Upcoming → Taken).
-      const [pendingRes, historyRes] = await Promise.all([
-        api.get("/reminder/pending"),
-        api.get("/reminder/history"),
-      ]);
-
-      setPendingReminders(
-        Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []
-      );
-      setHasLoadedPending(true);
-
-      const freshHistory = Array.isArray(historyRes.data)
-        ? historyRes.data
-        : historyRes.data?.reminders || historyRes.data?.data?.reminders || [];
-      setHistoryReminders(freshHistory);
-
-      // Let the parent (UserDash) refresh fetchMyMedicines() +
-      // fetchTodaySchedule() + fetchDashboardSummary() against its own
-      // state, so those screens reflect this change too.
       onReminderActionComplete && onReminderActionComplete();
     } catch (error) {
-      console.log("Mark Taken API Error:", error.message, error.response?.data);
-      console.log("Reminder ID that failed:", reminderId, "Full reminder object:", med);
-      console.log("Request URL that failed:", `/reminder/${reminderId}/taken`);
-
-      // Specific handling for "Reminder not found" — this means the ID
-      // we sent doesn't match any reminder on the backend. Show a clear
-      // error and DO NOT update the UI status.
+      console.log("Mark Taken Error:", error.message, error.response?.data);
       const errorMsg = error.response?.data?.message || "";
-      if (errorMsg.toLowerCase().includes("reminder not found")) {
-        toast.error("Reminder not found. The reminder may have been deleted or the ID is incorrect.");
-      } else {
-        toast.error(errorMsg || "Failed to mark as taken. Please try again.");
-      }
-
-      // Do NOT touch pendingReminders/historyReminders — status stays
-      // exactly as it was before the click.
+      toast.error(errorMsg || "Failed to mark as taken. Please try again.");
     }
   };
-  // ================================================================
 
-  // ================= API CALL: SNOOZE REMINDER =================
-  // Endpoint: POST /reminder/{reminderId}/snooze
-  // Same rules as handleMarkTaken above: correct ID resolution via
-  // resolveReminderId(), debug logging, no optimistic/hardcoded status,
-  // refetch fresh data only after backend confirms success,
-  // success:false treated as failure.
   const handleSnooze = async (med) => {
-    const reminderId = resolveReminderId(med);
-    const medicineName = med?.medicineName;
-
-    console.log("Reminder Object:", med);
-    console.log("Resolved Reminder ID:", reminderId);
-    console.log("Request URL:", `/reminder/${reminderId}/snooze`);
-
+    const reminderId = med?.id;
     if (reminderId == null) {
-      console.log("Snooze aborted — no valid reminder ID found on:", med);
       toast.error("Could not find a valid reminder ID for this item.");
       return;
     }
 
     try {
-      const res = await api.post(`/reminder/${reminderId}/snooze`);
+      await snoozeReminder(reminderId, 15);
+      showSnoozeToast(med.medicineName, 15);
 
-      if (res.data && res.data.success === false) {
-        console.log("Snooze API returned failure body:", res.data, "for reminderId:", reminderId);
-        toast.error(res.data.message || "Failed to snooze reminder. Please try again.");
-        return; // leave pendingReminders/historyReminders exactly as-is
-      }
-
-      showSnoozeToast(medicineName, 15);
-
-      const [pendingRes, historyRes] = await Promise.all([
-        api.get("/reminder/pending"),
-        api.get("/reminder/history"),
-      ]);
-
-      setPendingReminders(
-        Array.isArray(pendingRes.data) ? pendingRes.data : pendingRes.data?.reminders || []
-      );
-      setHasLoadedPending(true);
-
-      const freshHistory = Array.isArray(historyRes.data)
-        ? historyRes.data
-        : historyRes.data?.reminders || historyRes.data?.data?.reminders || [];
-      setHistoryReminders(freshHistory);
+      const [pendingRes, historyRes] = await Promise.all([getPendingReminders(), getReminderHistory()]);
+      setPendingReminders(pendingRes.data || []);
+      setHistoryReminders(historyRes.data || []);
 
       onReminderActionComplete && onReminderActionComplete();
     } catch (error) {
-      console.log("Snooze API Error:", error.message, error.response?.data);
-      console.log("Reminder ID that failed:", reminderId, "Full reminder object:", med);
-      console.log("Request URL that failed:", `/reminder/${reminderId}/snooze`);
-
+      console.log("Snooze Error:", error.message, error.response?.data);
       const errorMsg = error.response?.data?.message || "";
-      if (errorMsg.toLowerCase().includes("reminder not found")) {
-        toast.error("Reminder not found. The reminder may have been deleted or the ID is incorrect.");
-      } else {
-        toast.error(errorMsg || "Failed to snooze reminder. Please try again.");
-      }
+      toast.error(errorMsg || "Failed to snooze reminder. Please try again.");
     }
   };
-  // ================================================================
+
+  const handleDeleteReminder = async (id) => {
+    try {
+      await deleteReminder(id);
+      setHistoryReminders((prev) => prev.filter((r) => r.id !== id));
+      onDeleteReminder && onDeleteReminder(id);
+    } catch (error) {
+      console.log("Delete Reminder Error:", error.message, error.response?.data);
+      toast.error("Failed to delete reminder. Please try again.");
+    }
+  };
 
   return (
     <div className="rem-page">
@@ -502,7 +301,7 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
 
               <div className="rem-cards-grid">
                 {displayPending.map((med) => (
-                  <div key={med.reminderId ?? med.id} className="rem-card-item">
+                  <div key={med.id} className="rem-card-item">
                     <div className="rem-card-top-row">
                       <div className="rem-time-badge">
                         <Clock size={16} />
@@ -524,19 +323,11 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
                       <span>{dateStr}</span>
                     </div>
                     <div className="rem-card-actions-bar">
-                      <button
-                        className="rem-snooze-btn"
-                        type="button"
-                        onClick={() => handleSnooze(med)}
-                      >
+                      <button className="rem-snooze-btn" type="button" onClick={() => handleSnooze(med)}>
                         <Clock size={16} />
                         Snooze
                       </button>
-                      <button
-                        className="rem-taken-btn"
-                        type="button"
-                        onClick={() => handleMarkTaken(med)}
-                      >
+                      <button className="rem-taken-btn" type="button" onClick={() => handleMarkTaken(med)}>
                         ✓ Taken
                       </button>
                     </div>
@@ -553,7 +344,6 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
             </div>
 
             <div className="rem-history-list">
-              {/* Header Row */}
               <div className="rem-hl-header">
                 <div className="rem-hl-col rem-hl-col-name">Medicine Name</div>
                 <div className="rem-hl-col rem-hl-col-dose">Dosage</div>
@@ -563,9 +353,8 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
                 <div className="rem-hl-col rem-hl-col-action">Action</div>
               </div>
 
-              {/* Data Rows */}
               {displayHistory.map((med) => (
-                <div key={med.reminderId ?? med.id} className="rem-hl-row">
+                <div key={med.id} className="rem-hl-row">
                   <div className="rem-hl-col rem-hl-col-name">
                     <span className="rem-hl-label">Medicine Name</span>
                     <span className="rem-hl-value rem-hl-value-name">{med.medicineName}</span>
@@ -603,7 +392,7 @@ const UserRem = ({ onAddMedicine, onDeleteReminder, onReminderActionComplete }) 
                       className="rem-delete-btn"
                       type="button"
                       aria-label="Delete reminder"
-                      onClick={() => onDeleteReminder && onDeleteReminder(med.reminderId ?? med.id)}
+                      onClick={() => handleDeleteReminder(med.id)}
                     >
                       <Trash2 size={18} />
                     </button>

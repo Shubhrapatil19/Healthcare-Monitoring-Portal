@@ -1,8 +1,13 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import api from "../../api/axiosInstance";
+import { confirmLoginToken, getProfile } from "../../api/mockApi";
 import "./ConfirmLogin.css";
 
+// NOTE: With no real backend, UserLogin now logs the user in
+// immediately (see mockApi.loginUser) instead of sending a
+// confirmation email. This page is kept only for compatibility if
+// something still links here — it simply checks that a token already
+// exists in localStorage from the mock login step.
 const ConfirmLogin = ({ onLoginSuccess }) => {
   const params = new URLSearchParams(window.location.search);
   const verifyToken = params.get("token");
@@ -21,68 +26,27 @@ const ConfirmLogin = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // Verify the token with the backend
-      const response = await api.get(
-        `/auth/confirm-login?token=${verifyToken}`
-      );
+      // ================= MOCK: CONFIRM LOGIN (no backend) =================
+      const response = await confirmLoginToken(verifyToken);
+      // ========================================================================
 
-      // IMPORTANT: check that a real token came back before saving anything
       if (!response.data.token) {
         setLoading(false);
         setVerificationFailed(true);
-        setErrorMessage(
-          response.data.message || "Confirmation link expired or already used."
-        );
-        toast.error(
-          response.data.message || "Confirmation link expired or already used."
-        );
+        setErrorMessage("Confirmation link expired or already used.");
+        toast.error("Confirmation link expired or already used.");
         return;
       }
 
-      const jwt = response.data.token;
-
-      // Save REAL JWT returned by backend
-      localStorage.setItem("token", jwt);
-
-      // Fetch user profile to get name and store it
-      const fetchUserProfile = async () => {
-        try {
-          const profileResponse = await api.get("/profile/complete");
-          if (profileResponse.data) {
-            const userData = profileResponse.data;
-            if (userData.fullName) {
-              localStorage.setItem("currentUserName", userData.fullName);
-              localStorage.setItem(
-                "registeredUser",
-                JSON.stringify({
-                  fullName: userData.fullName,
-                  email: userData.email || "",
-                })
-              );
-            }
-          }
-        } catch {
-          // If profile fetch fails, try to get name from JWT or use default
-          try {
-            const payload = JSON.parse(atob(jwt.split(".")[1]));
-            if (payload.fullName || payload.name) {
-              const userName = payload.fullName || payload.name || "User";
-              localStorage.setItem("currentUserName", userName);
-              localStorage.setItem(
-                "registeredUser",
-                JSON.stringify({
-                  fullName: userName,
-                  email: payload.email || payload.sub || "",
-                })
-              );
-            }
-          } catch {
-            // If all fails, name will be "User" from fallback
-          }
+      // Fetch profile to make sure the display name is up to date
+      try {
+        const profileResponse = await getProfile();
+        if (profileResponse.data?.fullName) {
+          localStorage.setItem("currentUserName", profileResponse.data.fullName);
         }
-      };
-
-      await fetchUserProfile();
+      } catch {
+        // Non-fatal — name will just stay whatever was already stored
+      }
 
       setVerified(true);
       toast.success("Login Successful");
@@ -90,11 +54,11 @@ const ConfirmLogin = ({ onLoginSuccess }) => {
       setTimeout(() => {
         onLoginSuccess?.();
       }, 1500);
-    } catch {
+    } catch (error) {
       setLoading(false);
       setVerificationFailed(true);
-      setErrorMessage("Invalid or expired confirmation link.");
-      toast.error("Invalid or expired confirmation link.");
+      setErrorMessage(error.response?.data?.message || "Invalid or expired confirmation link.");
+      toast.error(error.response?.data?.message || "Invalid or expired confirmation link.");
     }
   };
 

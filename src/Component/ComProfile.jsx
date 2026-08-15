@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import api from "../api/axiosInstance";
+import { completeProfile } from "../api/MockApi";
 
 import {
   User,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import "./ComProfile.css";
 
-// Backend only accepts these exact disease values (POST /profile/complete)
+// Mocked backend only accepts these exact disease values
 const DISEASE_OPTIONS = [
   { label: "Diabetes", value: "DIABETES" },
   { label: "Hypertension", value: "HYPERTENSION" },
@@ -26,7 +26,7 @@ const DISEASE_OPTIONS = [
   { label: "Other", value: "OTHER" },
 ];
 
-// Backend only accepts these exact relation values (max 2 family contacts)
+// Mocked backend only accepts these exact relation values (max 2 family contacts)
 const RELATION_OPTIONS = [
   { label: "Father", value: "FATHER" },
   { label: "Mother", value: "MOTHER" },
@@ -157,24 +157,21 @@ const ComProfile = ({ onComplete }) => {
     setLoading(true);
 
     try {
-      // ================= API CALL: PROFILE COMPLETE =================
-      // Endpoint: POST /profile/complete (requires JWT header - auto
-      // attached by axiosInstance interceptor)
-      const response = await api.post("/profile/complete", {
+      // ================= MOCK: PROFILE COMPLETE (no backend) =================
+      const response = await completeProfile({
         age: Number(formData.age),
-        diseases: [formData.disease], // backend expects an array
+        diseases: [formData.disease], // kept as an array for parity with the old shape
         familyContacts: [
           { phoneNumber: formData.contact1, relation: formData.relation1 },
           { phoneNumber: formData.contact2, relation: formData.relation2 },
         ],
       });
-      // ==================================================================
+      // ==============================================================================
 
-      // Save locally only after a real successful save
+      // Save locally only after a successful save
       localStorage.setItem("profileCompleted", "true");
       // Store flat frontend structure so UserProfiles page
       // can read fields like disease, relation1, contact1, etc.
-      // (backend returns { diseases: [], familyContacts: [...] })
       const profileToStore = {
         age: formData.age,
         gender: formData.gender,
@@ -196,7 +193,7 @@ const ComProfile = ({ onComplete }) => {
         onComplete();
       }
     } catch (error) {
-      console.log("Profile Complete API Error:", error.message);
+      console.log("Profile Complete error:", error.response?.data || error.message);
       toast.error(
         error.response?.data?.message || "Failed to save profile. Please try again.",
         { duration: 4000 }

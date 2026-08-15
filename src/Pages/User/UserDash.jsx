@@ -1,5 +1,13 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import api from "../../api/axiosInstance";
+import {
+  getMedicines,
+  getInventory,
+  getTodaySchedule,
+  getDashboardSummary,
+  getCalendar,
+  updateMedicine,
+  deleteMedicine,
+} from "../../api/MockApi";
 import toast from "react-hot-toast";
 import "./UserDash.css";
 
@@ -66,7 +74,7 @@ const UserDash = ({ onLogout }) => {
   // Displayed month/year (defaults to current month, navigable via arrows)
   const [calendarMonth, setCalendarMonth] = useState(todayMonth);
   const [calendarYear, setCalendarYear] = useState(todayYear);
-  // Reminder data fetched from GET /reminder/calendar?startDate=...&endDate=...
+  // Reminder data (mocked — no real reminder engine without a backend)
   const [calendarData, setCalendarData] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
@@ -86,33 +94,17 @@ const UserDash = ({ onLogout }) => {
     calendarDays.push("");
   }
 
-  // ================= API CALL: GET REMINDER CALENDAR =================
-  // Endpoint: GET /reminder/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
-  // Fetches reminders for the currently displayed month range.
+  // ================= MOCK: GET REMINDER CALENDAR =================
   const fetchCalendarData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       setCalendarLoading(true);
-
-      // Build start/end dates for the displayed month (YYYY-MM-DD)
-      const startDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-01`;
-      const endDate = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(
-        daysInMonth
-      ).padStart(2, "0")}`;
-
-      const response = await api.get("/reminder/calendar", {
-        params: { startDate, endDate },
-      });
-
+      const response = await getCalendar();
       const data = Array.isArray(response.data)
         ? response.data
         : response.data?.reminders || response.data?.data || [];
       setCalendarData(data);
     } catch (err) {
-      // TEMP DEBUG
-      console.log("fetchCalendarData API Error:", err.response?.status, err.response?.data || err.message);
+      console.log("fetchCalendarData error:", err.response?.data || err.message);
       setCalendarData([]);
     } finally {
       setCalendarLoading(false);
@@ -123,7 +115,6 @@ const UserDash = ({ onLogout }) => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCalendarData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch when the displayed month/year changes
@@ -200,23 +191,9 @@ const UserDash = ({ onLogout }) => {
 
     return `${isToday ? " today" : ""}${statusClass}`;
   };
-  // CRITICAL FIX: Start with empty arrays — never initialize from
-  // localStorage. Stale cached data contains old IDs that no longer
-  // exist on the backend. Only real backend data should be shown.
-  const [medicines, setMedicines] = useState([]);
+
   const [stockItems, setStockItems] = useState([]);
 
-  // CRITICAL FIX: Clear stale localStorage cache on mount so old
-  // reminder/medicine IDs that no longer exist on the backend are
-  // never used again.
-  useEffect(() => {
-    try {
-      localStorage.removeItem("userMedicines");
-      localStorage.removeItem("userStockItems");
-    } catch {
-      // ignore
-    }
-  }, []);
   const [showProfile, setShowProfile] = useState(false);
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [todaySchedule, setTodaySchedule] = useState([]);
@@ -315,107 +292,50 @@ const UserDash = ({ onLogout }) => {
     setShowAddMedicineModal(true);
   };
 
-  // Save medicines to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("userMedicines", JSON.stringify(medicines));
-  }, [medicines]);
-
-  // Save stock items to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("userStockItems", JSON.stringify(stockItems));
-  }, [stockItems]);
-
-  // ================= REUSABLE FETCH FUNCTIONS =================
-  // Pulled out of useEffect bodies so they can be called both on mount
-  // AND again right after an add/update action (e.g. after adding a
-  // medicine, so "Today's Schedule" / "My Medicine" / summary cards
-  // reflect the new data immediately instead of staying stale until a
-  // manual page refresh).
-
-  const fetchMedicines = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const response = await api.get("/medicine/my-medicines");
-      if (response.data?.medicines && Array.isArray(response.data.medicines)) {
-        setMedicines(response.data.medicines);
-      } else if (response.data && Array.isArray(response.data)) {
-        setMedicines(response.data);
-      }
-    } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchMedicines API Error:', err.response?.status, err.response?.data || err.message);
-    }
-  };
-
+  // ================= REUSABLE FETCH FUNCTIONS (mocked) =================
   const fetchStockItemsFromServer = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const response = await api.get("/medicine/inventory");
+      const response = await getInventory();
       if (response.data?.stockItems && Array.isArray(response.data.stockItems)) {
         setStockItems(response.data.stockItems);
       }
     } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchStockItemsFromServer API Error:', err.response?.status, err.response?.data || err.message);
+      console.log("fetchStockItemsFromServer error:", err.response?.data || err.message);
     }
   };
 
-  // Endpoint: GET /medicine/today-schedule
   const fetchTodaySchedule = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       setScheduleLoading(true);
-      const response = await api.get("/medicine/today-schedule");
-      if (response.data && Array.isArray(response.data)) {
+      const response = await getTodaySchedule();
+      if (Array.isArray(response.data)) {
         setTodaySchedule(response.data);
-      } else if (response.data?.schedules && Array.isArray(response.data.schedules)) {
-        setTodaySchedule(response.data.schedules);
-      } else if (response.data?.medicines && Array.isArray(response.data.medicines)) {
-        setTodaySchedule(response.data.medicines);
       }
     } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchTodaySchedule API Error:', err.response?.status, err.response?.data || err.message);
+      console.log("fetchTodaySchedule error:", err.response?.data || err.message);
     } finally {
       setScheduleLoading(false);
     }
   };
 
-  // Endpoint: GET /medicine/inventory
   const fetchInventory = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       setInventoryLoading(true);
-      const response = await api.get("/medicine/inventory");
-      if (response.data && Array.isArray(response.data)) {
-        setInventoryData(response.data);
-      } else if (response.data?.inventory && Array.isArray(response.data.inventory)) {
-        setInventoryData(response.data.inventory);
-      } else if (response.data?.items && Array.isArray(response.data.items)) {
-        setInventoryData(response.data.items);
+      const response = await getInventory();
+      if (Array.isArray(response.data?.stockItems)) {
+        setInventoryData(response.data.stockItems);
       }
     } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchInventory API Error:', err.response?.status, err.response?.data || err.message);
+      console.log("fetchInventory error:", err.response?.data || err.message);
     } finally {
       setInventoryLoading(false);
     }
   };
 
-  // Endpoint: GET /medicine/dashboard-summary
   const fetchDashboardSummary = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       setSummaryLoading(true);
-      const response = await api.get("/medicine/dashboard-summary");
+      const response = await getDashboardSummary();
       if (response.data && typeof response.data === "object") {
         setDashboardSummary((prev) => ({
           ...prev,
@@ -423,29 +343,21 @@ const UserDash = ({ onLogout }) => {
         }));
       }
     } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchDashboardSummary API Error:', err.response?.status, err.response?.data || err.message);
+      console.log("fetchDashboardSummary error:", err.response?.data || err.message);
     } finally {
       setSummaryLoading(false);
     }
   };
 
-  // Endpoint: GET /medicine/my-medicines
   const fetchMyMedicines = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       setMyMedicinesLoading(true);
-      const response = await api.get("/medicine/my-medicines");
-      if (response.data && Array.isArray(response.data)) {
-        setMyMedicines(response.data);
-      } else if (response.data?.medicines && Array.isArray(response.data.medicines)) {
+      const response = await getMedicines();
+      if (response.data?.medicines && Array.isArray(response.data.medicines)) {
         setMyMedicines(response.data.medicines);
       }
     } catch (err) {
-      // TEMP DEBUG
-      console.log('fetchMyMedicines API Error:', err.response?.status, err.response?.data || err.message);
+      console.log("fetchMyMedicines error:", err.response?.data || err.message);
     } finally {
       setMyMedicinesLoading(false);
     }
@@ -468,14 +380,10 @@ const UserDash = ({ onLogout }) => {
   // ================================================================
 
   // ================= MEDICINE EDIT (My Medicine card) =================
-  // Endpoint: PUT /medicine/{id}
-  // Updates the medicine on the backend, then refreshes both the local
-  // medicine lists and the server-driven dashboard cards.
   const handleEditMedicine = async (updatedMedicine) => {
     if (!updatedMedicine?.id) return;
 
     // Backend expects frequency in backend format (e.g. "ONCE_DAILY").
-    // Map display labels back, and pass through already-backend values.
     const backendFrequency = (freq) => {
       const map = {
         "Once a day": "ONCE_DAILY",
@@ -491,18 +399,16 @@ const UserDash = ({ onLogout }) => {
       medicineName: updatedMedicine.medicineName,
       dosage: updatedMedicine.dosage,
       startTiming: timing ? `${timing}:00` : "",
+      timing,
       frequency: backendFrequency(updatedMedicine.frequency),
     };
 
     try {
-      const response = await api.put(`/medicine/${updatedMedicine.id}`, payload);
+      const response = await updateMedicine(updatedMedicine.id, payload);
       const saved = response.data || updatedMedicine;
 
-      // Update both medicine lists with the saved/updated item
+      // Update the My Medicine list with the saved/updated item
       setMyMedicines((prev) =>
-        prev.map((med) => (med.id === updatedMedicine.id ? { ...med, ...saved } : med))
-      );
-      setMedicines((prev) =>
         prev.map((med) => (med.id === updatedMedicine.id ? { ...med, ...saved } : med))
       );
 
@@ -512,8 +418,7 @@ const UserDash = ({ onLogout }) => {
       refreshAfterMedicineAdded();
       refreshAfterStockAdded();
     } catch (err) {
-      // TEMP DEBUG
-      console.log("Edit Medicine API Error:", err.response?.status, err.response?.data || err.message);
+      console.log("Edit Medicine error:", err.response?.data || err.message);
       toast.error(
         err.response?.data?.message || "Failed to update medicine. Please try again.",
         { duration: 4000 }
@@ -522,18 +427,14 @@ const UserDash = ({ onLogout }) => {
   };
 
   // ================= MEDICINE DELETE (My Medicine card) =================
-  // Endpoint: DELETE /medicine/{id}
-  // Deletes the medicine on the backend, removes it from the local lists,
-  // and refreshes the server-driven dashboard cards.
   const handleDeleteMedicine = async (id) => {
     if (!id) return;
 
     try {
-      await api.delete(`/medicine/${id}`);
+      await deleteMedicine(id);
 
-      // Remove from medicine + stock lists
+      // Remove from the medicine + stock lists
       setMyMedicines((prev) => prev.filter((med) => med.id !== id));
-      setMedicines((prev) => prev.filter((med) => med.id !== id));
       setStockItems((prev) => prev.filter((item) => item.id !== id));
 
       toast.success("Medicine deleted successfully!", { duration: 3000 });
@@ -542,8 +443,7 @@ const UserDash = ({ onLogout }) => {
       refreshAfterMedicineAdded();
       refreshAfterStockAdded();
     } catch (err) {
-      // TEMP DEBUG
-      console.log("Delete Medicine API Error:", err.response?.status, err.response?.data || err.message);
+      console.log("Delete Medicine error:", err.response?.data || err.message);
       toast.error(
         err.response?.data?.message || "Failed to delete medicine. Please try again.",
         { duration: 4000 }
@@ -552,39 +452,27 @@ const UserDash = ({ onLogout }) => {
   };
   // ================================================================
 
-  // CRITICAL FIX: Always fetch medicines from backend on mount — never
-  // skip based on localStorage. This ensures only real backend data is
-  // shown, not stale cached data with old IDs.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchMedicines();
-  }, []);
-
-  // CRITICAL FIX: Always fetch stock items from backend on mount.
+  // Fetch all dashboard data on mount
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStockItemsFromServer();
   }, []);
 
-  // Fetch today's schedule from backend
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTodaySchedule();
   }, []);
 
-  // Fetch inventory from backend
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInventory();
   }, []);
 
-  // Fetch dashboard summary from backend
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDashboardSummary();
   }, []);
 
-  // Fetch my medicines from backend
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMyMedicines();
@@ -594,17 +482,6 @@ const UserDash = ({ onLogout }) => {
     setShowAddMedicineModal(false);
 
     if (medicineData) {
-      // Extract first timing from timings array for display
-      const firstTiming = medicineData.timings?.[0]?.time || "";
-
-      const newMedicine = {
-        id: Date.now(),
-        status: "upcoming",
-        ...medicineData,
-        timing: firstTiming, // Ensure timing (singular) is set for table display
-      };
-      setMedicines((prev) => [...prev, newMedicine]);
-
       // Also add a notification for the new medicine
       const notification = {
         id: Date.now() + 1,
@@ -624,15 +501,14 @@ const UserDash = ({ onLogout }) => {
         // ignore
       }
 
-      // The medicine was already saved on the backend by AddMedicineModal
-      // (POST /medicine/add). Refresh the server-driven cards so the new
-      // medicine shows up in "Today's Schedule", "My Medicine", and the
-      // summary counters right away.
+      // The medicine was already saved (mocked) by AddMedicineModal.
+      // Refresh the server-driven cards so the new medicine shows up in
+      // "Today's Schedule", "My Medicine", and the summary counters right away.
       refreshAfterMedicineAdded();
     }
   };
 
-  // Add stock — now expects the SERVER's saved item (with real id) from AddStockModal
+  // Add stock — expects the mock-saved item (with generated id) from AddStockModal
   const handleAddStock = (savedStockItem) => {
     if (savedStockItem) {
       setStockItems((prev) => [...prev, savedStockItem]);
@@ -642,7 +518,7 @@ const UserDash = ({ onLogout }) => {
     setShowAddStockModal(false);
   };
 
-  // Update stock — called by UserInvent after a successful PUT /medicine/{id}/stock
+  // Update stock — called by UserInvent after a successful mock update
   const handleUpdateStock = (id, updatedData) => {
     setStockItems((prev) =>
       prev.map((item) =>
@@ -652,32 +528,10 @@ const UserDash = ({ onLogout }) => {
     refreshAfterStockAdded();
   };
 
-  // Delete stock — called by UserInvent after a successful DELETE /medicine/{id}
+  // Delete stock — called by UserInvent after a successful mock delete
   const handleDeleteStock = (id) => {
     setStockItems((prev) => prev.filter((item) => String(item.id) !== String(id)));
     refreshAfterStockAdded();
-  };
-
-  // Snooze reminder — add 10 minutes to the medicine timing
-  const handleSnoozeReminder = (medicineId) => {
-    setMedicines((prev) =>
-      prev.map((med) => {
-        if (med.id !== medicineId) return med;
-
-        // Calculate new time by adding 10 minutes
-        const [hours, minutes] = med.timing.split(":").map(Number);
-        const totalMinutes = hours * 60 + minutes + 10;
-        const newHours = Math.floor(totalMinutes / 60) % 24;
-        const newMinutes = totalMinutes % 60;
-        const newTiming = `${String(newHours).padStart(2, "0")}:${String(newMinutes).padStart(2, "0")}`;
-
-        return {
-          ...med,
-          timing: newTiming,
-          status: "snoozed",
-        };
-      })
-    );
   };
 
   return (
@@ -878,7 +732,6 @@ const UserDash = ({ onLogout }) => {
             ) : activeItem === "Reminders" ? (
               <UserRem
                 onAddMedicine={handleAddMedicine}
-                onSnoozeReminder={handleSnoozeReminder}
                 onReminderActionComplete={refreshAfterMedicineAdded}
               />
             ) : showLogoutModal ? (

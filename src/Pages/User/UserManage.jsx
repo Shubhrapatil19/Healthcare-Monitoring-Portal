@@ -13,6 +13,7 @@ import {
   Trash2,
   Save,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import AddMedicineModal from "../../Component/UserAddMed";
 
@@ -383,18 +384,21 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
       </div>
 
       {deleteConfirmation.visible && (
-        <div className="confirm-modal-overlay">
-          <div className="confirm-modal">
-            <h2>Confirm deletion</h2>
-            <p>
-              Are you sure you want to delete "{deleteConfirmation.medicine?.medicineName}"?
-            </p>
+        <div className="confirm-modal-overlay" onClick={cancelDeleteMedicine}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-modal-icon">
+              <AlertTriangle size={30} />
+            </div>
+            <h2>Confirm Deletion</h2>
+            <p className="confirm-modal-text">Are you sure you want to delete</p>
+            <p className="confirm-modal-medicine">"{deleteConfirmation.medicine?.medicineName}"?</p>
+            <p className="confirm-modal-hint">This action cannot be undone.</p>
             <div className="confirm-modal-actions">
               <button className="confirm-btn cancel" onClick={cancelDeleteMedicine}>
                 Cancel
               </button>
               <button className="confirm-btn delete" onClick={confirmDeleteMedicine}>
-                Yes, delete
+                Yes, Delete
               </button>
             </div>
           </div>

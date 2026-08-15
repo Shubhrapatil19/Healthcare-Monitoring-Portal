@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Package, Plus, Edit2, Save, X, ChevronLeft, ChevronRight, Search, ArrowUp, ArrowDown, Trash2, Loader2 } from "lucide-react";
-import api from "../../api/axiosInstance";
+import { getInventory, updateStock, deleteStock } from "../../api/MockApi";
 import "./UserInvent.css";
 
 const StatusBadge = ({ status }) => {
@@ -100,7 +100,7 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
         setLoading(true);
         setLoadError("");
 
-        const response = await api.get("/medicine/inventory");
+        const response = await getInventory();
         const normalized = extractInventoryList(response.data)
           .map(normalizeInventoryItem)
           .filter(Boolean);
@@ -250,9 +250,9 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
         expiryDate: editDraft.expiryDate,
       };
 
-      const response = await api.put(`/medicine/${editingId}/stock`, payload);
+      const response = await updateStock(editingId, payload);
       const savedItem = normalizeInventoryItem(
-        response.data?.stockItem || response.data?.data || response.data || {
+        response.data?.stockItem || response.data || {
           ...rows.find((item) => String(item.id) === String(editingId)),
           ...payload,
         }
@@ -284,7 +284,7 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
     setDeletingId(id);
     setRowError({ id: null, message: "" });
     try {
-      await api.delete(`/medicine/${id}`);
+      await deleteStock(id);
       setInventoryRows((prev) => prev.filter((item) => String(item.id) !== String(id)));
       onDeleteStock && onDeleteStock(id);
     } catch (err) {

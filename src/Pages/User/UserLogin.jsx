@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import api from "../../api/axiosInstance";
+import { loginUser } from "../../api/MockApi";
 
 import "./UserLogin.css";
 
@@ -14,7 +14,7 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 
-const UserLogin = ({ onGoRegister }) => {
+const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
   const rememberedEmail = localStorage.getItem("rememberEmail") || "";
 
   const [showPassword, setShowPassword] = useState(false);
@@ -72,60 +72,45 @@ const UserLogin = ({ onGoRegister }) => {
     setLoading(true);
 
     try {
-      // ================= API CALL: LOGIN =================
-      // Endpoint: POST /auth/login
-      // Note: This does NOT return a JWT directly. Backend sends a
-      // confirmation email first ("Is it you?" check). The real JWT
-      // is only issued when the user clicks the link in that email,
-      // which hits GET /auth/confirm-login?token=xxxx (handled separately,
-      // not from this form).
-      const response = await api.post("/auth/login", {
+      // ================= MOCK: LOGIN (no backend) =================
+      // No server means no confirmation email, so login now completes
+      // immediately once the credentials match a registered user.
+      const response = await loginUser({
         email: formData.email,
         password: formData.password,
       });
-      // =====================================================
+      // ================================================================
 
-      // Backend returns { token: null, type: "Bearer", message: "Confirmation email sent..." }
-      toast.success(
-        response.data.message || "Confirmation email sent. Please check your inbox to complete login.",
-        {
-          duration: 5000,
-          style: {
-            background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
-            color: "#fff",
-            padding: "14px 20px",
-            borderRadius: "10px",
-            boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
-            fontSize: "14px",
-            fontWeight: "600",
-            border: "1px solid rgba(255, 255, 255, 0.22)",
-          },
-          iconTheme: { primary: "#fff", secondary: "#2e8b57" },
-        }
-      );
-
-      // NOTE: We do NOT call onLoginSuccess() here, because login is not
-      // actually complete yet — the user still has to click the email link.
-      // Once ConfirmLogin (separate route/page) receives the JWT, that is
-      // where onLoginSuccess()/redirect to dashboard should happen.
+      toast.success(response.data.message || "Login successful!", {
+        duration: 4000,
+        style: {
+          background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
+          color: "#fff",
+          padding: "14px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
+          fontSize: "14px",
+          fontWeight: "600",
+          border: "1px solid rgba(255, 255, 255, 0.22)",
+        },
+        iconTheme: { primary: "#fff", secondary: "#2e8b57" },
+      });
 
       if (rememberMe) {
-        localStorage.setItem(
-          "rememberEmail",
-          formData.email
-        );
+        localStorage.setItem("rememberEmail", formData.email);
       }
 
-    } catch (error) {
-      if (!error.response) {
-        toast.error(
-          "Network Error. Please check your internet."
-        );
-        return;
+      if (typeof onLoginSuccess === "function") {
+        onLoginSuccess();
       }
+    } catch (error) {
       const errorMessage = error.response?.data?.message || "";
 
-      if (errorMessage.toLowerCase().includes("password") || errorMessage.toLowerCase().includes("credential")) {
+      if (
+        errorMessage.toLowerCase().includes("password") ||
+        errorMessage.toLowerCase().includes("email") ||
+        errorMessage.toLowerCase().includes("credential")
+      ) {
         setErrors((prev) => ({ ...prev, password: "Incorrect email or password" }));
       }
 
@@ -143,7 +128,6 @@ const UserLogin = ({ onGoRegister }) => {
         },
         iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
       });
-      console.log("Login API Error:", error.message);
     } finally {
       setLoading(false);
     }
@@ -374,7 +358,7 @@ const UserLogin = ({ onGoRegister }) => {
                 disabled={loading}
               >
                 <FaSignInAlt />
-                {loading ? "Sending..." : "Login"}
+                {loading ? "Logging in..." : "Login"}
               </button>
 
             </form>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import api from "../api/axiosInstance";
+import { addStock } from "../api/MockApi";
 
 import "./AddStock.css";
 
@@ -70,35 +70,31 @@ const AddStockModal = ({ onClose }) => {
     setLoading(true);
 
     try {
-      // ================= API CALL: ADD/UPDATE STOCK =================
-      // Endpoint: POST /medicine/stock (requires JWT header - auto
-      // attached by axiosInstance interceptor)
-      const response = await api.post("/medicine/stock", {
+      // ================= MOCK: ADD/UPDATE STOCK (no backend) =================
+      const response = await addStock({
         medicineName: formData.medicineName,
         currentStock: Number(formData.currentStock),
         minimumStock: Number(formData.minimumStock),
         expiryDate: formData.expiryDate,
       });
-      // ==================================================================
-
-      // TEMP DEBUG: confirm the actual shape/fields the backend sends back.
-      console.log("Add Stock API response:", response.data);
+      // ============================================================================
 
       toast.success(response.data?.message || "Stock updated successfully!", {
         duration: 3000,
       });
 
-      // Pass back the SERVER's saved object (with real backend id),
-      // not the local formData — this ensures Edit/Delete work correctly later.
-      const savedItem =
-        response.data?.stockItem ||
-        response.data?.data ||
-        (response.data?.id ? response.data : null) ||
-        { id: Date.now(), ...formData, currentStock: Number(formData.currentStock), minimumStock: Number(formData.minimumStock) };
+      // Pass back the saved object (with generated id) so Edit/Delete
+      // work correctly afterwards.
+      const savedItem = response.data?.stockItem || {
+        id: Date.now(),
+        ...formData,
+        currentStock: Number(formData.currentStock),
+        minimumStock: Number(formData.minimumStock),
+      };
 
       onClose(savedItem);
     } catch (error) {
-      console.log("Add/Update Stock API Error:", error.message);
+      console.log("Add/Update Stock error:", error.response?.data || error.message);
       toast.error(
         error.response?.data?.message || "Failed to update stock. Please try again.",
         { duration: 4000 }
