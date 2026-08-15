@@ -205,10 +205,37 @@ const UserLogin = ({ onGoRegister }) => {
             </h1>
 
             <p>
-              An intelligent platform to manage medicines,
-              reminders, inventory, alerts and family
-              communication – all in one place.
+              An intelligent platform to manage medicines, reminders,
+              inventory, alerts and family communication – all in one place.
             </p>
+
+            <div className="left-hero">
+              <div className="hero-illustration">
+                <div className="hero-card">
+                  <div className="hero-card-top">
+                    <div className="hero-circle"></div>
+                    <div className="hero-details">
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                  <div className="hero-card-body">
+                    <div className="hero-chart"></div>
+                    <div className="hero-badge">+</div>
+                  </div>
+                </div>
+              </div>
+              <div className="hero-highlights">
+                <div className="highlight-pill">
+                  <div></div>
+                  <span>Easy scheduling</span>
+                </div>
+                <div className="highlight-pill">
+                  <div></div>
+                  <span>Smart alerts</span>
+                </div>
+              </div>
+            </div>
 
             <div className="heartbeat-line">
               <div className="line"></div>

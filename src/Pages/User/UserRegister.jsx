@@ -14,6 +14,10 @@ import {
   Shield,
   Bell,
   LineChart,
+  CheckCircle,
+  CircleAlert,
+  ShieldCheck,
+  XCircle,
 } from "lucide-react";
 import "./UserRegister.css";
 
@@ -33,13 +37,47 @@ const UserRegister = ({ onSuccess }) => {
 
   const validatePassword = (password) => {
     const requirements = {
-      length: password.length >= 8 && password.length <= 20,
+      length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
-      lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
       special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?`~]/.test(password),
     };
     return requirements;
+  };
+
+  const getPasswordStrength = (password) => {
+    if (!password) return null;
+
+    const requirements = validatePassword(password);
+    const satisfiedCount = Object.values(requirements).filter(Boolean).length;
+
+    if (satisfiedCount <= 1) {
+      return {
+        label: "Weak",
+        color: "#DC2626",
+        barCount: 1,
+        textColor: "#DC2626",
+        icon: XCircle,
+      };
+    }
+
+    if (satisfiedCount <= 3) {
+      return {
+        label: "Medium",
+        color: "#F59E0B",
+        barCount: 2,
+        textColor: "#F59E0B",
+        icon: CircleAlert,
+      };
+    }
+
+    return {
+      label: "Strong",
+      color: "#16A34A",
+      barCount: 4,
+      textColor: "#16A34A",
+      icon: ShieldCheck,
+    };
   };
 
   const handleChange = (e) => {
@@ -89,15 +127,10 @@ const UserRegister = ({ onSuccess }) => {
       const failedRequirements = [];
 
       if (!requirements.length) {
-        if (formData.password.length < 8)
-          failedRequirements.push("at least 8 characters");
-        if (formData.password.length > 20)
-          failedRequirements.push("maximum 20 characters");
+        failedRequirements.push("at least 8 characters");
       }
       if (!requirements.uppercase)
         failedRequirements.push("at least 1 uppercase letter");
-      if (!requirements.lowercase)
-        failedRequirements.push("at least 1 lowercase letter");
       if (!requirements.number) failedRequirements.push("at least 1 number");
       if (!requirements.special)
         failedRequirements.push("at least 1 special character");
@@ -237,6 +270,14 @@ const UserRegister = ({ onSuccess }) => {
     }
   };
 
+  const passwordStrength = getPasswordStrength(formData.password);
+  const passwordRequirements = [
+    { label: "At least 8 characters", satisfied: validatePassword(formData.password).length },
+    { label: "Uppercase letter", satisfied: validatePassword(formData.password).uppercase },
+    { label: "Number", satisfied: validatePassword(formData.password).number },
+    { label: "Special character", satisfied: validatePassword(formData.password).special },
+  ];
+
   return (
     <div className="register-page">
       <header className="login-header">
@@ -340,6 +381,10 @@ const UserRegister = ({ onSuccess }) => {
         <div className="register-right-section">
           <div className="register-card">
             <div className="register-card-header">
+              <div className="register-card-badge">
+                <ShieldCheck size={14} />
+                <span>Secure sign-up</span>
+              </div>
               <h2 className="register-card-title">Create Account</h2>
               <p className="register-card-subtitle">Fill in the details below to get started</p>
             </div>
@@ -430,6 +475,49 @@ const UserRegister = ({ onSuccess }) => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {passwordStrength && (
+                  <div className="register-password-strength" style={{ borderColor: passwordStrength.color }}>
+                    <div className="register-strength-bars" aria-label="Password strength bars">
+                      {Array.from({ length: 4 }, (_, index) => (
+                        <span
+                          key={index}
+                          className={`register-strength-bar ${index < passwordStrength.barCount ? "active" : ""}`}
+                          style={{
+                            background: index < passwordStrength.barCount ? passwordStrength.color : "#E5E7EB",
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="register-strength-title" style={{ color: passwordStrength.textColor }}>
+                      <passwordStrength.icon size={16} />
+                      <span>{passwordStrength.label}</span>
+                    </div>
+
+                    <div className="register-strength-requirements">
+                      {passwordRequirements.map((requirement, index) => {
+                        const isSatisfied = requirement.satisfied;
+                        const statusColor = isSatisfied
+                          ? "#16A34A"
+                          : passwordStrength.label === "Medium"
+                            ? "#F59E0B"
+                            : "#DC2626";
+                        const StatusIcon = isSatisfied
+                          ? CheckCircle
+                          : passwordStrength.label === "Medium"
+                            ? CircleAlert
+                            : XCircle;
+
+                        return (
+                          <div key={`${requirement.label}-${index}`} className="register-strength-item">
+                            <StatusIcon size={14} color={statusColor} />
+                            <span style={{ color: statusColor }}>{requirement.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {errors.password && <span className="register-error-text">{errors.password}</span>}
               </div>
 

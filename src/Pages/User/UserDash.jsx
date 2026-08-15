@@ -155,6 +155,11 @@ const UserDash = ({ onLogout }) => {
     });
   };
 
+  const handleGoToToday = () => {
+    setCalendarMonth(todayMonth);
+    setCalendarYear(todayYear);
+  };
+
   // Build a lookup map: "YYYY-MM-DD" -> reminder status(es) for that date
   const calendarStatusMap = useMemo(() => {
     const map = {};
@@ -216,6 +221,13 @@ const UserDash = ({ onLogout }) => {
   const [showAddStockModal, setShowAddStockModal] = useState(false);
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [schedulePage, setSchedulePage] = useState(1);
+  const scheduleItemsPerPage = 4;
+  const scheduleTotalPages = Math.max(1, Math.ceil(todaySchedule.length / scheduleItemsPerPage));
+  const schedulePageSafe = Math.min(schedulePage, scheduleTotalPages);
+  const scheduleStartIndex = (schedulePageSafe - 1) * scheduleItemsPerPage;
+  const schedulePageItems = todaySchedule.slice(scheduleStartIndex, scheduleStartIndex + scheduleItemsPerPage);
+
   const [myMedicines, setMyMedicines] = useState([]);
   const [myMedicinesLoading, setMyMedicinesLoading] = useState(false);
   const [inventoryData, setInventoryData] = useState([]);
@@ -954,7 +966,7 @@ const UserDash = ({ onLogout }) => {
                             <span className="medicine-col medicine-frequency-col">Frequency</span>
                             <span className="medicine-col medicine-status-col">Status</span>
                           </div>
-                          {todaySchedule.map((medicine, index) => (
+                          {schedulePageItems.map((medicine, index) => (
                             <div key={medicine.id || index} className="medicine-item">
                               <div className="medicine-info">
                                 <h5>{medicine.medicineName}</h5>
@@ -972,6 +984,38 @@ const UserDash = ({ onLogout }) => {
                               </div>
                             </div>
                           ))}
+
+                          <div className="dashboard-schedule-pagination">
+                            <div className="schedule-page-info">
+                              Showing {scheduleStartIndex + 1} to {Math.min(scheduleStartIndex + scheduleItemsPerPage, todaySchedule.length)} of {todaySchedule.length}
+                            </div>
+                            <div className="schedule-pagination-controls">
+                              <button
+                                className="schedule-page-btn"
+                                disabled={schedulePage === 1}
+                                onClick={() => setSchedulePage((page) => Math.max(1, page - 1))}
+                              >
+                                Prev
+                              </button>
+                              {Array.from({ length: scheduleTotalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                  key={page}
+                                  className={`schedule-page-btn schedule-page-num ${schedulePage === page ? "active" : ""}`}
+                                  onClick={() => setSchedulePage(page)}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                              <button
+                                className="schedule-page-btn"
+                                disabled={schedulePage === scheduleTotalPages}
+                                onClick={() => setSchedulePage((page) => Math.min(scheduleTotalPages, page + 1))}
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
+
                           <button className="add-more-btn" onClick={handleAddMedicine}>
                             <Plus size={24} />
                             Add More Medicine
@@ -1045,8 +1089,28 @@ const UserDash = ({ onLogout }) => {
 
                   <div className="dashboard-card calendar-card">
                     <div className="card-header">
-                      <CalendarDays />
-                      Calendar
+                      <span className="calendar-title">
+                        <CalendarDays />
+                        Calendar
+                      </span>
+                      <button
+                        type="button"
+                        className="calendar-today-btn"
+                        onClick={handleGoToToday}
+                      >
+                        Today
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                          <polyline points="21 3 21 9 15 9"></polyline>
+                        </svg>
+                      </button>
                     </div>
 
                     <div className="calendar-container">

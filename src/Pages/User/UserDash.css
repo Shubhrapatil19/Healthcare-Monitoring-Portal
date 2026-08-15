@@ -68,13 +68,20 @@ body{
 }
 
 .logo {
-    width: 60px;
-    height: 46px;
+    width: 78px;
+    height: 62px;
     object-fit: contain;
     flex-shrink: 0;
-    border-radius: 14px;
-    background: rgba(5, 150, 105, 0.08);
-    padding: 6px;
+    border-radius: 18px;
+    background: rgba(5, 150, 105, 0.12);
+    padding: 8px;
+    box-shadow: 0 12px 24px rgba(5, 150, 105, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.logo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(5, 150, 105, 0.18);
 }
 
 .logo-text {
@@ -654,22 +661,22 @@ body{
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(180px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 18px;
+    margin-bottom: 28px;
 }
 
 /* ─────────── CARD 1 – Today's Medicines (Teal/Blue) ─────────── */
 .stat-card:nth-child(1) {
-    background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
-    border-color: rgba(13, 148, 136, 0.2);
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #effdfa 58%, #dff8f4 100%);
+    border-color: rgba(13, 148, 136, 0.18);
+    box-shadow: 0 14px 30px rgba(13, 148, 136, 0.11);
 }
 .stat-card:nth-child(1)::before {
     background: linear-gradient(180deg, #0d9488, #14b8a6);
 }
 .stat-card:nth-child(1) svg {
     background: linear-gradient(135deg, #0d9488, #14b8a6);
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+    box-shadow: 0 10px 20px rgba(13, 148, 136, 0.24);
 }
 .stat-card:nth-child(1) h1 {
     color: #0d9488;
@@ -681,16 +688,16 @@ body{
 
 /* ─────────── CARD 2 – Taken (Blue) ─────────── */
 .stat-card:nth-child(2) {
-    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
-    border-color: rgba(37, 99, 235, 0.2);
-    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 58%, #dbeafe 100%);
+    border-color: rgba(37, 99, 235, 0.18);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.1);
 }
 .stat-card:nth-child(2)::before {
     background: linear-gradient(180deg, #2563eb, #60a5fa);
 }
 .stat-card:nth-child(2) svg {
     background: linear-gradient(135deg, #2563eb, #60a5fa);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
 }
 .stat-card:nth-child(2) h1 {
     color: #2563eb;
@@ -702,16 +709,16 @@ body{
 
 /* ─────────── CARD 3 – Missed (Red/Rose) ─────────── */
 .stat-card:nth-child(3) {
-    background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
-    border-color: rgba(225, 29, 72, 0.2);
-    box-shadow: 0 8px 24px rgba(225, 29, 72, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #fff1f2 58%, #ffe4e6 100%);
+    border-color: rgba(225, 29, 72, 0.18);
+    box-shadow: 0 14px 30px rgba(225, 29, 72, 0.1);
 }
 .stat-card:nth-child(3)::before {
     background: linear-gradient(180deg, #e11d48, #fb7185);
 }
 .stat-card:nth-child(3) svg {
     background: linear-gradient(135deg, #e11d48, #fb7185);
-    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+    box-shadow: 0 10px 20px rgba(225, 29, 72, 0.22);
 }
 .stat-card:nth-child(3) h1 {
     color: #e11d48;
@@ -723,16 +730,16 @@ body{
 
 /* ─────────── CARD 4 – Low Stock Alerts (Amber) ─────────── */
 .stat-card:nth-child(4) {
-    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
-    border-color: rgba(217, 119, 6, 0.2);
-    box-shadow: 0 8px 24px rgba(217, 119, 6, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 58%, #fef3c7 100%);
+    border-color: rgba(217, 119, 6, 0.18);
+    box-shadow: 0 14px 30px rgba(217, 119, 6, 0.1);
 }
 .stat-card:nth-child(4)::before {
     background: linear-gradient(180deg, #d97706, #f59e0b);
 }
 .stat-card:nth-child(4) svg {
     background: linear-gradient(135deg, #d97706, #f59e0b);
-    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+    box-shadow: 0 10px 20px rgba(217, 119, 6, 0.22);
 }
 .stat-card:nth-child(4) h1 {
     color: #d97706;
@@ -744,14 +751,15 @@ body{
 
 /* ─────────── BASE CARD STYLES ─────────── */
 .stat-card {
-    border-radius: 22px;
-    padding: 24px 22px;
+    min-height: 132px;
+    border-radius: 16px;
+    padding: 22px 20px;
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
     position: relative;
     overflow: hidden;
-    transition: all 0.35s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     cursor: pointer;
     border: 1px solid;
 }
@@ -760,49 +768,66 @@ body{
     content: '';
     position: absolute;
     left: 0;
-    top: 1rem;
-    width: 8px;
-    height: calc(100% - 2rem);
-    border-radius: 0 8px 8px 0;
+    top: 14px;
+    width: 5px;
+    height: calc(100% - 28px);
+    border-radius: 0 999px 999px 0;
     transition: all 0.35s ease;
 }
 
+.stat-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 48%),
+        repeating-linear-gradient(135deg, rgba(15, 23, 42, 0.025) 0 1px, transparent 1px 12px);
+    pointer-events: none;
+}
+
 .stat-card svg {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     color: white;
-    padding: 12px;
-    border-radius: 16px;
+    padding: 13px;
+    border-radius: 14px;
     transition: all 0.35s ease;
     position: relative;
-    z-index: 1;
+    z-index: 2;
     flex-shrink: 0;
 }
 
 .stat-card:hover {
-    transform: translateY(-6px);
+    transform: translateY(-4px);
+}
+
+.stat-card:hover svg {
+    transform: scale(1.04);
 }
 
 .stat-card > div {
     flex: 1;
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    min-width: 0;
 }
 
 .stat-card h1 {
-    font-size: 44px;
-    font-weight: 700;
+    font-size: 40px;
+    font-weight: 800;
     margin: 0;
     line-height: 1;
+    letter-spacing: 0;
 }
 
 .stat-card p {
-    font-size: 13px;
+    font-size: 12px;
     color: #475569;
-    font-weight: 600;
-    margin: 6px 0 0;
+    font-weight: 800;
+    margin: 8px 0 0;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0;
+    line-height: 1.25;
 }
 
 @media (max-width: 1120px) {
@@ -1502,6 +1527,58 @@ body{
 
 }
 
+.dashboard-schedule-pagination{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid #e5e7eb;
+}
+
+.schedule-page-info{
+    color:#475569;
+    font-size:14px;
+    font-weight:500;
+}
+
+.schedule-pagination-controls{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+}
+
+.schedule-page-btn{
+    min-width:44px;
+    padding:10px 14px;
+    border-radius:12px;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:#1f2937;
+    cursor:pointer;
+    font-weight:600;
+    transition:all 0.25s ease;
+}
+
+.schedule-page-btn:hover:not(:disabled){
+    background:#f8fafc;
+    border-color:#94a3b8;
+}
+
+.schedule-page-btn:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
+}
+
+.schedule-page-num.active{
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color:#ffffff;
+    border-color:transparent;
+}
+
 /* ================= MEDICINE TABLE ================= */
 
 .medicine-table{
@@ -2158,6 +2235,247 @@ body{
     font-weight:600;
 }
 
+/* Reference-style soft calendar */
+.calendar-card{
+    position:relative;
+    min-height:360px;
+    overflow:hidden;
+    border:1px solid #bfe9e7;
+    border-radius:12px;
+    background:linear-gradient(180deg, #d9f7f4 0%, #f9fffe 55%, #f8fffe 100%);
+    box-shadow:0 8px 22px rgba(15, 118, 110, 0.12);
+}
+
+.calendar-card::before{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:118px;
+    background:
+        url("data:image/svg+xml,%3Csvg width='900' height='150' viewBox='0 0 900 150' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'%3E%3Cpath d='M0 55 C110 18 185 20 292 65 C405 112 520 112 640 63 C740 22 820 20 900 54 L900 150 L0 150 Z' fill='%23d7f7f4'/%3E%3Cpath d='M0 92 C135 45 245 48 352 87 C475 132 578 133 702 89 C785 60 845 55 900 70 L900 150 L0 150 Z' fill='%23effcfa' fill-opacity='0.95'/%3E%3C/svg%3E") bottom center / 100% 100% no-repeat;
+    pointer-events:none;
+    z-index:0;
+}
+
+.calendar-card::after{
+    display:block;
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:88px;
+    background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(208,244,241,0.45) 100%);
+    pointer-events:none;
+    z-index:0;
+}
+
+.calendar-card:hover{
+    transform:none;
+    border-color:#bfe9e7;
+    box-shadow:0 8px 22px rgba(15, 118, 110, 0.12);
+}
+
+.calendar-card .card-header{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:18px 22px 8px;
+    color:#0f766e;
+    font-size:17px;
+    font-weight:700;
+}
+
+.calendar-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.calendar-card .card-header svg{
+    width:24px;
+    height:24px;
+    color:#0f766e;
+}
+
+.calendar-today-btn{
+    min-height:28px;
+    padding:0 12px;
+    border:1px solid #008a8b;
+    border-radius:6px;
+    background:rgba(255, 255, 255, 0.72);
+    color:#007f86;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.calendar-today-btn:hover{
+    background:#ffffff;
+}
+
+.calendar-container{
+    position:relative;
+    z-index:1;
+    padding:11px 22px 16px;
+}
+
+.calendar-header{
+    display:grid;
+    grid-template-columns:34px 1fr 34px;
+    align-items:center;
+    margin-bottom:13px;
+    padding:0 5px;
+}
+
+.calendar-header h3{
+    margin:0;
+    color:#007f86;
+    font-size:15px;
+    font-weight:800;
+    text-align:center;
+}
+
+.calendar-nav-btn{
+    width:30px;
+    height:30px;
+    padding:0;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    color:#007f86;
+}
+
+.calendar-nav-btn:hover{
+    background:rgba(0, 127, 134, 0.1);
+}
+
+.calendar-nav-btn svg{
+    width:18px;
+    height:18px;
+    stroke-width:2.7;
+}
+
+.calendar-grid{
+    gap:8px 14px;
+    flex:0;
+    padding:0 5px;
+}
+
+.calendar-day-header{
+    padding:0 0 8px;
+    color:#007f86;
+    font-size:9px;
+    font-weight:800;
+    text-transform:uppercase;
+}
+
+.calendar-date{
+    width:24px;
+    height:24px;
+    aspect-ratio:auto;
+    justify-self:center;
+    border-radius:50%;
+    background:transparent;
+    color:#1e293b;
+    font-size:12px;
+    font-weight:700;
+}
+
+.calendar-date:hover{
+    background:rgba(0, 127, 134, 0.1);
+}
+
+.calendar-date.today,
+.calendar-date.taken{
+    background:linear-gradient(135deg, #00998f 0%, #0aa79d 100%);
+    color:#ffffff;
+    border-radius:50%;
+    box-shadow:0 6px 12px rgba(0, 153, 143, 0.28);
+    transform:none;
+}
+
+.calendar-date.missed{
+    background:#ef4444;
+    color:#ffffff;
+    border-radius:50%;
+}
+
+.calendar-date.snoozed{
+    background:#fde68a;
+    color:#92400e;
+    border-radius:50%;
+}
+
+.calendar-date.upcoming{
+    background:#c9f5f1;
+    color:#007f86;
+    border-radius:50%;
+}
+
+.calendar-footer{
+    align-items:center;
+    gap:14px;
+    margin-top:17px;
+}
+
+.calendar-legend{
+    margin-top:0;
+    padding-top:0;
+    border-top:0;
+    gap:18px;
+}
+
+.legend-item{
+    color:#1e293b;
+    font-size:11px;
+    font-weight:700;
+}
+
+.legend-dot{
+    width:7px;
+    height:7px;
+}
+
+.legend-dot.taken{
+    background:#2563eb;
+}
+
+.legend-dot.missed{
+    background:#ef4444;
+}
+
+.calendar-actions{
+    gap:10px;
+}
+
+.calendar-action-btn{
+    min-width:72px;
+    padding:8px 18px;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:800;
+    box-shadow:none;
+}
+
+.alert-btn{
+    background:#ffe4a3;
+    color:#92400e;
+}
+
+.reminder-btn{
+    background:#bcefed;
+    color:#007f86;
+}
+
 /* ================= QUICK ACTIONS ================= */
 
 .quick-actions{
@@ -2608,7 +2926,7 @@ body{
 
     .stat-card p{
         font-size:11px;
-        letter-spacing:0.6px;
+        letter-spacing:0;
     }
 
     .card-row{
@@ -2715,6 +3033,12 @@ body{
         min-width: 0;
         padding: 10px 16px;
         font-size: 12px;
+    }
+
+    .calendar-today-btn {
+        min-height: 26px;
+        padding: 0 10px;
+        font-size: 10px;
     }
 
     /* Medicine tables */
@@ -3034,6 +3358,13 @@ body{
     .calendar-action-btn {
         padding: 8px 12px;
         font-size: 11px;
+    }
+
+    .calendar-today-btn {
+        min-height: 24px;
+        padding: 0 8px;
+        font-size: 9px;
+        gap: 5px;
     }
 
     .medicine-list-container{
@@ -3356,4 +3687,161 @@ body{
 
 .add-more-btn:hover svg{
     transform:rotate(90deg) scale(1.1);
+}
+
+/* ===== Today's Schedule Card Polish ===== */
+.today-schedule-card{
+    border:1px solid #cdeeea;
+    border-radius:16px;
+    background:
+        radial-gradient(circle at 12% 0%, rgba(209, 250, 245, 0.75) 0 22%, transparent 23%),
+        linear-gradient(180deg, #f8fffe 0%, #ffffff 45%, #f6fbfa 100%);
+    box-shadow:0 14px 34px rgba(15, 118, 110, 0.1);
+}
+
+.today-schedule-card:hover{
+    border-color:#8bded7;
+    box-shadow:0 18px 40px rgba(15, 118, 110, 0.14);
+}
+
+.today-schedule-card .card-header{
+    border-bottom:0;
+    background:linear-gradient(90deg, rgba(240, 253, 250, 0.96) 0%, rgba(255, 255, 255, 0.82) 100%);
+    color:#0f766e;
+    position:relative;
+}
+
+.today-schedule-card .card-header::after{
+    content:'';
+    position:absolute;
+    left:24px;
+    right:24px;
+    bottom:0;
+    height:1px;
+    background:linear-gradient(90deg, rgba(15, 118, 110, 0.18), rgba(15, 118, 110, 0));
+}
+
+.today-schedule-card .card-header svg{
+    color:#0f766e;
+    background:#dcfdf8;
+    border-radius:10px;
+    padding:5px;
+    box-shadow:0 8px 18px rgba(15, 118, 110, 0.14);
+}
+
+.today-schedule-card .schedule-content{
+    padding:18px 20px 20px;
+}
+
+.today-schedule-card .medicine-list--today{
+    gap:9px;
+}
+
+.today-schedule-card .medicine-list--today .medicine-table-header{
+    min-height:42px;
+    border-radius:10px;
+    background:linear-gradient(135deg, #0f766e 0%, #13a193 100%);
+    box-shadow:0 10px 18px rgba(15, 118, 110, 0.16);
+}
+
+.today-schedule-card .medicine-list--today .medicine-item{
+    border:1px solid #dcebe8;
+    border-radius:12px;
+    background:rgba(255, 255, 255, 0.88);
+    box-shadow:0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.today-schedule-card .medicine-list--today .medicine-item:nth-child(even),
+.today-schedule-card .medicine-list--today .medicine-item:nth-child(odd){
+    background:rgba(255, 255, 255, 0.9);
+}
+
+.today-schedule-card .medicine-list--today .medicine-item:hover{
+    background:#f0fdfa;
+    border-color:#8bded7;
+    transform:translateY(-2px);
+    box-shadow:0 14px 26px rgba(15, 118, 110, 0.12);
+}
+
+.today-schedule-card .medicine-info h5{
+    color:#0f172a;
+    font-weight:800;
+}
+
+.today-schedule-card .medicine-dosage-value,
+.today-schedule-card .medicine-frequency-value{
+    border:1px solid rgba(15, 118, 110, 0.1);
+    background:#eefdf9;
+    color:#0f766e;
+    font-weight:700;
+}
+
+.today-schedule-card .medicine-time-value{
+    color:#334155;
+    font-weight:700;
+}
+
+.today-schedule-card .status-badge{
+    padding:5px 12px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+}
+
+.today-schedule-card .status-badge.upcoming{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.today-schedule-card .status-badge.taken{
+    background:#dcfce7;
+    color:#047857;
+}
+
+.today-schedule-card .status-badge.missed{
+    background:#ffe4e6;
+    color:#be123c;
+}
+
+.today-schedule-card .dashboard-schedule-pagination{
+    border-top:1px solid #dcebe8;
+    margin-top:14px;
+    padding-top:14px;
+}
+
+.today-schedule-card .schedule-page-info{
+    color:#64748b;
+    font-size:12px;
+    font-weight:700;
+}
+
+.today-schedule-card .schedule-page-btn{
+    min-width:36px;
+    padding:8px 11px;
+    border-radius:8px;
+    border-color:#cdeeea;
+    color:#0f766e;
+    font-size:12px;
+}
+
+.today-schedule-card .schedule-page-btn:hover:not(:disabled){
+    background:#ecfdf5;
+    border-color:#8bded7;
+}
+
+.today-schedule-card .schedule-page-num.active{
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    color:#ffffff;
+}
+
+.today-schedule-card .add-more-btn{
+    border:1px solid #0f766e !important;
+    background:linear-gradient(135deg, #ffffff 0%, #effdfa 100%) !important;
+    color:#0f766e !important;
+    border-radius:10px !important;
+}
+
+.today-schedule-card .add-more-btn:hover{
+    background:linear-gradient(135deg, #0f766e 0%, #14b8a6 100%) !important;
+    color:#ffffff !important;
 }
