@@ -114,24 +114,26 @@ const UserProfiles = () => {
           JSON.stringify(data)
         );
 
-        const basicUserData = {
-          fullName:
-            data.fullName ||
-            registeredUser.fullName ||
-            "",
+        setRegisteredUser((previousUser) => {
+          const basicUserData = {
+            fullName:
+              data.fullName ||
+              previousUser.fullName ||
+              "",
 
-          email:
-            data.email ||
-            registeredUser.email ||
-            "",
-        };
+            email:
+              data.email ||
+              previousUser.email ||
+              "",
+          };
 
-        setRegisteredUser(basicUserData);
+          localStorage.setItem(
+            "registeredUser",
+            JSON.stringify(basicUserData)
+          );
 
-        localStorage.setItem(
-          "registeredUser",
-          JSON.stringify(basicUserData)
-        );
+          return basicUserData;
+        });
       } catch (error) {
         console.error(
           "Profile load error:",
@@ -661,6 +663,9 @@ const UserProfiles = () => {
 
   return (
     <div className="up-container">
+      <h1 className="up-page-title">
+        My Profile
+      </h1>
 
       {/* ================= PROFILE HEADER ================= */}
 

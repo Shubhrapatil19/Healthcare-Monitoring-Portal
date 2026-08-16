@@ -1,11 +1,11 @@
 // ================================================================
-// mockApi.jsx
+// MockApi.jsx
+// USER MOCK API ONLY
 // ----------------------------------------------------------------
-// DEMO MODE
-// No real backend
+// No backend
 // No axios
 // No ngrok
-// Everything is stored in localStorage
+// Everything stored in localStorage
 // ================================================================
 
 const DELAY = 300;
@@ -71,7 +71,9 @@ const KEYS = {
 // ================================================================
 
 const todayISO = () =>
-  new Date().toISOString().slice(0, 10);
+  new Date()
+    .toISOString()
+    .slice(0, 10);
 
 // ================================================================
 // DEFAULT MEDICINES
@@ -161,7 +163,7 @@ const DEFAULT_HISTORY = [
 ];
 
 // ================================================================
-// DEFAULT NOTIFICATIONS
+// DEFAULT USER NOTIFICATIONS
 // ================================================================
 
 const DEFAULT_NOTIFICATIONS = [
@@ -169,39 +171,50 @@ const DEFAULT_NOTIFICATIONS = [
     id: "n1",
     type: "info",
     title: "Medicine Reminder",
-    message: "It's time to take Metformin 500mg.",
+    message:
+      "It's time to take Metformin 500mg.",
     status: "Unread",
-    createdAt: new Date().toISOString(),
+    createdAt:
+      new Date().toISOString(),
   },
   {
     id: "n2",
     type: "warning",
     title: "Low Stock Alert",
-    message: "Paracetamol stock is running low.",
+    message:
+      "Paracetamol stock is running low.",
     status: "Unread",
-    createdAt: new Date(
-      Date.now() - 60 * 60 * 1000
-    ).toISOString(),
+    createdAt:
+      new Date(
+        Date.now() -
+          60 * 60 * 1000
+      ).toISOString(),
   },
   {
     id: "n3",
     type: "success",
     title: "Medicine Taken",
-    message: "Metformin has been marked as taken.",
+    message:
+      "Metformin has been marked as taken.",
     status: "Read",
-    createdAt: new Date(
-      Date.now() - 2 * 60 * 60 * 1000
-    ).toISOString(),
+    createdAt:
+      new Date(
+        Date.now() -
+          2 * 60 * 60 * 1000
+      ).toISOString(),
   },
   {
     id: "n4",
     type: "critical",
     title: "Missed Medicine",
-    message: "You missed your Paracetamol dose.",
+    message:
+      "You missed your Paracetamol dose.",
     status: "Unread",
-    createdAt: new Date(
-      Date.now() - 3 * 60 * 60 * 1000
-    ).toISOString(),
+    createdAt:
+      new Date(
+        Date.now() -
+          3 * 60 * 60 * 1000
+      ).toISOString(),
   },
 ];
 
@@ -209,9 +222,13 @@ const DEFAULT_NOTIFICATIONS = [
 // GENERIC LOAD / SAVE
 // ================================================================
 
-const load = (key, fallback) => {
+const load = (
+  key,
+  fallback
+) => {
   try {
-    const raw = localStorage.getItem(key);
+    const raw =
+      localStorage.getItem(key);
 
     if (raw === null) {
       localStorage.setItem(
@@ -228,7 +245,10 @@ const load = (key, fallback) => {
   }
 };
 
-const save = (key, value) => {
+const save = (
+  key,
+  value
+) => {
   try {
     localStorage.setItem(
       key,
@@ -248,7 +268,9 @@ const save = (key, value) => {
 
 let idCounter = Date.now();
 
-const nextId = (prefix = "id") =>
+const nextId = (
+  prefix = "id"
+) =>
   `${prefix}_${idCounter++}`;
 
 // ================================================================
@@ -261,540 +283,658 @@ const loadMedicines = () =>
     DEFAULT_MEDICINES
   );
 
-const saveMedicines = (value) =>
+const saveMedicines = (
+  value
+) =>
   save(
     KEYS.MEDICINES,
     value
   );
 
-const loadPendingReminders = () =>
-  load(
-    KEYS.PENDING,
-    DEFAULT_PENDING
-  );
-
-const savePendingReminders = (value) =>
-  save(
-    KEYS.PENDING,
-    value
-  );
-
-const loadHistoryReminders = () =>
-  load(
-    KEYS.HISTORY,
-    DEFAULT_HISTORY
-  );
-
-const saveHistoryReminders = (value) =>
-  save(
-    KEYS.HISTORY,
-    value
-  );
-
-// ================================================================
-// AUTH - REGISTER
-// ================================================================
-
-export const registerUser = async ({
-  fullName,
-  email,
-  mobile,
-  password,
-}) => {
-  await wait();
-
-  const users = read(
-    "mockUsers",
-    []
-  );
-
-  const alreadyExists = users.some(
-    (user) =>
-      user.email.toLowerCase() ===
-      email.toLowerCase()
-  );
-
-  if (alreadyExists) {
-    throw apiError(
-      "This email is already registered."
+const loadPendingReminders =
+  () =>
+    load(
+      KEYS.PENDING,
+      DEFAULT_PENDING
     );
-  }
 
-  users.push({
+const savePendingReminders =
+  (value) =>
+    save(
+      KEYS.PENDING,
+      value
+    );
+
+const loadHistoryReminders =
+  () =>
+    load(
+      KEYS.HISTORY,
+      DEFAULT_HISTORY
+    );
+
+const saveHistoryReminders =
+  (value) =>
+    save(
+      KEYS.HISTORY,
+      value
+    );
+
+// ================================================================
+// USER AUTH - REGISTER
+// ================================================================
+
+export const registerUser =
+  async ({
     fullName,
     email,
     mobile,
     password,
-  });
+  }) => {
+    await wait();
 
-  write(
-    "mockUsers",
-    users
-  );
+    const normalizedEmail =
+      String(email || "")
+        .trim()
+        .toLowerCase();
 
-  return {
-    data: {
-      success: true,
-      message:
-        "Account created successfully!",
-    },
-  };
-};
-
-// ================================================================
-// AUTH - LOGIN
-// ================================================================
-
-export const loginUser = async ({
-  email,
-  password,
-}) => {
-  await wait();
-
-  const users = read(
-    "mockUsers",
-    []
-  );
-
-  const user = users.find(
-    (item) =>
-      item.email.toLowerCase() ===
-      email.toLowerCase()
-  );
-
-  if (
-    !user ||
-    user.password !== password
-  ) {
-    throw apiError(
-      "Incorrect email or password"
-    );
-  }
-
-  const token =
-    `mock-token-${Date.now()}`;
-
-  localStorage.setItem(
-    "token",
-    token
-  );
-
-  localStorage.setItem(
-    "isLoggedIn",
-    "true"
-  );
-
-  localStorage.setItem(
-    "currentUserName",
-    user.fullName
-  );
-
-  write(
-    "registeredUser",
-    {
-      fullName: user.fullName,
-      email: user.email,
-      mobile: user.mobile,
+    // Reserve Admin email
+    if (
+      normalizedEmail ===
+      "admin@gmail.com"
+    ) {
+      throw apiError(
+        "This email is reserved for the administrator."
+      );
     }
-  );
 
-  return {
-    data: {
-      success: true,
-      token,
-      type: "Bearer",
-      message:
-        "Login successful!",
-    },
+    const users =
+      read(
+        "mockUsers",
+        []
+      );
+
+    const alreadyExists =
+      users.some(
+        (user) =>
+          String(
+            user.email || ""
+          )
+            .trim()
+            .toLowerCase() ===
+          normalizedEmail
+      );
+
+    if (alreadyExists) {
+      throw apiError(
+        "This email is already registered."
+      );
+    }
+
+    users.push({
+      fullName,
+      email:
+        normalizedEmail,
+      mobile,
+      password,
+      role: "USER",
+    });
+
+    write(
+      "mockUsers",
+      users
+    );
+
+    return {
+      data: {
+        success: true,
+        role: "USER",
+        message:
+          "Account created successfully!",
+      },
+    };
   };
-};
 
 // ================================================================
-// AUTH - LOGOUT
+// USER AUTH - LOGIN
 // ================================================================
 
-export const logoutUser = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("isLoggedIn");
+export const loginUser =
+  async ({
+    email,
+    password,
+  }) => {
+    await wait();
 
-  return {
-    data: {
-      success: true,
-      message:
-        "Logged out successfully!",
-    },
+    const normalizedEmail =
+      String(email || "")
+        .trim()
+        .toLowerCase();
+
+    const users =
+      read(
+        "mockUsers",
+        []
+      );
+
+    const user =
+      users.find(
+        (item) =>
+          String(
+            item.email || ""
+          )
+            .trim()
+            .toLowerCase() ===
+          normalizedEmail
+      );
+
+    if (
+      !user ||
+      user.password !==
+        password
+    ) {
+      throw apiError(
+        "Incorrect email or password"
+      );
+    }
+
+    const token =
+      `user-token-${Date.now()}`;
+
+    localStorage.setItem(
+      "token",
+      token
+    );
+
+    localStorage.setItem(
+      "isLoggedIn",
+      "true"
+    );
+
+    localStorage.setItem(
+      "userRole",
+      "USER"
+    );
+
+    localStorage.setItem(
+      "currentUserName",
+      user.fullName
+    );
+
+    write(
+      "registeredUser",
+      {
+        fullName:
+          user.fullName,
+
+        email:
+          user.email,
+
+        mobile:
+          user.mobile,
+      }
+    );
+
+    return {
+      data: {
+        success: true,
+        token,
+        type: "Bearer",
+        role: "USER",
+        fullName:
+          user.fullName,
+        email:
+          user.email,
+        message:
+          "Login successful!",
+      },
+    };
   };
-};
+
+// ================================================================
+// USER AUTH - LOGOUT
+// ================================================================
+
+export const logoutUser =
+  () => {
+    localStorage.removeItem(
+      "token"
+    );
+
+    localStorage.removeItem(
+      "isLoggedIn"
+    );
+
+    localStorage.removeItem(
+      "userRole"
+    );
+
+    localStorage.removeItem(
+      "currentUserName"
+    );
+
+    return {
+      data: {
+        success: true,
+        message:
+          "Logged out successfully!",
+      },
+    };
+  };
 
 // ================================================================
 // CONFIRM LOGIN
 // ================================================================
 
-export const confirmLoginToken = async (
-  token
-) => {
-  await wait();
+export const confirmLoginToken =
+  async (token) => {
+    await wait();
 
-  if (!token) {
-    throw apiError(
-      "Invalid confirmation link."
-    );
-  }
+    if (!token) {
+      throw apiError(
+        "Invalid confirmation link."
+      );
+    }
 
-  return {
-    data: {
-      success: true,
-      token,
-    },
+    return {
+      data: {
+        success: true,
+        token,
+      },
+    };
   };
-};
 
 // ================================================================
 // PROFILE - COMPLETE
 // ================================================================
 
-export const completeProfile = async (
-  payload
-) => {
-  await wait();
+export const completeProfile =
+  async (payload) => {
+    await wait();
 
-  const registeredUser =
-    read(
-      "registeredUser",
-      {}
+    const registeredUser =
+      read(
+        "registeredUser",
+        {}
+      );
+
+    const profile = {
+      ...payload,
+
+      fullName:
+        payload.fullName ||
+        registeredUser.fullName ||
+        "",
+
+      email:
+        payload.email ||
+        registeredUser.email ||
+        "",
+
+      gender:
+        payload.gender ||
+        "",
+
+      completed: true,
+    };
+
+    write(
+      "mockProfile",
+      profile
     );
 
-  const profile = {
-    ...payload,
+    write(
+      "profileData",
+      profile
+    );
 
-    fullName:
-      payload.fullName ||
-      registeredUser.fullName ||
-      "",
+    localStorage.setItem(
+      "profileCompleted",
+      "true"
+    );
 
-    email:
-      payload.email ||
-      registeredUser.email ||
-      "",
-
-    gender:
-      payload.gender || "",
-
-    completed: true,
+    return {
+      data: {
+        success: true,
+        message:
+          "Profile completed successfully!",
+        ...profile,
+      },
+    };
   };
-
-  write(
-    "mockProfile",
-    profile
-  );
-
-  write(
-    "profileData",
-    profile
-  );
-
-  localStorage.setItem(
-    "profileCompleted",
-    "true"
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Profile completed successfully!",
-      ...profile,
-    },
-  };
-};
 
 // ================================================================
 // PROFILE - GET
 // ================================================================
 
-export const getProfile = async () => {
-  await wait();
+export const getProfile =
+  async () => {
+    await wait();
 
-  const profile =
-    read(
-      "mockProfile",
-      {}
-    );
+    const profile =
+      read(
+        "mockProfile",
+        {}
+      );
 
-  const registeredUser =
-    read(
-      "registeredUser",
-      {}
-    );
+    const registeredUser =
+      read(
+        "registeredUser",
+        {}
+      );
 
-  const data = {
-    ...profile,
+    return {
+      data: {
+        ...profile,
 
-    fullName:
-      profile.fullName ||
-      registeredUser.fullName ||
-      "",
+        fullName:
+          profile.fullName ||
+          registeredUser.fullName ||
+          "",
 
-    email:
-      profile.email ||
-      registeredUser.email ||
-      "",
+        email:
+          profile.email ||
+          registeredUser.email ||
+          "",
+      },
+    };
   };
-
-  return {
-    data,
-  };
-};
 
 // ================================================================
 // PROFILE - UPDATE
-// IMPORTANT: UserProfiles.jsx imports this.
 // ================================================================
 
-export const updateProfile = async (
-  payload
-) => {
-  await wait();
+export const updateProfile =
+  async (payload) => {
+    await wait();
 
-  const existingProfile =
-    read(
-      "mockProfile",
-      {}
-    );
+    const existingProfile =
+      read(
+        "mockProfile",
+        {}
+      );
 
-  const registeredUser =
-    read(
-      "registeredUser",
-      {}
-    );
+    const registeredUser =
+      read(
+        "registeredUser",
+        {}
+      );
 
-  const updatedProfile = {
-    ...existingProfile,
-    ...payload,
-
-    fullName:
-      payload.fullName ||
-      existingProfile.fullName ||
-      registeredUser.fullName ||
-      "",
-
-    email:
-      payload.email ||
-      existingProfile.email ||
-      registeredUser.email ||
-      "",
-
-    completed: true,
-  };
-
-  write(
-    "mockProfile",
-    updatedProfile
-  );
-
-  write(
-    "profileData",
-    updatedProfile
-  );
-
-  write(
-    "registeredUser",
-    {
-      ...registeredUser,
+    const updatedProfile = {
+      ...existingProfile,
+      ...payload,
 
       fullName:
-        updatedProfile.fullName,
+        payload.fullName ||
+        existingProfile.fullName ||
+        registeredUser.fullName ||
+        "",
 
       email:
-        updatedProfile.email,
-    }
-  );
+        payload.email ||
+        existingProfile.email ||
+        registeredUser.email ||
+        "",
 
-  if (updatedProfile.fullName) {
-    localStorage.setItem(
-      "currentUserName",
-      updatedProfile.fullName
+      completed: true,
+    };
+
+    write(
+      "mockProfile",
+      updatedProfile
     );
-  }
 
-  localStorage.setItem(
-    "profileCompleted",
-    "true"
-  );
+    write(
+      "profileData",
+      updatedProfile
+    );
 
-  return {
-    data: {
-      success: true,
-      message:
-        "Profile updated successfully!",
-      ...updatedProfile,
-    },
+    write(
+      "registeredUser",
+      {
+        ...registeredUser,
+
+        fullName:
+          updatedProfile.fullName,
+
+        email:
+          updatedProfile.email,
+      }
+    );
+
+    if (
+      updatedProfile.fullName
+    ) {
+      localStorage.setItem(
+        "currentUserName",
+        updatedProfile.fullName
+      );
+    }
+
+    localStorage.setItem(
+      "profileCompleted",
+      "true"
+    );
+
+    return {
+      data: {
+        success: true,
+        message:
+          "Profile updated successfully!",
+        ...updatedProfile,
+      },
+    };
   };
-};
 
 // ================================================================
 // MEDICINES - GET
 // ================================================================
 
-export const getMedicines = async () => {
-  await wait();
+export const getMedicines =
+  async () => {
+    await wait();
 
-  return {
-    data: {
-      medicines:
-        loadMedicines(),
-    },
+    return {
+      data: {
+        medicines:
+          loadMedicines(),
+      },
+    };
   };
-};
 
 // ================================================================
 // MEDICINES - ADD
 // ================================================================
 
-export const addMedicine = async (
-  payload
-) => {
-  await wait();
+export const addMedicine =
+  async (payload) => {
+    await wait();
 
-  const medicines =
-    loadMedicines();
+    const medicines =
+      loadMedicines();
 
-  const medicineName =
-    payload.medicineName ||
-    payload.name ||
-    "Medicine";
+    const medicineName =
+      payload.medicineName ||
+      payload.name ||
+      "Medicine";
 
-  const newMedicine = {
-    id: nextId("m"),
+    const newMedicine = {
+      id:
+        nextId("m"),
 
-    ...payload,
+      ...payload,
 
-    name: medicineName,
-    medicineName,
+      name:
+        medicineName,
 
-    currentStock:
-      Number(
-        payload.currentStock
-      ) || 0,
+      medicineName,
 
-    minimumStock:
-      Number(
-        payload.minimumStock
-      ) || 0,
+      currentStock:
+        Number(
+          payload.currentStock
+        ) || 0,
 
-    status:
-      payload.status ||
-      "upcoming",
+      minimumStock:
+        Number(
+          payload.minimumStock
+        ) || 0,
+
+      status:
+        payload.status ||
+        "upcoming",
+    };
+
+    medicines.push(
+      newMedicine
+    );
+
+    saveMedicines(
+      medicines
+    );
+
+    const reminderTime =
+      payload.timing ||
+      String(
+        payload.startTiming ||
+          ""
+      ).slice(0, 5);
+
+    if (reminderTime) {
+      const pending =
+        loadPendingReminders();
+
+      pending.push({
+        id:
+          nextId("r"),
+
+        medicineId:
+          newMedicine.id,
+
+        medicineName,
+
+        dosage:
+          newMedicine.dosage ||
+          "",
+
+        time:
+          reminderTime,
+
+        date:
+          payload.startDate ||
+          todayISO(),
+
+        status:
+          "upcoming",
+      });
+
+      savePendingReminders(
+        pending
+      );
+    }
+
+    return {
+      data: {
+        success: true,
+        message:
+          "Medicine added successfully!",
+        medicine:
+          newMedicine,
+      },
+    };
   };
-
-  medicines.push(
-    newMedicine
-  );
-
-  saveMedicines(
-    medicines
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Medicine added successfully!",
-      medicine:
-        newMedicine,
-    },
-  };
-};
 
 // ================================================================
 // MEDICINES - UPDATE
 // ================================================================
 
-export const updateMedicine = async (
-  id,
-  payload
-) => {
-  await wait();
+export const updateMedicine =
+  async (
+    id,
+    payload
+  ) => {
+    await wait();
 
-  const medicines =
-    loadMedicines();
+    const medicines =
+      loadMedicines();
 
-  const index =
-    medicines.findIndex(
-      (medicine) =>
-        String(
-          medicine.id
-        ) ===
-        String(id)
+    const index =
+      medicines.findIndex(
+        (medicine) =>
+          String(
+            medicine.id
+          ) ===
+          String(id)
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Medicine not found"
+      );
+    }
+
+    medicines[index] = {
+      ...medicines[index],
+      ...payload,
+    };
+
+    saveMedicines(
+      medicines
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Medicine not found"
-    );
-  }
-
-  medicines[index] = {
-    ...medicines[index],
-    ...payload,
+    return {
+      data: {
+        success: true,
+        medicine:
+          medicines[index],
+      },
+    };
   };
-
-  saveMedicines(
-    medicines
-  );
-
-  return {
-    data: {
-      success: true,
-      medicine:
-        medicines[index],
-    },
-  };
-};
 
 // ================================================================
 // MEDICINES - DELETE
 // ================================================================
 
-export const deleteMedicine = async (
-  id
-) => {
-  await wait();
+export const deleteMedicine =
+  async (id) => {
+    await wait();
 
-  const medicines =
-    loadMedicines().filter(
-      (medicine) =>
-        String(
-          medicine.id
-        ) !==
-        String(id)
+    const medicines =
+      loadMedicines()
+        .filter(
+          (medicine) =>
+            String(
+              medicine.id
+            ) !==
+            String(id)
+        );
+
+    saveMedicines(
+      medicines
     );
 
-  saveMedicines(
-    medicines
-  );
+    const pending =
+      loadPendingReminders()
+        .filter(
+          (reminder) =>
+            String(
+              reminder.medicineId
+            ) !==
+            String(id)
+        );
 
-  const pending =
-    loadPendingReminders().filter(
-      (reminder) =>
-        String(
-          reminder.medicineId
-        ) !==
-        String(id)
+    savePendingReminders(
+      pending
     );
 
-  savePendingReminders(
-    pending
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Medicine deleted successfully!",
-    },
+    return {
+      data: {
+        success: true,
+        message:
+          "Medicine deleted successfully!",
+      },
+    };
   };
-};
 
 // ================================================================
 // TODAY SCHEDULE
@@ -807,14 +947,14 @@ export const getTodaySchedule =
     const today =
       todayISO();
 
-    const schedule =
-      loadPendingReminders().filter(
-        (reminder) =>
-          reminder.date === today
-      );
-
     return {
-      data: schedule,
+      data:
+        loadPendingReminders()
+          .filter(
+            (reminder) =>
+              reminder.date ===
+              today
+          ),
     };
   };
 
@@ -833,16 +973,20 @@ export const getDashboardSummary =
       loadMedicines();
 
     const pending =
-      loadPendingReminders().filter(
-        (item) =>
-          item.date === today
-      );
+      loadPendingReminders()
+        .filter(
+          (item) =>
+            item.date ===
+            today
+        );
 
     const history =
-      loadHistoryReminders().filter(
-        (item) =>
-          item.date === today
-      );
+      loadHistoryReminders()
+        .filter(
+          (item) =>
+            item.date ===
+            today
+        );
 
     return {
       data: {
@@ -918,11 +1062,12 @@ export const getPendingReminders =
 
     return {
       data:
-        loadPendingReminders().filter(
-          (reminder) =>
-            reminder.date ===
-            today
-        ),
+        loadPendingReminders()
+          .filter(
+            (reminder) =>
+              reminder.date ===
+              today
+          ),
     };
   };
 
@@ -940,68 +1085,76 @@ export const getReminderHistory =
     };
   };
 
+// Compatibility with older UserReport.jsx
+export const getHistoryReminders =
+  () =>
+    loadHistoryReminders();
+
 // ================================================================
 // INTERNAL REMINDER HELPER
 // ================================================================
 
-const moveReminderToHistory = (
-  id,
-  status
-) => {
-  const pending =
-    loadPendingReminders();
+const moveReminderToHistory =
+  (
+    id,
+    status
+  ) => {
+    const pending =
+      loadPendingReminders();
 
-  const index =
-    pending.findIndex(
-      (reminder) =>
-        String(
-          reminder.id
-        ) ===
-        String(id)
+    const index =
+      pending.findIndex(
+        (reminder) =>
+          String(
+            reminder.id
+          ) ===
+          String(id)
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Reminder not found"
+      );
+    }
+
+    const [reminder] =
+      pending.splice(
+        index,
+        1
+      );
+
+    savePendingReminders(
+      pending
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Reminder not found"
+    const history =
+      loadHistoryReminders();
+
+    const historyItem = {
+      ...reminder,
+      status,
+    };
+
+    history.push(
+      historyItem
     );
-  }
 
-  const [reminder] =
-    pending.splice(
-      index,
-      1
+    saveHistoryReminders(
+      history
     );
 
-  savePendingReminders(
-    pending
-  );
-
-  const history =
-    loadHistoryReminders();
-
-  const historyItem = {
-    ...reminder,
-    status,
+    return {
+      data: {
+        success: true,
+        message:
+          `Marked as ${status}`,
+        reminder:
+          historyItem,
+      },
+    };
   };
-
-  history.push(
-    historyItem
-  );
-
-  saveHistoryReminders(
-    history
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        `Marked as ${status}`,
-      reminder:
-        historyItem,
-    },
-  };
-};
 
 // ================================================================
 // REMINDER - TAKEN
@@ -1035,136 +1188,145 @@ export const markReminderMissed =
 // REMINDER - SNOOZE
 // ================================================================
 
-export const snoozeReminder = async (
-  id,
-  minutes = 10
-) => {
-  await wait();
+export const snoozeReminder =
+  async (
+    id,
+    minutes = 10
+  ) => {
+    await wait();
 
-  const pending =
-    loadPendingReminders();
+    const pending =
+      loadPendingReminders();
 
-  const index =
-    pending.findIndex(
-      (reminder) =>
-        String(
-          reminder.id
-        ) ===
-        String(id)
+    const index =
+      pending.findIndex(
+        (reminder) =>
+          String(
+            reminder.id
+          ) ===
+          String(id)
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Reminder not found"
+      );
+    }
+
+    const currentTime =
+      String(
+        pending[index]
+          .time ||
+        "00:00"
+      );
+
+    const [
+      hours = "0",
+      mins = "0",
+    ] =
+      currentTime
+        .split(":");
+
+    const totalMinutes =
+      (
+        Number(hours) *
+          60 +
+        Number(mins) +
+        Number(minutes)
+      ) %
+      1440;
+
+    const newHours =
+      Math.floor(
+        totalMinutes /
+          60
+      );
+
+    const newMinutes =
+      totalMinutes %
+      60;
+
+    pending[index] = {
+      ...pending[index],
+
+      time:
+        `${String(
+          newHours
+        ).padStart(
+          2,
+          "0"
+        )}:${String(
+          newMinutes
+        ).padStart(
+          2,
+          "0"
+        )}`,
+
+      status:
+        "snoozed",
+    };
+
+    savePendingReminders(
+      pending
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Reminder not found"
-    );
-  }
-
-  const currentTime =
-    String(
-      pending[index].time ||
-      "00:00"
-    );
-
-  const [
-    hours = "0",
-    mins = "0",
-  ] =
-    currentTime.split(":");
-
-  const totalMinutes =
-    (
-      Number(hours) * 60 +
-      Number(mins) +
-      Number(minutes)
-    ) %
-    1440;
-
-  const newHours =
-    Math.floor(
-      totalMinutes / 60
-    );
-
-  const newMinutes =
-    totalMinutes % 60;
-
-  pending[index] = {
-    ...pending[index],
-
-    time:
-      `${String(
-        newHours
-      ).padStart(
-        2,
-        "0"
-      )}:${String(
-        newMinutes
-      ).padStart(
-        2,
-        "0"
-      )}`,
-
-    status:
-      "snoozed",
+    return {
+      data: {
+        success: true,
+        message:
+          "Reminder snoozed",
+        reminder:
+          pending[index],
+      },
+    };
   };
-
-  savePendingReminders(
-    pending
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Reminder snoozed",
-      reminder:
-        pending[index],
-    },
-  };
-};
 
 // ================================================================
 // REMINDER - DELETE
 // ================================================================
 
-export const deleteReminder = async (
-  id
-) => {
-  await wait();
+export const deleteReminder =
+  async (id) => {
+    await wait();
 
-  const pending =
-    loadPendingReminders().filter(
-      (reminder) =>
-        String(
-          reminder.id
-        ) !==
-        String(id)
+    const pending =
+      loadPendingReminders()
+        .filter(
+          (reminder) =>
+            String(
+              reminder.id
+            ) !==
+            String(id)
+        );
+
+    const history =
+      loadHistoryReminders()
+        .filter(
+          (reminder) =>
+            String(
+              reminder.id
+            ) !==
+            String(id)
+        );
+
+    savePendingReminders(
+      pending
     );
 
-  const history =
-    loadHistoryReminders().filter(
-      (reminder) =>
-        String(
-          reminder.id
-        ) !==
-        String(id)
+    saveHistoryReminders(
+      history
     );
 
-  savePendingReminders(
-    pending
-  );
-
-  saveHistoryReminders(
-    history
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Reminder deleted successfully!",
-    },
+    return {
+      data: {
+        success: true,
+        message:
+          "Reminder deleted successfully!",
+      },
+    };
   };
-};
 
 // ================================================================
 // INVENTORY - GET
@@ -1175,33 +1337,43 @@ export const getInventory =
     await wait();
 
     const stockItems =
-      loadMedicines().map(
-        (medicine) => ({
-          id:
-            medicine.id,
+      loadMedicines()
+        .map(
+          (medicine) => ({
+            id:
+              medicine.id,
 
-          name:
-            medicine.name ||
-            medicine.medicineName,
+            name:
+              medicine.name ||
+              medicine
+                .medicineName,
 
-          medicineName:
-            medicine.medicineName ||
-            medicine.name,
+            medicineName:
+              medicine
+                .medicineName ||
+              medicine.name,
 
-          dosage:
-            medicine.dosage,
+            dosage:
+              medicine.dosage,
 
-          currentStock:
-            Number(
-              medicine.currentStock
-            ) || 0,
+            currentStock:
+              Number(
+                medicine
+                  .currentStock
+              ) || 0,
 
-          minimumStock:
-            Number(
-              medicine.minimumStock
-            ) || 0,
-        })
-      );
+            minimumStock:
+              Number(
+                medicine
+                  .minimumStock
+              ) || 0,
+
+            expiryDate:
+              medicine
+                .expiryDate ||
+              "",
+          })
+        );
 
     return {
       data: {
@@ -1214,166 +1386,175 @@ export const getInventory =
 // INVENTORY - ADD STOCK
 // ================================================================
 
-export const addStock = async (
-  payload
-) => {
-  await wait();
+export const addStock =
+  async (payload) => {
+    await wait();
 
-  const medicines =
-    loadMedicines();
+    const medicines =
+      loadMedicines();
 
-  const medicineName =
-    payload.medicineName ||
-    payload.name;
+    const medicineName =
+      payload.medicineName ||
+      payload.name;
 
-  const index =
-    medicines.findIndex(
-      (medicine) =>
-        String(
-          medicine.medicineName ||
-          medicine.name ||
-          ""
-        ).toLowerCase() ===
-        String(
-          medicineName ||
-          ""
-        ).toLowerCase()
+    const index =
+      medicines.findIndex(
+        (medicine) =>
+          String(
+            medicine
+              .medicineName ||
+            medicine.name ||
+            ""
+          )
+            .toLowerCase() ===
+          String(
+            medicineName ||
+            ""
+          )
+            .toLowerCase()
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Please select an existing medicine."
+      );
+    }
+
+    medicines[index] = {
+      ...medicines[index],
+
+      currentStock:
+        Number(
+          payload.currentStock
+        ) || 0,
+
+      minimumStock:
+        Number(
+          payload.minimumStock
+        ) || 0,
+
+      expiryDate:
+        payload.expiryDate ||
+        medicines[index]
+          .expiryDate ||
+        "",
+    };
+
+    saveMedicines(
+      medicines
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Please select an existing medicine."
-    );
-  }
-
-  medicines[index] = {
-    ...medicines[index],
-
-    currentStock:
-      Number(
-        payload.currentStock
-      ) || 0,
-
-    minimumStock:
-      Number(
-        payload.minimumStock
-      ) || 0,
-
-    expiryDate:
-      payload.expiryDate ||
-      medicines[index].expiryDate ||
-      "",
+    return {
+      data: {
+        success: true,
+        message:
+          "Stock updated successfully!",
+        stockItem:
+          medicines[index],
+      },
+    };
   };
-
-  saveMedicines(
-    medicines
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Stock updated successfully!",
-      stockItem:
-        medicines[index],
-    },
-  };
-};
 
 // ================================================================
 // INVENTORY - UPDATE
 // ================================================================
 
-export const updateStock = async (
-  id,
-  payload
-) => {
-  await wait();
+export const updateStock =
+  async (
+    id,
+    payload
+  ) => {
+    await wait();
 
-  const medicines =
-    loadMedicines();
+    const medicines =
+      loadMedicines();
 
-  const index =
-    medicines.findIndex(
-      (medicine) =>
-        String(
-          medicine.id
-        ) ===
-        String(id)
+    const index =
+      medicines.findIndex(
+        (medicine) =>
+          String(
+            medicine.id
+          ) ===
+          String(id)
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Stock item not found"
+      );
+    }
+
+    medicines[index] = {
+      ...medicines[index],
+      ...payload,
+    };
+
+    saveMedicines(
+      medicines
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Stock item not found"
-    );
-  }
-
-  medicines[index] = {
-    ...medicines[index],
-    ...payload,
+    return {
+      data: {
+        success: true,
+        stockItem:
+          medicines[index],
+      },
+    };
   };
-
-  saveMedicines(
-    medicines
-  );
-
-  return {
-    data: {
-      success: true,
-      stockItem:
-        medicines[index],
-    },
-  };
-};
 
 // ================================================================
 // INVENTORY - DELETE
 // ================================================================
 
-export const deleteStock = async (
-  id
-) => {
-  await wait();
+export const deleteStock =
+  async (id) => {
+    await wait();
 
-  const medicines =
-    loadMedicines();
+    const medicines =
+      loadMedicines();
 
-  const index =
-    medicines.findIndex(
-      (medicine) =>
-        String(
-          medicine.id
-        ) ===
-        String(id)
+    const index =
+      medicines.findIndex(
+        (medicine) =>
+          String(
+            medicine.id
+          ) ===
+          String(id)
+      );
+
+    if (
+      index === -1
+    ) {
+      throw apiError(
+        "Stock item not found"
+      );
+    }
+
+    medicines[index] = {
+      ...medicines[index],
+      currentStock: 0,
+      minimumStock: 0,
+    };
+
+    saveMedicines(
+      medicines
     );
 
-  if (index === -1) {
-    throw apiError(
-      "Stock item not found"
-    );
-  }
-
-  medicines[index] = {
-    ...medicines[index],
-    currentStock: 0,
-    minimumStock: 0,
+    return {
+      data: {
+        success: true,
+        message:
+          "Stock removed successfully!",
+      },
+    };
   };
-
-  saveMedicines(
-    medicines
-  );
-
-  return {
-    data: {
-      success: true,
-      message:
-        "Stock removed successfully!",
-    },
-  };
-};
 
 // ================================================================
-// NOTIFICATIONS - GET
+// USER NOTIFICATIONS - GET
 // ================================================================
 
 export const getNotifications =
@@ -1394,7 +1575,7 @@ export const getNotifications =
   };
 
 // ================================================================
-// NOTIFICATIONS - MARK ONE READ
+// USER NOTIFICATION - MARK ONE READ
 // ================================================================
 
 export const markNotificationRead =
@@ -1416,7 +1597,8 @@ export const markNotificationRead =
           String(id)
             ? {
                 ...notification,
-                status: "Read",
+                status:
+                  "Read",
               }
             : notification
       );
@@ -1436,7 +1618,7 @@ export const markNotificationRead =
   };
 
 // ================================================================
-// NOTIFICATIONS - MARK ALL READ
+// USER NOTIFICATION - MARK ALL READ
 // ================================================================
 
 export const markAllNotificationsRead =
@@ -1453,7 +1635,8 @@ export const markAllNotificationsRead =
       notifications.map(
         (notification) => ({
           ...notification,
-          status: "Read",
+          status:
+            "Read",
         })
       );
 

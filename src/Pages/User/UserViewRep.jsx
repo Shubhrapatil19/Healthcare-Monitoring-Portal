@@ -53,7 +53,6 @@ const UserViewRep = ({ onBack }) => {
       }
     };
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadReportData();
 
     return () => {
@@ -65,9 +64,12 @@ const UserViewRep = ({ onBack }) => {
     const byMed = {};
     history.forEach((h) => {
       const key = h.medicineName || "Unknown";
+      const status = String(h.status || "").toLowerCase();
+
       if (!byMed[key]) byMed[key] = { name: key, taken: 0, missed: 0 };
-      if (h.status === "taken") byMed[key].taken += 1;
-      else if (h.status === "missed") byMed[key].missed += 1;
+
+      if (status === "taken") byMed[key].taken += 1;
+      else if (status === "missed") byMed[key].missed += 1;
     });
     return Object.values(byMed).map((m) => {
       const totalScheduled = m.taken + m.missed;
@@ -77,17 +79,29 @@ const UserViewRep = ({ onBack }) => {
   }, [history]);
 
   const inventoryData = useMemo(() => {
-    return medicines.map((m) => ({
-      name: m.name,
-      currentStock: m.currentStock,
-      minimumStock: m.minimumStock,
-      status: m.currentStock >= m.minimumStock ? "In Stock" : "Low Stock",
-    }));
+    return medicines.map((m) => {
+      const currentStock =
+        Number(m.currentStock) || 0;
+
+      const minimumStock =
+        Number(m.minimumStock) || 0;
+
+      return {
+        name:
+          m.name || m.medicineName || "Medicine",
+        currentStock,
+        minimumStock,
+        status:
+          currentStock >= minimumStock
+            ? "In Stock"
+            : "Low Stock",
+      };
+    });
   }, [medicines]);
 
   const hasReportData = medicineData.length > 0 || inventoryData.length > 0;
-  const totalTaken = history.filter((h) => h.status === "taken").length;
-  const totalMissed = history.filter((h) => h.status === "missed").length;
+  const totalTaken = history.filter((h) => String(h.status || "").toLowerCase() === "taken").length;
+  const totalMissed = history.filter((h) => String(h.status || "").toLowerCase() === "missed").length;
   const overallCompliance =
     totalTaken + totalMissed > 0 ? Math.round((totalTaken / (totalTaken + totalMissed)) * 100) : 0;
   const lowStockCount = inventoryData.filter((i) => i.status === "Low Stock").length;
@@ -254,7 +268,7 @@ const UserViewRep = ({ onBack }) => {
             </div>
 
             {/* ── Medicine Compliance Table ── */}
-            <div className="rep-table-card">
+            <div className="rep-table-card rep-compliance-card">
               <div className="rep-table-header">
                 <div className="rep-table-title-wrap">
                   <div className="rep-table-icon">
@@ -270,7 +284,7 @@ const UserViewRep = ({ onBack }) => {
                 <span className="rep-table-badge">Detailed View</span>
               </div>
               <div className="rep-table-wrap">
-                <table className="rep-table">
+                <table className="rep-table rep-compliance-table">
                   <thead>
                     <tr>
                       <th>Medicine</th>
@@ -281,15 +295,33 @@ const UserViewRep = ({ onBack }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {medicineData.map((m, i) => (
+                    {medicineData.length === 0 ? (
+                      <tr className="rep-compliance-empty-row">
+                        <td colSpan="5">
+                          <div className="rep-compliance-empty">
+                            <span className="rep-compliance-empty-icon">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="4" y="3" width="16" height="18" rx="2"/>
+                                <path d="M9 7h6"/>
+                                <path d="M9 12h6"/>
+                                <path d="M9 17h4"/>
+                              </svg>
+                            </span>
+
+                            <strong>No compliance data available</strong>
+                            <span>Data will appear here once medicines are taken or missed.</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : medicineData.map((m, i) => (
                       <tr key={i}>
                         <td className="rep-td-name" data-label="Medicine">
                           <span className="rep-medicine-dot"></span>
                           {m.name}
                         </td>
-                        <td data-label="Scheduled">{m.totalScheduled}</td>
-                        <td className="rep-td-taken" data-label="Taken">{m.taken}</td>
-                        <td className="rep-td-missed" data-label="Missed">{m.missed}</td>
+                        <td data-label="Scheduled"><span className="rep-count-chip rep-count-scheduled">{m.totalScheduled}</span></td>
+                        <td className="rep-td-taken" data-label="Taken"><span className="rep-count-chip rep-count-taken">{m.taken}</span></td>
+                        <td className="rep-td-missed" data-label="Missed"><span className="rep-count-chip rep-count-missed">{m.missed}</span></td>
                         <td data-label="Compliance">
                           <div className="rep-comp-wrap">
                             <span className="rep-comp-text">{m.compliance}%</span>
@@ -319,7 +351,7 @@ const UserViewRep = ({ onBack }) => {
             {/* ── Bottom Two Columns ── */}
             <div className="rep-bottom-grid">
               {/* Inventory */}
-              <div className="rep-table-card">
+              <div className="rep-table-card rep-inventory-status-card">
                 <div className="rep-table-header">
                   <div className="rep-table-title-wrap">
                     <div className="rep-table-icon">
@@ -338,7 +370,7 @@ const UserViewRep = ({ onBack }) => {
                       No stock data added yet.
                     </p>
                   ) : (
-                    <table className="rep-table rep-table-sm">
+                    <table className="rep-table rep-table-sm rep-inventory-table">
                       <thead>
                         <tr>
                           <th>Medicine</th>
@@ -350,9 +382,18 @@ const UserViewRep = ({ onBack }) => {
                       <tbody>
                         {inventoryData.map((item, i) => (
                           <tr key={i}>
-                            <td className="rep-td-name" data-label="Medicine">{item.name}</td>
-                            <td data-label="Stock">{item.currentStock}</td>
-                            <td data-label="Min">{item.minimumStock}</td>
+                            <td className="rep-td-name" data-label="Medicine">
+                              <span className="rep-inventory-med-icon">
+                                {String(item.name || "?").charAt(0).toUpperCase()}
+                              </span>
+                              <span>{item.name}</span>
+                            </td>
+                            <td data-label="Stock">
+                              <span className="rep-stock-value">{item.currentStock}</span>
+                            </td>
+                            <td data-label="Min">
+                              <span className="rep-min-value">{item.minimumStock}</span>
+                            </td>
                             <td data-label="Status">
                               <span className={`rep-inv-badge ${item.status === "In Stock" ? "rep-inv-instock" : "rep-inv-lowstock"}`}>
                                 {item.status === "In Stock" ? (
@@ -371,7 +412,7 @@ const UserViewRep = ({ onBack }) => {
               </div>
 
               {/* Report Info */}
-              <div className="rep-table-card">
+              <div className="rep-table-card rep-info-card">
                 <div className="rep-table-header">
                   <div className="rep-table-title-wrap">
                     <div className="rep-table-icon">

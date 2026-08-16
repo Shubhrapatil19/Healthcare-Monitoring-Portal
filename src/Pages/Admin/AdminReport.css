@@ -1,0 +1,932 @@
+.admin-report-page,
+.admin-report-page * {
+  box-sizing: border-box;
+}
+
+.admin-report-page {
+  width: 100%;
+  color: #1e293b;
+  font-family: "Inter", "Poppins", sans-serif;
+}
+
+.admin-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.admin-report-header-left {
+  min-width: 0;
+}
+
+.admin-report-header-left h1 {
+  margin: 0;
+  color: #0f8f8d;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.admin-report-header-left p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-report-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-report-btn-outline,
+.admin-report-btn-reset,
+.admin-report-btn-generate {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-report-btn-outline {
+  padding: 0 16px;
+  border: 1.5px solid rgba(15, 143, 141, 0.38);
+  background: #ffffff;
+  color: #0f8f8d;
+}
+
+.admin-report-btn-outline:hover:not(:disabled) {
+  border-color: #0f8f8d;
+  background: #effdfb;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 143, 141, 0.14);
+}
+
+.admin-report-btn-outline:disabled,
+.admin-report-btn-reset:disabled,
+.admin-report-btn-generate:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-report-filter-card,
+.admin-report-info-card,
+.admin-report-table-card {
+  width: 100%;
+  border: 1px solid #e4edf5;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.admin-report-filter-card {
+  margin-bottom: 18px;
+  padding: 22px;
+  border-radius: 14px;
+}
+
+.admin-report-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 28px;
+  align-items: end;
+}
+
+.admin-report-patient-field {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-report-type-field {
+  grid-column: 1;
+  grid-row: 2;
+  justify-content: flex-start;
+}
+
+.admin-report-format-field {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.admin-report-from-field {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.admin-report-to-field {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.admin-report-filter-actions {
+  grid-column: 2;
+  grid-row: 3;
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
+  min-height: 70px;
+}
+
+.admin-report-filter-field {
+  min-width: 0;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.admin-report-filter-field label {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.75px;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.admin-report-search-input,
+.admin-report-select,
+.admin-report-date-input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #dfe7ef;
+  border-radius: 10px;
+  background: #f8fbfd;
+  color: #1e293b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-report-search-input,
+.admin-report-select {
+  padding: 0 13px;
+}
+
+.admin-report-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.admin-report-search-input:focus,
+.admin-report-select:focus,
+.admin-report-date-input:hover {
+  border-color: #0f8f8d;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(15, 143, 141, 0.1);
+}
+
+.admin-report-radio-group {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-report-radio-label {
+  position: relative;
+  flex: 1;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid #dfe7ef;
+  border-radius: 10px;
+  background: #f8fbfd;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-report-radio-label::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-report-radio-label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-report-radio-label:has(input:checked) {
+  border-color: rgba(15, 143, 141, 0.55);
+  background: #e7fbf8;
+  color: #0f766e;
+  box-shadow: 0 8px 18px rgba(15, 143, 141, 0.12);
+}
+
+.admin-report-radio-label:has(input:checked)::before {
+  border-color: #0f8f8d;
+  background: #0f8f8d;
+  box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+.admin-report-radio-label:hover {
+  border-color: rgba(15, 143, 141, 0.35);
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.admin-report-radio-label:has(input:checked):hover {
+  color: #0f766e;
+}
+
+.admin-report-btn-reset {
+  min-width: 96px;
+  padding: 0 16px;
+  border: 1px solid #dfe7ef;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.admin-report-btn-reset:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.admin-report-btn-generate {
+  min-width: 156px;
+  padding: 0 18px;
+  border: 0;
+  background: #0f9f9a;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(15, 143, 141, 0.22);
+}
+
+.admin-report-btn-generate:hover:not(:disabled) {
+  background: #0a6e6c;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(15, 143, 141, 0.3);
+}
+
+.admin-report-info-card {
+  position: relative;
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px 20px 18px 24px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.admin-report-info-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #13a69d;
+}
+
+.admin-report-info-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #e7fbf8;
+  color: #0f8f8d;
+}
+
+.admin-report-info-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.admin-report-info-patient {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 0;
+  border-right: 0;
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.admin-report-info-type {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid #bfeee9;
+  border-radius: 999px;
+  background: #e7fbf8;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.admin-report-info-dates {
+  padding: 8px 12px;
+  border: 1px solid #dfe7ef;
+  border-radius: 999px;
+  background: #f8fbfd;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-report-table-card {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-report-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.admin-report-table {
+  --report-table-x: 20px;
+  --report-table-date-x: 28px;
+  width: 100%;
+  min-width: 900px;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  table-layout: fixed;
+}
+
+.admin-report-col-date {
+  width: 11%;
+}
+
+.admin-report-col-medicine {
+  width: 27%;
+}
+
+.admin-report-col-scheduled,
+.admin-report-col-taken {
+  width: 15%;
+}
+
+.admin-report-col-status {
+  width: 13%;
+}
+
+.admin-report-col-remarks {
+  width: 19%;
+}
+
+.admin-report-table thead {
+  background: transparent;
+}
+
+.admin-report-table th {
+  height: 38px;
+  padding: 0 var(--report-table-x);
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.85px;
+  text-align: left;
+  text-transform: uppercase;
+  background: #e7fbf8;
+  border-top: 1px solid #ccefeb;
+  border-bottom: 1px solid #ccefeb;
+}
+
+.admin-report-table th:first-child {
+  border-left: 1px solid #ccefeb;
+  border-radius: 12px 0 0 12px;
+}
+
+.admin-report-table th:last-child {
+  border-right: 1px solid #ccefeb;
+  border-radius: 0 12px 12px 0;
+}
+
+.admin-report-table td {
+  height: 62px;
+  padding: 0 var(--report-table-x);
+  border-top: 1px solid #e8eef5;
+  border-bottom: 1px solid #e8eef5;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.admin-report-table td:nth-child(1) {
+  color: #1e3a5f;
+  font-weight: 800;
+}
+
+.admin-report-table td:nth-child(2) {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.admin-report-table td:nth-child(3),
+.admin-report-table td:nth-child(4) {
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-report-table td:nth-child(6) {
+  color: #475569;
+  line-height: 1.35;
+}
+
+.admin-report-table tbody tr {
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-report-table tbody tr:nth-child(even) {
+  background: transparent;
+}
+
+.admin-report-table tbody tr:hover {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.admin-report-table tbody tr:hover td {
+  background: #fbfffe;
+  border-color: #ccefeb;
+}
+
+.admin-report-table td:first-child {
+  border-left: 1px solid #e8eef5;
+  border-radius: 12px 0 0 12px;
+}
+
+.admin-report-table td:last-child {
+  border-right: 1px solid #e8eef5;
+  border-radius: 0 12px 12px 0;
+}
+
+.admin-report-table th:nth-child(1),
+.admin-report-table td:nth-child(1) {
+  padding-left: var(--report-table-date-x);
+}
+
+.admin-report-table th:nth-child(1),
+.admin-report-table td:nth-child(1),
+.admin-report-table th:nth-child(2),
+.admin-report-table td:nth-child(2),
+.admin-report-table th:nth-child(6),
+.admin-report-table td:nth-child(6) {
+  text-align: left;
+}
+
+.admin-report-table td:nth-child(1),
+.admin-report-table td:nth-child(2),
+.admin-report-table td:nth-child(3),
+.admin-report-table td:nth-child(4) {
+  white-space: nowrap;
+}
+
+.admin-report-table th:nth-child(3),
+.admin-report-table td:nth-child(3),
+.admin-report-table th:nth-child(4),
+.admin-report-table td:nth-child(4) {
+  padding-left: var(--report-table-x);
+  padding-right: var(--report-table-x);
+  text-align: center;
+}
+
+.admin-report-table th:nth-child(5),
+.admin-report-table td:nth-child(5) {
+  padding-left: var(--report-table-x);
+  padding-right: var(--report-table-x);
+  text-align: center;
+}
+
+.admin-report-empty {
+  padding: 42px 18px !important;
+  color: #94a3b8 !important;
+  text-align: center !important;
+}
+
+.admin-report-status {
+  width: 86px;
+  min-width: 86px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.admin-report-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.admin-report-status.taken {
+  border: 1px solid #bbf7d0;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.admin-report-status.missed {
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.admin-report-status.pending,
+.admin-report-status.snooze,
+.admin-report-status.snoozed {
+  border: 1px solid #fde68a;
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.admin-report-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.admin-report-pagination-info {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-report-pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.admin-report-page-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.admin-report-page-btn:hover:not(:disabled) {
+  border-color: #0f8f8d;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.admin-report-page-btn.active {
+  border-color: #0f8f8d;
+  background: #0f8f8d;
+  color: #ffffff;
+}
+
+.admin-report-page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-report-calendar-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.admin-report-date-input {
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.admin-report-calendar-icon {
+  flex-shrink: 0;
+  color: #0f8f8d;
+  font-size: 17px;
+}
+
+.admin-report-date-text {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-report-calendar-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5000;
+  width: 300px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  animation: adminReportCalendarIn 0.2s ease;
+}
+
+@keyframes adminReportCalendarIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-report-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.admin-report-cal-title {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.admin-report-cal-nav {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin-report-cal-nav:hover {
+  background: #dff6f2;
+  color: #0f766e;
+}
+
+.admin-report-cal-weekdays,
+.admin-report-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.admin-report-cal-weekdays {
+  margin-bottom: 6px;
+}
+
+.admin-report-cal-weekday {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-report-cal-cell,
+.admin-report-cal-day {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.admin-report-cal-day {
+  border: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-report-cal-day:hover:not(:disabled):not(.selected) {
+  background: #dff6f2;
+  color: #0f766e;
+}
+
+.admin-report-cal-day.selected {
+  background: #0f8f8d;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.27);
+}
+
+.admin-report-cal-day.today:not(.selected) {
+  border: 1.5px solid #0f8f8d;
+  color: #0f766e;
+}
+
+.admin-report-cal-day.disabled {
+  opacity: 0.45;
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.admin-report-cal-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+}
+
+.admin-report-cal-today,
+.admin-report-cal-close {
+  flex: 1;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-report-cal-today {
+  border: 0;
+  background: #0f8f8d;
+  color: #ffffff;
+}
+
+.admin-report-cal-close {
+  border: 1px solid #dbe3ec;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.admin-report-cal-today:hover {
+  background: #0a6e6c;
+}
+
+.admin-report-cal-close:hover {
+  border-color: #0f8f8d;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+@media (max-width: 1180px) {
+  .admin-report-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-report-patient-field,
+  .admin-report-type-field,
+  .admin-report-format-field,
+  .admin-report-from-field,
+  .admin-report-to-field,
+  .admin-report-filter-actions {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .admin-report-filter-actions {
+    min-height: auto;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-report-header,
+  .admin-report-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-report-header-right,
+  .admin-report-btn-outline,
+  .admin-report-btn-reset,
+  .admin-report-btn-generate {
+    width: 100%;
+  }
+
+  .admin-report-filter-card,
+  .admin-report-info-card {
+    padding: 16px;
+  }
+
+  .admin-report-radio-group {
+    height: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-report-radio-label {
+    height: 36px;
+    justify-content: center;
+  }
+
+  .admin-report-filter-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-report-info-card {
+    align-items: flex-start;
+  }
+
+  .admin-report-info-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-report-info-patient {
+    min-width: 0;
+  }
+
+  .admin-report-info-dates {
+    white-space: normal;
+  }
+
+  .admin-report-pagination-controls {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-report-header-left h1 {
+    font-size: 20px;
+    letter-spacing: 3px;
+  }
+
+  .admin-report-info-card {
+    flex-direction: column;
+  }
+
+  .admin-report-calendar-popup {
+    width: min(300px, calc(100vw - 46px));
+  }
+}

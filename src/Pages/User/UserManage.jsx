@@ -200,9 +200,9 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
             <Pill size={60} />
             <h4>No medicine added yet</h4>
             <p>Add your medicine to see your medicine list</p>
-            <button onClick={handleAddMedicine}>
+            <button className="add-first-medicine-btn" onClick={handleAddMedicine}>
               <Plus size={24} />
-              Add Your First Medicine
+              <span>Add Your First Medicine</span>
             </button>
           </div>
         ) : (

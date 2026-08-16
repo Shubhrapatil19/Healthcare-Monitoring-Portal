@@ -119,9 +119,9 @@ const UserDash = ({ onLogout }) => {
 
   // Refetch when the displayed month/year changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCalendarData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    queueMicrotask(() => {
+      fetchCalendarData();
+    });
   }, [calendarMonth, calendarYear]);
 
   // Navigate to previous month
@@ -821,7 +821,7 @@ const UserDash = ({ onLogout }) => {
                             onClick={handleAddMedicine}
                           >
                             <Plus size={24} />
-                            Add Your First Medicine
+                            <span>Add Your First Medicine</span>
                           </button>
                         </div>
                       ) : (
@@ -913,7 +913,7 @@ const UserDash = ({ onLogout }) => {
                           onClick={() => setShowAddStockModal(true)}
                         >
                           <Plus size={24} />
-                          Add Medicine Stock
+                          <span>Add Medicine Stock</span>
                         </button>
                       </div>
                     ) : (

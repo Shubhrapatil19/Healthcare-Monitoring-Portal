@@ -26,8 +26,9 @@
    CONTAINER
    =========================== */
 .up-container {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 32px 24px;
   min-height: 100vh;
   background: #F0F4F8;
@@ -48,6 +49,32 @@
   color: #0F766E;
 }
 
+.up-page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 24px;
+  text-align: left;
+  position: relative;
+  padding-left: 18px;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.up-page-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  background: linear-gradient(180deg, #0d9488, #14b8a6, #5eead4);
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
 /* ===========================
    PROFILE HEADER
    =========================== */
@@ -56,12 +83,24 @@
   align-items: center;
   gap: 20px;
   padding: 28px 32px;
-  background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%);
+  border: 2px solid transparent;
   border-radius: 20px;
   margin-bottom: 28px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(15, 118, 110, 0.25);
+  --up-profile-border-angle: 0deg;
+  background:
+    linear-gradient(135deg, #0F766E 0%, #14B8A6 100%) padding-box,
+    conic-gradient(
+      from var(--up-profile-border-angle),
+      #F59E0B 0deg,
+      #F59E0B 120deg,
+      #4C8BF5 180deg,
+      #4C8BF5 300deg,
+      #F59E0B 360deg
+    ) border-box;
+  animation: upProfileBorderSpin 3.2s linear infinite;
 }
 
 .up-profile-header::before {
@@ -546,6 +585,11 @@
     padding: 20px 16px;
   }
 
+  .up-page-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
   .up-profile-header {
     flex-direction: column;
     text-align: center;
@@ -686,5 +730,17 @@
   .up-message {
     padding: 12px 16px;
     font-size: 13px;
+  }
+}
+
+@property --up-profile-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes upProfileBorderSpin {
+  to {
+    --up-profile-border-angle: 360deg;
   }
 }

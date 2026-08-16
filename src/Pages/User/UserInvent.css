@@ -31,6 +31,23 @@
   z-index: 1;
 }
 
+.inventory-container .inventory-header {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inventory-container .header-left h1 {
+  color: #1a2f3a;
+}
+
+.inventory-container .header-left > svg {
+  color: #0d7377;
+  background: linear-gradient(135deg, #e8f5f5, #d4edf0);
+  border-radius: 12px;
+}
+
 .inventory-header {
   display: flex;
   justify-content: space-between;

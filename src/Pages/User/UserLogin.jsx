@@ -1,6 +1,8 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+
 import { loginUser } from "../../api/MockApi";
+import { loginAdmin } from "../../api/AdminMockApi";
 
 import "./UserLogin.css";
 
@@ -14,53 +16,222 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 
-const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
-  const rememberedEmail = localStorage.getItem("rememberEmail") || "";
+const ADMIN_EMAIL = "admin@gmail.com";
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
-  const [isForgetOpen, setIsForgetOpen] = useState(false);
+const UserLogin = ({
+  onGoRegister,
+  onLoginSuccess,
+  onAdminLoginSuccess,
+}) => {
+  // =========================================================
+  // REMEMBERED EMAIL
+  // =========================================================
 
-  const [formData, setFormData] = useState({
-    email: rememberedEmail,
-    password: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const rememberedEmail =
+    localStorage.getItem("rememberEmail") || "";
+
+  // =========================================================
+  // STATE
+  // =========================================================
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [rememberMe, setRememberMe] =
+    useState(!!rememberedEmail);
+
+  const [isForgetOpen, setIsForgetOpen] =
+    useState(false);
+
+  const [formData, setFormData] =
+    useState({
+      email: rememberedEmail,
+      password: "",
+    });
+
+  const [errors, setErrors] =
+    useState({});
+
+  const [loading, setLoading] =
+    useState(false);
+
+  // =========================================================
+  // INPUT CHANGE
+  // =========================================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
+
       [name]:
         name === "email"
-          ? value.trim().toLowerCase()
+          ? value
+              .trim()
+              .toLowerCase()
           : value,
     }));
+
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
     }
   };
+
+  // =========================================================
+  // VALIDATION
+  // =========================================================
 
   const validateForm = () => {
     const newErrors = {};
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    // EMAIL
     if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Enter a valid email";
+      newErrors.email =
+        "Email is required";
+    } else if (
+      !emailRegex.test(
+        formData.email
+      )
+    ) {
+      newErrors.email =
+        "Enter a valid email";
     }
+
+    // PASSWORD
     if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (/\s/.test(formData.password)) {
-      newErrors.password = "Password cannot contain spaces";
+      newErrors.password =
+        "Password is required";
+    } else if (
+      /\s/.test(
+        formData.password
+      )
+    ) {
+      newErrors.password =
+        "Password cannot contain spaces";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    return (
+      Object.keys(newErrors).length === 0
+    );
   };
+
+  // =========================================================
+  // SAVE REMEMBER EMAIL
+  // =========================================================
+
+  const handleRememberEmail = () => {
+    if (rememberMe) {
+      localStorage.setItem(
+        "rememberEmail",
+        formData.email
+      );
+    } else {
+      localStorage.removeItem(
+        "rememberEmail"
+      );
+    }
+  };
+
+  // =========================================================
+  // SUCCESS TOAST
+  // =========================================================
+
+  const showSuccessToast = (message) => {
+    toast.success(
+      message || "Login successful!",
+      {
+        duration: 4000,
+
+        style: {
+          background:
+            "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
+
+          color: "#fff",
+
+          padding:
+            "14px 20px",
+
+          borderRadius:
+            "10px",
+
+          boxShadow:
+            "0 8px 20px rgba(46, 139, 87, 0.28)",
+
+          fontSize:
+            "14px",
+
+          fontWeight:
+            "600",
+
+          border:
+            "1px solid rgba(255, 255, 255, 0.22)",
+        },
+
+        iconTheme: {
+          primary: "#fff",
+          secondary: "#2e8b57",
+        },
+      }
+    );
+  };
+
+  // =========================================================
+  // ERROR TOAST
+  // =========================================================
+
+  const showErrorToast = (message) => {
+    toast.error(
+      message ||
+        "Login failed. Please try again.",
+      {
+        duration: 4000,
+
+        style: {
+          background:
+            "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
+
+          color: "#fff",
+
+          padding:
+            "14px 20px",
+
+          borderRadius:
+            "10px",
+
+          boxShadow:
+            "0 8px 20px rgba(31, 111, 139, 0.25)",
+
+          fontSize:
+            "14px",
+
+          fontWeight:
+            "600",
+
+          border:
+            "1px solid rgba(255, 255, 255, 0.22)",
+        },
+
+        iconTheme: {
+          primary: "#fff",
+          secondary: "#1f6f8b",
+        },
+      }
+    );
+  };
+
+  // =========================================================
+  // LOGIN
+  // SAME LOGIN PAGE FOR USER + ADMIN
+  // =========================================================
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,76 +243,107 @@ const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // ================= MOCK: LOGIN (no backend) =================
-      // No server means no confirmation email, so login now completes
-      // immediately once the credentials match a registered user.
-      const response = await loginUser({
-        email: formData.email,
-        password: formData.password,
-      });
-      // ================================================================
+      const normalizedEmail =
+        formData.email
+          .trim()
+          .toLowerCase();
 
-      toast.success(response.data.message || "Login successful!", {
-        duration: 4000,
-        style: {
-          background: "linear-gradient(135deg, #2e8b57 0%, #1f6f8b 100%)",
-          color: "#fff",
-          padding: "14px 20px",
-          borderRadius: "10px",
-          boxShadow: "0 8px 20px rgba(46, 139, 87, 0.28)",
-          fontSize: "14px",
-          fontWeight: "600",
-          border: "1px solid rgba(255, 255, 255, 0.22)",
-        },
-        iconTheme: { primary: "#fff", secondary: "#2e8b57" },
-      });
+      let response;
 
-      if (rememberMe) {
-        localStorage.setItem("rememberEmail", formData.email);
+      // =====================================================
+      // ADMIN LOGIN
+      // =====================================================
+
+      if (
+        normalizedEmail ===
+        ADMIN_EMAIL
+      ) {
+        response =
+          await loginAdmin({
+            email:
+              normalizedEmail,
+
+            password:
+              formData.password,
+          });
+
+        handleRememberEmail();
+
+        showSuccessToast(
+          response?.data?.message ||
+            "Admin login successful!"
+        );
+
+        if (
+          typeof onAdminLoginSuccess ===
+          "function"
+        ) {
+          onAdminLoginSuccess();
+        }
+
+        return;
       }
 
-      if (typeof onLoginSuccess === "function") {
+      // =====================================================
+      // NORMAL USER LOGIN
+      // =====================================================
+
+      response =
+        await loginUser({
+          email:
+            normalizedEmail,
+
+          password:
+            formData.password,
+        });
+
+      handleRememberEmail();
+
+      showSuccessToast(
+        response?.data?.message ||
+          "Login successful!"
+      );
+
+      if (
+        typeof onLoginSuccess ===
+        "function"
+      ) {
         onLoginSuccess();
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "";
+      const errorMessage =
+        error?.response?.data
+          ?.message ||
+        error?.message ||
+        "Login failed. Please try again.";
 
-      if (
-        errorMessage.toLowerCase().includes("password") ||
-        errorMessage.toLowerCase().includes("email") ||
-        errorMessage.toLowerCase().includes("credential")
-      ) {
-        setErrors((prev) => ({ ...prev, password: "Incorrect email or password" }));
-      }
+      setErrors((prev) => ({
+        ...prev,
 
-      toast.error(errorMessage || "Login failed. Please try again.", {
-        duration: 4000,
-        style: {
-          background: "linear-gradient(135deg, #1f6f8b 0%, #0f4c5c 100%)",
-          color: "#fff",
-          padding: "14px 20px",
-          borderRadius: "10px",
-          boxShadow: "0 8px 20px rgba(31, 111, 139, 0.25)",
-          fontSize: "14px",
-          fontWeight: "600",
-          border: "1px solid rgba(255, 255, 255, 0.22)",
-        },
-        iconTheme: { primary: "#fff", secondary: "#1f6f8b" },
-      });
+        password:
+          "Incorrect email or password",
+      }));
+
+      showErrorToast(
+        errorMessage
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <div className="login-page">
-
-      {/* ================= HEADER ================= */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <header className="login-header">
-
         <div className="header-left">
-
           <div className="logo-box">
             <img
               className="hms-logo-icon"
@@ -150,97 +352,130 @@ const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
             />
           </div>
 
-
           <div>
             <h2 className="system-title">
-              <span className="green-text">Healthcare Monitoring</span>{" "}
-              <span className="blue-text">System</span>
+              <span className="green-text">
+                Healthcare Monitoring
+              </span>{" "}
+
+              <span className="blue-text">
+                System
+              </span>
             </h2>
 
             <p className="header-subtitle">
-              Care. Monitor. Remind. Stay Healthy.
+              Care. Monitor. Remind.
+              Stay Healthy.
             </p>
           </div>
-
         </div>
 
         <div className="header-right">
-          <h4>Your Health, Our Priority</h4>
+          <h4>
+            Your Health, Our Priority
+          </h4>
 
-          <p>Secure • Reliable • Care Focused</p>
+          <p>
+            Secure • Reliable • Care Focused
+          </p>
         </div>
-
       </header>
 
-      {/* ================= MAIN ================= */}
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
 
       <div className="login-container">
-
-        {/* LEFT SIDE */}
+        {/* ===================================================
+            LEFT SECTION
+        =================================================== */}
 
         <div className="left-section">
-
           <div className="left-content">
-
             <h1>
               Healthcare
               <br />
-              <span>Monitoring System</span>
+
+              <span>
+                Monitoring System
+              </span>
             </h1>
 
             <p>
-              An intelligent platform to manage medicines, reminders,
-              inventory, alerts and family communication – all in one place.
+              An intelligent platform to
+              manage medicines, reminders,
+              inventory, alerts and family
+              communication – all in one
+              place.
             </p>
+
+            {/* HERO */}
 
             <div className="left-hero">
               <div className="hero-illustration">
                 <div className="hero-card">
                   <div className="hero-card-top">
-                    <div className="hero-circle"></div>
+                    <div className="hero-circle">
+                    </div>
+
                     <div className="hero-details">
                       <span></span>
                       <span></span>
                     </div>
                   </div>
+
                   <div className="hero-card-body">
-                    <div className="hero-chart"></div>
-                    <div className="hero-badge">+</div>
+                    <div className="hero-chart">
+                    </div>
+
+                    <div className="hero-badge">
+                      +
+                    </div>
                   </div>
                 </div>
               </div>
+
               <div className="hero-highlights">
                 <div className="highlight-pill">
                   <div></div>
-                  <span>Easy scheduling</span>
+
+                  <span>
+                    Easy scheduling
+                  </span>
                 </div>
+
                 <div className="highlight-pill">
                   <div></div>
-                  <span>Smart alerts</span>
+
+                  <span>
+                    Smart alerts
+                  </span>
                 </div>
               </div>
             </div>
 
+            {/* HEARTBEAT */}
+
             <div className="heartbeat-line">
-              <div className="line"></div>
+              <div className="line">
+              </div>
 
               <div className="pulse">
                 <span></span>
               </div>
 
-              <div className="line"></div>
+              <div className="line">
+              </div>
             </div>
-
           </div>
-
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* ===================================================
+            RIGHT SECTION
+        =================================================== */}
 
         <div className="right-section">
-
           <div className="login-card">
-
             {/* LOGO */}
 
             <div className="login-logo">
@@ -253,59 +488,110 @@ const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
               </div>
             </div>
 
+            {/* TITLE */}
 
-            <h2>Welcome Back!</h2>
+            <h2>
+              Welcome Back!
+            </h2>
 
             <p className="welcome-text">
-              Sign in to continue to your account
+              Sign in to continue to your
+              account
             </p>
 
-            <form onSubmit={handleLogin}>
+            {/* =================================================
+                LOGIN FORM
+            ================================================= */}
 
+            <form onSubmit={handleLogin}>
               {/* EMAIL */}
 
-              <label>Email </label>
+              <label>
+                Email
+              </label>
 
               <div className="input-box">
-
-                <FaEnvelope className="input-icon" />
+                <FaEnvelope
+                  className="input-icon"
+                />
 
                 <input
                   type="text"
                   name="email"
                   placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleChange}
+                  value={
+                    formData.email
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  autoComplete="email"
                 />
-
               </div>
+
               {errors.email && (
-                <span style={{ color: "#ef4444", fontSize: "13px", display: "block", marginTop: "-14px", marginBottom: "14px" }}>
+                <span
+                  style={{
+                    color:
+                      "#ef4444",
+
+                    fontSize:
+                      "13px",
+
+                    display:
+                      "block",
+
+                    marginTop:
+                      "-14px",
+
+                    marginBottom:
+                      "14px",
+                  }}
+                >
                   {errors.email}
                 </span>
               )}
 
               {/* PASSWORD */}
 
-              <label>Password</label>
+              <label>
+                Password
+              </label>
 
               <div className="input-box">
-
-                <FaLock className="input-icon" />
+                <FaLock
+                  className="input-icon"
+                />
 
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   name="password"
                   placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
+                  value={
+                    formData.password
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  autoComplete="current-password"
                 />
 
                 <button
                   type="button"
                   className="eye-btn"
                   onClick={() =>
-                    setShowPassword(!showPassword)
+                    setShowPassword(
+                      (prev) => !prev
+                    )
+                  }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
                   }
                 >
                   {showPassword ? (
@@ -314,40 +600,61 @@ const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
                     <FaEye />
                   )}
                 </button>
-
               </div>
+
               {errors.password && (
-                <span style={{ color: "#ef4444", fontSize: "13px", display: "block", marginTop: "-14px", marginBottom: "14px" }}>
+                <span
+                  style={{
+                    color:
+                      "#ef4444",
+
+                    fontSize:
+                      "13px",
+
+                    display:
+                      "block",
+
+                    marginTop:
+                      "-14px",
+
+                    marginBottom:
+                      "14px",
+                  }}
+                >
                   {errors.password}
                 </span>
               )}
 
-              {/* REMEMBER */}
+              {/* REMEMBER / FORGOT */}
 
               <div className="login-options">
-
                 <label className="remember">
-
                   <input
                     type="checkbox"
-                    checked={rememberMe}
+                    checked={
+                      rememberMe
+                    }
                     onChange={() =>
-                      setRememberMe(!rememberMe)
+                      setRememberMe(
+                        (prev) => !prev
+                      )
                     }
                   />
 
-                  <span>Remember Me</span>
-
+                  <span>
+                    Remember Me
+                  </span>
                 </label>
 
                 <button
                   type="button"
                   className="forget-link"
-                  onClick={() => setIsForgetOpen(true)}
+                  onClick={() =>
+                    setIsForgetOpen(true)
+                  }
                 >
                   Forget Password?
                 </button>
-
               </div>
 
               {/* LOGIN BUTTON */}
@@ -358,43 +665,60 @@ const UserLogin = ({ onGoRegister, onLoginSuccess }) => {
                 disabled={loading}
               >
                 <FaSignInAlt />
-                {loading ? "Logging in..." : "Login"}
-              </button>
 
+                {loading
+                  ? "Logging in..."
+                  : "Login"}
+              </button>
             </form>
 
-            {/* REGISTER */}
+            {/* =================================================
+                REGISTER
+                Only normal user registers
+            ================================================= */}
 
             <div className="register-link">
-
-              Don't have an account?
+              Don't have an account?{" "}
 
               <a
-                href="#"
+                href="#register"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (typeof onGoRegister === "function") onGoRegister();
+
+                  if (
+                    typeof onGoRegister ===
+                    "function"
+                  ) {
+                    onGoRegister();
+                  }
                 }}
               >
                 Register Now
               </a>
-
             </div>
-
           </div>
-
         </div>
-
       </div>
 
-      <UserForget isOpen={isForgetOpen} onClose={() => setIsForgetOpen(false)} />
+      {/* =====================================================
+          FORGOT PASSWORD MODAL
+      ===================================================== */}
 
-      {/* ================= FOOTER ================= */}
+      <UserForget
+        isOpen={isForgetOpen}
+        onClose={() =>
+          setIsForgetOpen(false)
+        }
+      />
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
 
       <footer className="login-footer">
-        © 2025 Healthcare Monitoring System. All Rights Reserved
+        © 2025 Healthcare Monitoring
+        System. All Rights Reserved
       </footer>
-
     </div>
   );
 };

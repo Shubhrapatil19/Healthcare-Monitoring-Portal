@@ -1,0 +1,230 @@
+.admin-add-user-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.admin-add-user-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+  animation: adminAddUserIn 0.22s ease;
+}
+
+.admin-add-user-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.admin-add-user-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.admin-add-user-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  color: #94a3b8;
+  background: #f3f6fa;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-add-user-close:hover:not(:disabled) {
+  color: #0f766e;
+  background: #e9fbf8;
+  transform: translateY(-1px);
+}
+
+.admin-add-user-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-add-user-body {
+  display: grid;
+  gap: 16px;
+  max-height: min(64vh, 620px);
+  overflow-y: auto;
+  padding: 22px 26px;
+}
+
+.admin-add-user-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.admin-add-user-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-add-user-field label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.admin-add-user-field label span {
+  color: #ef4444;
+}
+
+.admin-add-user-field input,
+.admin-add-user-field select,
+.admin-add-user-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dfe7ef;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #1f2937;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-add-user-field input,
+.admin-add-user-field select {
+  height: 44px;
+  padding: 0 13px;
+}
+
+.admin-add-user-field textarea {
+  min-height: 74px;
+  resize: vertical;
+  padding: 12px 13px;
+}
+
+.admin-add-user-field input::placeholder,
+.admin-add-user-field textarea::placeholder {
+  color: #94a3b8;
+}
+
+.admin-add-user-field input:focus,
+.admin-add-user-field select:focus,
+.admin-add-user-field textarea:focus {
+  border-color: #0f8f8d;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(15, 143, 141, 0.12);
+}
+
+.admin-add-user-field small {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-add-user-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 26px;
+  border-top: 1px solid #edf1f5;
+  background: #ffffff;
+}
+
+.admin-add-user-cancel,
+.admin-add-user-save {
+  min-width: 118px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-add-user-cancel {
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-add-user-save {
+  color: #ffffff;
+  background: #0f8f8d;
+  box-shadow: 0 12px 24px rgba(15, 143, 141, 0.24);
+}
+
+.admin-add-user-cancel:hover:not(:disabled),
+.admin-add-user-save:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.admin-add-user-cancel:hover:not(:disabled) {
+  background: #eef2f7;
+}
+
+.admin-add-user-save:hover:not(:disabled) {
+  background: #0a6e6c;
+  box-shadow: 0 16px 30px rgba(15, 143, 141, 0.32);
+}
+
+.admin-add-user-cancel:disabled,
+.admin-add-user-save:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@keyframes adminAddUserIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-add-user-overlay {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .admin-add-user-header,
+  .admin-add-user-body,
+  .admin-add-user-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-add-user-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-add-user-footer {
+    flex-direction: column-reverse;
+  }
+
+  .admin-add-user-cancel,
+  .admin-add-user-save {
+    width: 100%;
+  }
+}

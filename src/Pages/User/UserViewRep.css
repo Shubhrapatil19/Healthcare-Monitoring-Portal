@@ -61,15 +61,50 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  border: none;
+  --rep-download-border-angle: 0deg;
+  background:
+    linear-gradient(135deg, #0d9488, #14b8a6) padding-box,
+    conic-gradient(
+      from var(--rep-download-border-angle),
+      #ff6b6b 0deg,
+      #ff6b6b 115deg,
+      #22d3ee 180deg,
+      #22d3ee 295deg,
+      #ff6b6b 360deg
+    ) border-box;
+  border: 2px solid transparent;
   color: #ffffff;
   border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+  animation: repDownloadBorderSpin 3.2s linear infinite;
+}
+
+.rep-download-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: skewX(-18deg);
+  animation: repDownloadShine 2.6s ease-in-out infinite;
+}
+
+.rep-download-btn svg,
+.rep-download-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.rep-download-btn svg {
+  transition: transform 0.3s ease;
 }
 
 .rep-download-btn:hover {
@@ -77,8 +112,44 @@
   box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
 }
 
+.rep-download-btn:hover svg {
+  transform: translateY(2px);
+}
+
 .rep-download-btn:active {
   transform: translateY(0) scale(0.97);
+}
+
+.rep-download-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+}
+
+.rep-download-btn:disabled::before {
+  display: none;
+}
+
+@keyframes repDownloadShine {
+  0% {
+    left: -80%;
+  }
+  45%, 100% {
+    left: 120%;
+  }
+}
+
+@property --rep-download-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes repDownloadBorderSpin {
+  to {
+    --rep-download-border-angle: 360deg;
+  }
 }
 
 /* ===== REPORT CONTENT ===== */
@@ -193,33 +264,37 @@
 .rep-stat-card {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 16px;
+  min-height: 104px;
+  padding: 1.15rem 1.25rem;
+  border-radius: 18px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
 }
 
 .rep-stat-card::before {
   content: '';
   position: absolute;
-  top: 0;
   left: 0;
-  right: 0;
-  height: 3px;
-  transition: height 0.3s ease;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
 }
 
 .rep-stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.09);
 }
 
 .rep-stat-card:hover::before {
-  height: 4px;
+  top: 12px;
+  bottom: 12px;
 }
 
 .rep-stat-green::before { background: linear-gradient(90deg, #059669, #34d399); }
@@ -227,19 +302,35 @@
 .rep-stat-red::before { background: linear-gradient(90deg, #dc2626, #f87171); }
 .rep-stat-amber::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
 
+.rep-stat-green {
+  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+}
+
+.rep-stat-teal {
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+}
+
+.rep-stat-red {
+  background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+}
+
+.rep-stat-amber {
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
 .rep-stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 16px;
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
 
 .rep-stat-card:hover .rep-stat-icon {
-  transform: scale(1.08) rotate(3deg);
+  transform: translateY(-2px) scale(1.05);
 }
 
 .rep-stat-icon svg {
@@ -273,22 +364,24 @@
 
 .rep-stat-info {
   flex: 1;
+  text-align: right;
+  min-width: 0;
 }
 
 .rep-stat-label {
   display: block;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 800;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
 }
 
 .rep-stat-value {
   display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -497,6 +590,114 @@
   border-radius: 50%;
   background: #d97706;
 }
+
+.rep-inventory-table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  border-spacing: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.rep-inventory-table thead {
+  background: linear-gradient(135deg, #eef2ff, #f0fdfa);
+}
+
+.rep-inventory-table th {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #c7d2fe;
+  color: #4338ca;
+  background: transparent;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.rep-inventory-table th:first-child {
+  border-radius: 0;
+}
+
+.rep-inventory-table th:last-child {
+  border-radius: 0;
+}
+
+.rep-inventory-table th:nth-child(1),
+.rep-inventory-table td:nth-child(1) {
+  width: 42%;
+  text-align: left;
+}
+
+.rep-inventory-table th:nth-child(2),
+.rep-inventory-table td:nth-child(2),
+.rep-inventory-table th:nth-child(3),
+.rep-inventory-table td:nth-child(3) {
+  width: 16%;
+  text-align: center;
+}
+
+.rep-inventory-table th:nth-child(4),
+.rep-inventory-table td:nth-child(4) {
+  width: 26%;
+  text-align: center;
+}
+
+.rep-inventory-table td {
+  height: 62px;
+  padding: 0.85rem 1rem;
+  border-top: 0;
+  border-bottom: 1px solid #edf2f7;
+  background: #ffffff;
+}
+
+.rep-inventory-table td:first-child {
+  border-left: 0;
+  border-radius: 0;
+}
+
+.rep-inventory-table td:last-child {
+  border-right: 0;
+  border-radius: 0;
+}
+
+.rep-inventory-table tbody tr:hover td {
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.rep-inventory-med-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  background: #e0e7ff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.rep-stock-value,
+.rep-min-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 32px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.rep-stock-value {
+  color: #0f766e;
+  background: #ccfbf1;
+}
+
+.rep-min-value {
+  color: #4338ca;
+  background: #eef2ff;
+}
+
 
 /* ── Bottom Grid ── */
 .rep-bottom-grid {
@@ -768,6 +969,28 @@
     letter-spacing: 0.03em;
   }
 
+  .rep-inventory-table {
+    border-spacing: 0;
+    padding: 0;
+  }
+
+  .rep-inventory-table tr {
+    margin-bottom: 0.75rem;
+    border: 1px solid #e6f3f1;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .rep-inventory-table td,
+  .rep-inventory-table td:first-child,
+  .rep-inventory-table td:last-child {
+    height: auto;
+    border: 0;
+    border-bottom: 1px solid #f0f5fa;
+    border-radius: 0;
+  }
+
   .rep-td-name {
     font-weight: 700;
   }
@@ -788,4 +1011,325 @@
   .rep-info-val {
     font-size: 0.8125rem;
   }
+}
+
+.rep-inventory-status-card {
+  border: 1px solid rgba(13, 148, 136, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(13, 148, 136, 0.08);
+}
+
+.rep-inventory-status-card:hover {
+  box-shadow: 0 16px 36px rgba(13, 148, 136, 0.12);
+}
+
+.rep-inventory-status-card .rep-table-header {
+  padding: 1.05rem 1.25rem;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.96) 0%, rgba(20, 184, 166, 0.92) 100%);
+  border-bottom: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.rep-inventory-status-card .rep-table-header::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  top: -52px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rep-inventory-status-card .rep-table-title-wrap {
+  gap: 0.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.rep-inventory-status-card .rep-table-icon {
+  width: 40px;
+  height: 40px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 13px;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.14);
+  position: relative;
+  z-index: 1;
+}
+
+.rep-inventory-status-card .rep-table-header h3 {
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+}
+
+.rep-inventory-status-card .rep-table-wrap {
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 34%),
+    #f0fdfa;
+}
+
+.rep-inventory-status-card .rep-inventory-table {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 118, 110, 0.06), 0 10px 24px rgba(13, 148, 136, 0.06);
+}
+
+.rep-inventory-status-card .rep-inventory-table thead {
+  background: #e6fffa;
+}
+
+.rep-inventory-status-card .rep-inventory-table th {
+  color: #0f766e;
+  border-bottom-color: rgba(13, 148, 136, 0.18);
+}
+
+.rep-inventory-status-card .rep-inventory-table tbody tr:hover td {
+  background: #f0fdfa;
+}
+
+.rep-info-card {
+  border: 1px solid rgba(13, 148, 136, 0.16);
+  border-radius: 18px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.rep-info-card .rep-table-header {
+  padding: 1.05rem 1.25rem;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%);
+  border-bottom: 1px solid rgba(13, 148, 136, 0.14);
+}
+
+.rep-info-card .rep-table-icon {
+  color: #0d9488;
+  background: #ccfbf1;
+  border: 1px solid rgba(13, 148, 136, 0.12);
+  border-radius: 13px;
+}
+
+.rep-info-card .rep-table-header h3 {
+  color: #0f766e;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.rep-info-card .rep-info-list {
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.rep-info-card .rep-info-row {
+  min-height: 58px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.55rem;
+  border: 1px solid #e6f3f1;
+  border-bottom: 1px solid #e6f3f1;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.rep-info-card .rep-info-row:last-child {
+  margin-bottom: 0;
+  border-bottom: 1px solid #e6f3f1;
+}
+
+.rep-info-card .rep-info-row:hover {
+  background: #f0fdfa;
+  border-color: rgba(13, 148, 136, 0.22);
+}
+
+.rep-info-card .rep-info-key {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.rep-info-card .rep-info-val {
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.rep-info-card .rep-status-complete {
+  padding: 0.42rem 0.9rem;
+  color: #047857;
+  background: linear-gradient(135deg, #d1fae5, #ccfbf1);
+  border: 1px solid rgba(5, 150, 105, 0.14);
+}
+
+.rep-compliance-card {
+  border: 1px solid rgba(13, 148, 136, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.rep-compliance-card .rep-table-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e6f3f1;
+  padding: 1.1rem 1.25rem;
+  position: relative;
+}
+
+.rep-compliance-card .rep-table-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #0d9488, #14b8a6);
+}
+
+.rep-compliance-card .rep-table-icon {
+  color: #0d9488;
+  background: #ecfdf5;
+  border: 1px solid rgba(13, 148, 136, 0.12);
+}
+
+.rep-compliance-card .rep-table-header h3 {
+  color: #0f766e;
+  font-weight: 800;
+}
+
+.rep-compliance-card .rep-table-badge {
+  color: #0f766e;
+  background: #ccfbf1;
+  border: 1px solid rgba(13, 148, 136, 0.12);
+}
+
+.rep-compliance-table {
+  table-layout: fixed;
+}
+
+.rep-compliance-table thead {
+  background: linear-gradient(90deg, #f8fafc 0%, #f0fdfa 100%);
+}
+
+.rep-compliance-table th {
+  color: #334155;
+  border-bottom: 1px solid #d9ebe8;
+}
+
+.rep-compliance-table th:nth-child(1),
+.rep-compliance-table td:nth-child(1) {
+  width: 34%;
+}
+
+.rep-compliance-table th:nth-child(2),
+.rep-compliance-table td:nth-child(2),
+.rep-compliance-table th:nth-child(3),
+.rep-compliance-table td:nth-child(3),
+.rep-compliance-table th:nth-child(4),
+.rep-compliance-table td:nth-child(4) {
+  width: 14%;
+  text-align: center;
+}
+
+.rep-compliance-table th:nth-child(5),
+.rep-compliance-table td:nth-child(5) {
+  width: 24%;
+}
+
+.rep-compliance-table td {
+  height: 66px;
+}
+
+.rep-compliance-table tbody tr:hover {
+  background: #f8fffd;
+}
+
+.rep-count-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 32px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.rep-count-scheduled {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.rep-count-taken {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.rep-count-missed {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.rep-compliance-empty-row td {
+  height: 180px;
+  padding: 0 !important;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(20, 184, 166, 0.12), transparent 28%),
+    #ffffff;
+  text-align: center;
+}
+
+.rep-compliance-table tbody .rep-compliance-empty-row:hover {
+  background: transparent;
+}
+
+.rep-compliance-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  color: #64748b;
+}
+
+.rep-compliance-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0d9488;
+  background: linear-gradient(135deg, #ccfbf1, #f0fdfa);
+  border: 1px solid rgba(13, 148, 136, 0.14);
+  box-shadow: 0 10px 24px rgba(13, 148, 136, 0.1);
+}
+
+.rep-compliance-empty-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.rep-compliance-empty strong {
+  color: #334155;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.rep-compliance-empty span:last-child {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
 }

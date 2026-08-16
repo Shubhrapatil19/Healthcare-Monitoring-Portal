@@ -7,6 +7,8 @@ import UserLogin from "./Pages/User/UserLogin";
 import UserDash from "./Pages/User/UserDash";
 import ConfirmLogin from "./Pages/User/ConfirmLogin";
 
+import AdminDashboard from "./Pages/Admin/AdminDashboard";
+
 function App() {
   // =========================================================
   // INITIAL VIEW
@@ -14,17 +16,22 @@ function App() {
 
   const getInitialView = () => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const tokenFromUrl = params.get("token");
 
     // Email confirmation link case
-    if (token) {
+    if (tokenFromUrl) {
       return "confirmLogin";
     }
 
-    // Already logged in case
     const savedToken = localStorage.getItem("token");
+    const savedRole = localStorage.getItem("userRole");
 
+    // Already logged in
     if (savedToken) {
+      if (savedRole === "ADMIN") {
+        return "adminDashboard";
+      }
+
       return "dashboard";
     }
 
@@ -34,14 +41,39 @@ function App() {
   const [view, setView] = useState(getInitialView);
 
   // =========================================================
-  // LOGIN SUCCESS
+  // USER LOGIN SUCCESS
   // =========================================================
 
-  const handleLoginSuccess = () => {
+  const handleUserLoginSuccess = () => {
     localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userRole", "USER");
 
-    // Login ke baad dashboard render hoga
     setView("dashboard");
+  };
+
+  // =========================================================
+  // ADMIN LOGIN SUCCESS
+  // =========================================================
+
+  const handleAdminLoginSuccess = () => {
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("userRole", "ADMIN");
+
+    setView("adminDashboard");
+  };
+
+  // =========================================================
+  // CONFIRM LOGIN SUCCESS
+  // =========================================================
+
+  const handleConfirmLoginSuccess = () => {
+    const role = localStorage.getItem("userRole");
+
+    if (role === "ADMIN") {
+      setView("adminDashboard");
+    } else {
+      setView("dashboard");
+    }
   };
 
   // =========================================================
@@ -51,9 +83,15 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("currentUserName");
 
     setView("login");
   };
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <>
@@ -83,15 +121,14 @@ function App() {
       ) : view === "login" ? (
 
         /* =====================================================
-            LOGIN PAGE
+            SAME LOGIN PAGE
+            USER + ADMIN
         ===================================================== */
 
         <UserLogin
           onGoRegister={() => setView("register")}
-
-          // IMPORTANT:
-          // Successful login ke baad dashboard open karega
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={handleUserLoginSuccess}
+          onAdminLoginSuccess={handleAdminLoginSuccess}
         />
 
       ) : view === "confirmLogin" ? (
@@ -101,19 +138,28 @@ function App() {
         ===================================================== */
 
         <ConfirmLogin
-          onLoginSuccess={handleLoginSuccess}
+          onLoginSuccess={handleConfirmLoginSuccess}
+        />
+
+      ) : view === "adminDashboard" ? (
+
+        /* =====================================================
+            ADMIN DASHBOARD
+        ===================================================== */
+
+        <AdminDashboard
+          onLogout={handleLogout}
         />
 
       ) : (
 
         /* =====================================================
-            DASHBOARD
+            USER DASHBOARD
         ===================================================== */
 
         <UserDash
           onLogout={handleLogout}
         />
-
       )}
     </>
   );

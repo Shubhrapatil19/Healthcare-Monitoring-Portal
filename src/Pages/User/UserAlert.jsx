@@ -275,48 +275,6 @@ const UserAlert = ({ onAddMedicine }) => {
   };
 
   // ========================================================
-  // TRIGGER EMERGENCY
-  // ========================================================
-
-  const handleTriggerEmergency = () => {
-    const now = new Date();
-
-    const emergencyAlert = {
-      id: `emergency-${Date.now()}`,
-      type: "emergency",
-      label: "Emergency",
-      medicineName: "Emergency Alert",
-      message: "Emergency alert! Immediate attention required.",
-      sentTo: "Family Members",
-
-      date: now.toLocaleDateString("en-GB"),
-
-      time: now.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-
-      status: "unread",
-    };
-
-    const updatedAlerts = [
-      emergencyAlert,
-      ...alerts,
-    ];
-
-    setAlerts(updatedAlerts);
-
-    saveAlerts(updatedAlerts);
-
-    setActiveTab("all");
-    setCurrentPage(1);
-
-    toast.success(
-      "Emergency alert triggered! Family members have been notified."
-    );
-  };
-
-  // ========================================================
   // UI
   // ========================================================
 
@@ -341,15 +299,6 @@ const UserAlert = ({ onAddMedicine }) => {
             </p>
 
           </div>
-
-          <button
-            className="al-emergency-trigger-btn"
-            onClick={handleTriggerEmergency}
-          >
-            <Megaphone size={18} />
-
-            Trigger Emergency Alert
-          </button>
 
         </div>
 
