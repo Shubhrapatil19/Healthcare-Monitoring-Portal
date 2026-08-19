@@ -4,9 +4,6 @@ import {
   Plus,
   Search,
   Clock,
-  CheckCircle2,
-  XCircle,
-  CalendarClock,
   ChevronLeft,
   ChevronRight,
   Pencil,
@@ -14,6 +11,7 @@ import {
   Save,
   X,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import AddMedicineModal from "../../Component/UserAddMed";
 
@@ -33,6 +31,7 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
     dosage: "",
     timing: "",
     frequency: "",
+    notes: "",
   });
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     visible: false,
@@ -91,12 +90,13 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
       dosage: medicine.dosage,
       timing: medicine.timing,
       frequency: medicine.frequency,
+      notes: medicine.notes || "",
     });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditFormData({ medicineName: "", dosage: "", timing: "", frequency: "" });
+    setEditFormData({ medicineName: "", dosage: "", timing: "", frequency: "", notes: "" });
   };
 
   const handleEditFieldChange = (field, value) => {
@@ -112,6 +112,7 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
       onEditMedicine({
         ...medicine,
         ...editFormData,
+        notes: editFormData.notes.trim(),
       });
     }
 
@@ -152,20 +153,6 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
   // null, empty, or any unexpected value — which made brand-new
   // medicines (with no status yet) show up as already "Taken".
   // Also normalizes case so "Taken" / "TAKEN" / "taken" all match.
-  const getStatusBadgeClass = (status) => {
-    const normalized = (status || "").toString().trim().toLowerCase();
-    if (normalized === "missed") return "missed";
-    if (normalized === "taken") return "taken";
-    return "upcoming";
-  };
-
-  const getStatusIcon = (status) => {
-    const normalized = (status || "").toString().trim().toLowerCase();
-    if (normalized === "missed") return <><XCircle size={14} /> Missed</>;
-    if (normalized === "taken") return <><CheckCircle2 size={14} /> Taken</>;
-    return <><CalendarClock size={14} /> Upcoming</>;
-  };
-
   return (
     <>
       {showAddMedicineModal && (
@@ -212,18 +199,16 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
               <span className="medicine-col medicine-dosage-col">Dosage</span>
               <span className="medicine-col medicine-time-col">Timing</span>
               <span className="medicine-col medicine-frequency-col">Frequency</span>
-              <span className="medicine-col medicine-status-col">Status</span>
               <span className="medicine-col medicine-actions-col">Actions</span>
-            </div>
-
-            <div className="medicine-count-info">
-              Showing {paginatedMedicines.length} of {filteredMedicines.length} medicines
             </div>
 
             <div className="medicine-items-wrapper">
               {paginatedMedicines.length > 0 ? (
                 paginatedMedicines.map((medicine) => {
                   const isEditing = editingId === medicine.id;
+                  const savedNotes = String(
+                    medicine.notes || medicine.note || medicine.instructions || ""
+                  ).trim();
 
                   return (
                     <div
@@ -276,11 +261,6 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
                               placeholder="Frequency"
                             />
                           </div>
-                          <div className="medicine-status">
-                            <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
-                              {getStatusIcon(medicine.status)}
-                            </span>
-                          </div>
                           <div className="medicine-actions">
                             <button
                               className="action-btn save-btn"
@@ -297,6 +277,18 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
                               <X size={15} />
                             </button>
                           </div>
+                          <div className="medicine-notes-edit">
+                            <label htmlFor={`medicine-notes-${medicine.id}`}>Notes</label>
+                            <textarea
+                              id={`medicine-notes-${medicine.id}`}
+                              className="edit-input medicine-notes-textarea"
+                              value={editFormData.notes}
+                              onChange={(e) =>
+                                handleEditFieldChange("notes", e.target.value)
+                              }
+                              placeholder="Add instructions, meal timing, or doctor notes"
+                            />
+                          </div>
                         </>
                       ) : (
                         <>
@@ -309,11 +301,6 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
                             {medicine.timing || medicine.time || "—"}
                           </div>
                           <div className="medicine-frequency-value">{medicine.frequency}</div>
-                          <div className="medicine-status">
-                            <span className={`status-badge ${getStatusBadgeClass(medicine.status)}`}>
-                              {getStatusIcon(medicine.status)}
-                            </span>
-                          </div>
                           <div className="medicine-actions">
                             <button
                               className="action-btn edit-btn"
@@ -330,6 +317,15 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
                               <Trash2 size={15} />
                             </button>
                           </div>
+                          {savedNotes && (
+                            <div className="medicine-notes-panel">
+                              <div className="medicine-notes-label">
+                                <FileText size={14} />
+                                <span>Notes</span>
+                              </div>
+                              <p>{savedNotes}</p>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -344,40 +340,46 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
             </div>
 
             <div className="user-manage-footer">
-              <button className="add-more-btn" onClick={handleAddMedicine}>
-                <Plus size={24} />
-                Add More Medicine
-              </button>
+              <div className="medicine-count-info">
+                Showing {paginatedMedicines.length} of {filteredMedicines.length} medicines
+              </div>
 
-              {totalPages > 1 && (
-                <div className="pagination-controls">
-                  <button
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
+              <div className="user-manage-footer-actions">
+                <button className="add-more-btn" onClick={handleAddMedicine}>
+                  <Plus size={24} />
+                  Add More Medicine
+                </button>
 
-                  {getPageNumbers().map((page) => (
+                {totalPages > 1 && (
+                  <div className="pagination-controls">
                     <button
-                      key={page}
-                      className={`pagination-btn ${page === currentPage ? "active" : ""}`}
-                      onClick={() => handlePageChange(page)}
+                      className="pagination-btn"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
                     >
-                      {page}
+                      <ChevronLeft size={16} />
                     </button>
-                  ))}
 
-                  <button
-                    className="pagination-btn"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
+                    {getPageNumbers().map((page) => (
+                      <button
+                        key={page}
+                        className={`pagination-btn ${page === currentPage ? "active" : ""}`}
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      className="pagination-btn"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -409,3 +411,8 @@ const UserManage = ({ medicines, onAddMedicine, onEditMedicine, onDeleteMedicine
 };
 
 export default UserManage;
+
+
+
+
+

@@ -280,7 +280,7 @@ const nextId = (
 const loadMedicines = () =>
   load(
     KEYS.MEDICINES,
-    DEFAULT_MEDICINES
+    []
   );
 
 const saveMedicines = (
@@ -295,7 +295,7 @@ const loadPendingReminders =
   () =>
     load(
       KEYS.PENDING,
-      DEFAULT_PENDING
+      []
     );
 
 const savePendingReminders =
@@ -309,7 +309,7 @@ const loadHistoryReminders =
   () =>
     load(
       KEYS.HISTORY,
-      DEFAULT_HISTORY
+      []
     );
 
 const saveHistoryReminders =
@@ -570,6 +570,13 @@ export const completeProfile =
         registeredUser.email ||
         "",
 
+      mobile:
+        payload.mobile ||
+        registeredUser.mobile ||
+        "",
+
+
+
       gender:
         payload.gender ||
         "",
@@ -635,6 +642,11 @@ export const getProfile =
           profile.email ||
           registeredUser.email ||
           "",
+
+        mobile:
+          profile.mobile ||
+          registeredUser.mobile ||
+          "",
       },
     };
   };
@@ -674,6 +686,14 @@ export const updateProfile =
         existingProfile.email ||
         registeredUser.email ||
         "",
+
+      mobile:
+        payload.mobile ||
+        existingProfile.mobile ||
+        registeredUser.mobile ||
+        "",
+
+
 
       completed: true,
     };
@@ -791,39 +811,52 @@ export const addMedicine =
       medicines
     );
 
-    const reminderTime =
-      payload.timing ||
-      String(
-        payload.startTiming ||
-          ""
-      ).slice(0, 5);
+    const reminderTimes =
+      Array.isArray(payload.timings) && payload.timings.length > 0
+        ? payload.timings.filter(Boolean)
+        : [
+            payload.timing ||
+              String(
+                payload.startTiming ||
+                  ""
+              ).slice(0, 5),
+          ].filter(Boolean);
 
-    if (reminderTime) {
+    if (reminderTimes.length > 0) {
       const pending =
         loadPendingReminders();
 
-      pending.push({
-        id:
-          nextId("r"),
+      reminderTimes.forEach((reminderTime, index) => {
+        pending.push({
+          id:
+            nextId("r"),
 
-        medicineId:
-          newMedicine.id,
+          medicineId:
+            newMedicine.id,
 
-        medicineName,
+          medicineName,
 
-        dosage:
-          newMedicine.dosage ||
-          "",
+          dosage:
+            newMedicine.dosage ||
+            "",
 
-        time:
-          reminderTime,
+          time:
+            reminderTime,
 
-        date:
-          payload.startDate ||
-          todayISO(),
+          doseIndex:
+            index + 1,
 
-        status:
-          "upcoming",
+          frequency:
+            newMedicine.frequency ||
+            "Once a day",
+
+          date:
+            payload.startDate ||
+            todayISO(),
+
+          status:
+            "upcoming",
+        });
       });
 
       savePendingReminders(
@@ -947,6 +980,9 @@ export const getTodaySchedule =
     const today =
       todayISO();
 
+    const medicines =
+      loadMedicines();
+
     return {
       data:
         loadPendingReminders()
@@ -954,7 +990,30 @@ export const getTodaySchedule =
             (reminder) =>
               reminder.date ===
               today
-          ),
+          )
+          .map((reminder) => {
+            const medicine =
+              medicines.find(
+                (item) =>
+                  String(item.id) ===
+                  String(reminder.medicineId)
+              );
+
+            return {
+              ...reminder,
+              frequency:
+                reminder.frequency ||
+                medicine?.frequency ||
+                "Once a day",
+
+              notes:
+                reminder.notes ||
+                medicine?.notes ||
+                medicine?.note ||
+                medicine?.instructions ||
+                "",
+            };
+          }),
     };
   };
 
@@ -1011,6 +1070,10 @@ export const getDashboardSummary =
         lowStock:
           medicines.filter(
             (medicine) => {
+              if (medicine.stockRemoved) {
+                return false;
+              }
+
               const current =
                 Number(
                   medicine.currentStock
@@ -1060,6 +1123,9 @@ export const getPendingReminders =
     const today =
       todayISO();
 
+    const medicines =
+      loadMedicines();
+
     return {
       data:
         loadPendingReminders()
@@ -1067,7 +1133,30 @@ export const getPendingReminders =
             (reminder) =>
               reminder.date ===
               today
-          ),
+          )
+          .map((reminder) => {
+            const medicine =
+              medicines.find(
+                (item) =>
+                  String(item.id) ===
+                  String(reminder.medicineId)
+              );
+
+            return {
+              ...reminder,
+              frequency:
+                reminder.frequency ||
+                medicine?.frequency ||
+                "Once a day",
+
+              notes:
+                reminder.notes ||
+                medicine?.notes ||
+                medicine?.note ||
+                medicine?.instructions ||
+                "",
+            };
+          }),
     };
   };
 
@@ -1338,6 +1427,10 @@ export const getInventory =
 
     const stockItems =
       loadMedicines()
+        .filter(
+          (medicine) =>
+            !medicine.stockRemoved
+        )
         .map(
           (medicine) => ({
             id:
@@ -1440,6 +1533,9 @@ export const addStock =
         medicines[index]
           .expiryDate ||
         "",
+
+      stockRemoved:
+        false,
     };
 
     saveMedicines(
@@ -1491,6 +1587,8 @@ export const updateStock =
     medicines[index] = {
       ...medicines[index],
       ...payload,
+      stockRemoved:
+        false,
     };
 
     saveMedicines(
@@ -1538,6 +1636,7 @@ export const deleteStock =
       ...medicines[index],
       currentStock: 0,
       minimumStock: 0,
+      stockRemoved: true,
     };
 
     saveMedicines(
@@ -1564,7 +1663,7 @@ export const getNotifications =
     const notifications =
       load(
         KEYS.NOTIFICATIONS,
-        DEFAULT_NOTIFICATIONS
+        []
       );
 
     return {
@@ -1585,7 +1684,7 @@ export const markNotificationRead =
     const notifications =
       load(
         KEYS.NOTIFICATIONS,
-        DEFAULT_NOTIFICATIONS
+        []
       );
 
     const updated =
@@ -1628,7 +1727,7 @@ export const markAllNotificationsRead =
     const notifications =
       load(
         KEYS.NOTIFICATIONS,
-        DEFAULT_NOTIFICATIONS
+        []
       );
 
     const updated =
@@ -1653,3 +1752,6 @@ export const markAllNotificationsRead =
       },
     };
   };
+
+
+

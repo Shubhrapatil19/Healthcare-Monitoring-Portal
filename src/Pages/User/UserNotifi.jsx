@@ -94,21 +94,15 @@ const loadNotifications = () => {
       }
     }
 
-    const defaultData = createDefaultNotifications();
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(defaultData)
-    );
-
-    return defaultData;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    return [];
   } catch (error) {
     console.error(
       "Unable to load notifications:",
       error
     );
 
-    return createDefaultNotifications();
+    return [];
   }
 };
 
@@ -268,6 +262,19 @@ const UserNotifi = () => {
     }
   };
 
+  // ================================================================
+  // CLEAR ALL NOTIFICATIONS
+  // ================================================================
+
+  const handleClearAll = () => {
+    if (notifications.length === 0) return;
+
+    setNotifications([]);
+    saveNotifications([]);
+    setSearchQuery("");
+    setFilter("all");
+    setCurrentPage(1);
+  };
   // ================================================================
   // NOTIFICATION CLICK
   // ================================================================
@@ -455,6 +462,19 @@ const UserNotifi = () => {
               <CheckCheck size={18} />
 
               Mark All Read
+
+            </button>
+            {/* CLEAR ALL */}
+
+            <button
+              className="nt-clear-all-btn"
+              onClick={handleClearAll}
+              disabled={notifications.length === 0}
+            >
+
+              <Trash2 size={18} />
+
+              Clear All
 
             </button>
 

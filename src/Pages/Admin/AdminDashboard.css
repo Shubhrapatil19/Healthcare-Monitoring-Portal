@@ -2277,3 +2277,232 @@
   }
 }
 
+
+/* User-style admin header refresh */
+.admin-navbar {
+  height: 76px;
+  min-height: 76px;
+  padding: 10px 18px;
+  background: linear-gradient(120deg, #ffffff 0%, #f9fffd 48%, #dcfafa 100%);
+  border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+  box-shadow: 0 10px 26px rgba(15, 118, 110, 0.08);
+}
+
+.admin-navbar-left {
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-menu-btn {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: transparent;
+  color: #0f766e;
+  font-size: 22px;
+}
+
+.admin-menu-btn:hover {
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  transform: translateY(-1px);
+}
+
+.admin-navbar-brand {
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-brand-logo {
+  width: 48px;
+  height: 48px;
+  padding: 1px;
+  border-radius: 10px;
+  background: #eafffb;
+  box-shadow: none;
+}
+
+.admin-brand-logo:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.admin-brand-title {
+  font-size: 16px;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #0f766e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-brand-subtitle {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-navbar-right {
+  gap: 14px;
+  margin-left: auto;
+}
+
+.admin-notif-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: transparent;
+  color: #0f766e;
+  font-size: 19px;
+}
+
+.admin-notif-btn:hover {
+  background: rgba(15, 118, 110, 0.08);
+  transform: none;
+}
+
+.admin-notif-dot {
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.admin-user-profile::before {
+  background: conic-gradient(
+    from var(--admin-profile-border-angle),
+    #2563EB 0deg,
+    #2563EB 115deg,
+    #F59E0B 180deg,
+    #F59E0B 295deg,
+    #2563EB 360deg
+  );
+}
+
+.admin-user-avatar {
+  background: #14b8a6;
+}
+
+.admin-user-profile:hover .admin-user-avatar {
+  background: #0f766e;
+}
+
+@media (max-width: 768px) {
+  .admin-navbar {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    height: 58px;
+    min-height: 58px;
+    padding: 7px 12px;
+    column-gap: 10px;
+    background: linear-gradient(90deg, #ffffff 0%, #fbfffe 62%, #e7fbf8 100%);
+  }
+
+  .admin-navbar-left {
+    display: contents;
+  }
+
+  .admin-menu-btn {
+    grid-column: 1;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 20px;
+  }
+
+  .admin-navbar-brand {
+    grid-column: 2;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .admin-brand-logo {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 3px;
+    border-radius: 9px;
+  }
+
+  .admin-brand-texts {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .admin-brand-title {
+    font-size: 12px;
+    line-height: 1.05;
+    max-width: 100%;
+  }
+
+  .admin-brand-subtitle {
+    display: block;
+    margin-top: 4px;
+    font-size: 8px;
+    line-height: 1;
+    max-width: 100%;
+  }
+
+  .admin-navbar-right {
+    grid-column: 3;
+    gap: 10px;
+    min-width: 74px;
+    margin-left: 0;
+  }
+
+  .admin-notif-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .admin-notif-dot {
+    top: 2px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    box-shadow: 0 0 0 2px #ffffff;
+  }
+
+  .admin-user-profile {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 2px;
+    border-radius: 50%;
+    flex: 0 0 36px;
+  }
+
+  .admin-user-details {
+    display: none;
+  }
+
+  .admin-user-avatar {
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
+    font-weight: 800;
+  }
+}
+
+/* Admin sidebar header after moving menu control to top navbar */
+.dashboard-layout .sidebar-header {
+  justify-content: flex-start;
+  padding: 20px 26px;
+}
+
+.dashboard-layout.sidebar-collapsed .sidebar-header {
+  justify-content: center;
+  padding: 20px 8px;
+}

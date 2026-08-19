@@ -106,7 +106,8 @@
   color: #94A3B8;
 }
 
-.nt-mark-all-btn {
+.nt-mark-all-btn,
+.nt-clear-all-btn {
   height: 44px;
   padding: 0 22px;
   border: none;
@@ -127,7 +128,8 @@
   overflow: hidden;
 }
 
-.nt-mark-all-btn::before {
+.nt-mark-all-btn::before,
+.nt-clear-all-btn::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -136,17 +138,40 @@
   transition: opacity 0.3s ease;
 }
 
-.nt-mark-all-btn:hover {
+.nt-mark-all-btn:hover:not(:disabled),
+.nt-clear-all-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(15, 118, 110, 0.4);
 }
 
-.nt-mark-all-btn:hover::before {
+.nt-mark-all-btn:hover:not(:disabled)::before,
+.nt-clear-all-btn:hover:not(:disabled)::before {
   opacity: 1;
 }
 
-.nt-mark-all-btn:active {
+.nt-mark-all-btn:active:not(:disabled),
+.nt-clear-all-btn:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
+}
+.nt-clear-all-btn {
+  background: #FFFFFF;
+  color: #DC2626;
+  border: 1.5px solid #FECACA;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12);
+}
+
+.nt-clear-all-btn:hover:not(:disabled) {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.18);
+}
+
+.nt-mark-all-btn:disabled,
+.nt-clear-all-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* ===== SUMMARY BAR ===== */
@@ -921,7 +946,8 @@
     width: 100%;
   }
 
-  .nt-mark-all-btn {
+  .nt-mark-all-btn,
+  .nt-clear-all-btn {
     width: 100%;
     justify-content: center;
   }

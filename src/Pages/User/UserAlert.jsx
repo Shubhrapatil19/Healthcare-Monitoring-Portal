@@ -64,6 +64,20 @@ const createDefaultAlerts = () => [
     time: "11:00 AM",
     status: "read",
   },
+  {
+    id: "e1",
+    type: "emergency",
+    label: "Emergency Alert",
+    medicineName: "Amlodipine",
+    message:
+      "Dose was missed. Emergency contacts have been notified.",
+    dosage: "5mg",
+    timing: "01:00 PM",
+    date: "18/08/2026",
+    time: "01:30 PM",
+    sentTo: "Emergency Contact 1 & 2",
+    status: "sent",
+  },
 ];
 
 const loadAlerts = () => {
@@ -78,17 +92,11 @@ const loadAlerts = () => {
       }
     }
 
-    const defaults = createDefaultAlerts();
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(defaults)
-    );
-
-    return defaults;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    return [];
   } catch (error) {
     console.error("Unable to load demo alerts:", error);
-    return createDefaultAlerts();
+    return [];
   }
 };
 
@@ -993,3 +1001,4 @@ const UserAlert = ({ onAddMedicine }) => {
 };
 
 export default UserAlert;
+

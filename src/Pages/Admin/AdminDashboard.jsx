@@ -151,15 +151,6 @@ function AdminSidebar({
       }`}
     >
       <div className="sidebar-header">
-        <button
-          type="button"
-          className="sidebar-toggle-btn"
-          aria-label="Toggle admin sidebar"
-          onClick={onToggle}
-        >
-          <FiMenu />
-        </button>
-
         {isOpen && (
           <h3 className="sidebar-title">
             Menu
@@ -2191,3 +2182,4 @@ function AdminDashboard({
 }
 
 export default AdminDashboard;
+

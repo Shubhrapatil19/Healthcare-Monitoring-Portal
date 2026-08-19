@@ -226,6 +226,12 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
       inStockH: clampHeight(inStockCount), lowStockH: clampHeight(lowStockCount), outStockH: clampHeight(outStockCount) };
   }, [derived]);
 
+  const chartTicks = useMemo(() => {
+    const max = chartCounts.maxCount;
+    const middle = Math.floor(max / 2);
+    return Array.from(new Set([max, middle, 0]));
+  }, [chartCounts.maxCount]);
+
   const startEdit = (r) => {
     setRowError({ id: null, message: "" });
     setEditingId(r.id);
@@ -513,9 +519,9 @@ const UserInvent = ({ stockItems = [], onAddStock, onUpdateStock, onDeleteStock 
             </div>
             <div className="bar-chart" aria-label="Stock status chart">
               <div className="y-axis" aria-hidden>
-                <span>{Math.ceil(chartCounts.maxCount / 3)}</span>
-                <span>{Math.ceil((chartCounts.maxCount * 2) / 3)}</span>
-                <span>{chartCounts.maxCount}</span>
+                {chartTicks.map((tick) => (
+                  <span key={tick}>{tick}</span>
+                ))}
               </div>
               <div className="chart-bars">
                 <div className="bar-group">

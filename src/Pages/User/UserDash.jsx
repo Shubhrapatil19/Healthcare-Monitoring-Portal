@@ -36,12 +36,15 @@ import {
   LogOut,
   CalendarDays,
   Package,
+  ShieldCheck,
   CircleCheck,
   CircleX,
   ArrowDownCircle,
   Plus,
   Menu,
   Clock,
+  FileText,
+  ChevronDown,
 } from "lucide-react";
 
 const UserDash = ({ onLogout }) => {
@@ -218,6 +221,49 @@ const UserDash = ({ onLogout }) => {
   const schedulePageSafe = Math.min(schedulePage, scheduleTotalPages);
   const scheduleStartIndex = (schedulePageSafe - 1) * scheduleItemsPerPage;
   const schedulePageItems = todaySchedule.slice(scheduleStartIndex, scheduleStartIndex + scheduleItemsPerPage);
+  const scheduleMedicineRows = useMemo(() => {
+    const grouped = new Map();
+
+    schedulePageItems.forEach((medicine) => {
+      const name = medicine.medicineName || "Medicine";
+      const key = name.trim().toLowerCase();
+      if (!grouped.has(key)) {
+        grouped.set(key, { name, medicines: [], notes: "" });
+      }
+      const row = grouped.get(key);
+      const notes = String(
+        medicine.notes || medicine.note || medicine.instructions || ""
+      ).trim();
+
+      row.medicines.push(medicine);
+      if (!row.notes && notes) row.notes = notes;
+    });
+
+    return Array.from(grouped.values());
+  }, [schedulePageItems]);
+  const todayScheduleDate = today.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const getScheduleTimeLabel = (medicine) => medicine.timing || medicine.time || "00:00";
+
+  const getScheduleTimelinePosition = (medicine) => {
+    const rawTime = String(getScheduleTimeLabel(medicine)).trim();
+    const match = rawTime.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    if (!match) return 50;
+
+    let hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    const period = match[3]?.toUpperCase();
+
+    if (period === "PM" && hours < 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+
+    const totalMinutes = Math.min(Math.max(hours * 60 + minutes, 0), 24 * 60);
+    return Math.min(Math.max((totalMinutes / (24 * 60)) * 100, 6), 82);
+  };
 
   const [myMedicines, setMyMedicines] = useState([]);
   const [myMedicinesLoading, setMyMedicinesLoading] = useState(false);
@@ -267,8 +313,7 @@ const UserDash = ({ onLogout }) => {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  }, []);
   const handleSidebarToggle = () => {
     const newState = !sidebarOpen;
     setSidebarOpen(newState);
@@ -577,6 +622,15 @@ const UserDash = ({ onLogout }) => {
       >
         {/* ================= HEADER ================= */}
         <header className="topbar">
+          <button
+            type="button"
+            className="header-menu-btn"
+            aria-label="Toggle menu"
+            onClick={handleSidebarToggle}
+          >
+            <Menu size={24} />
+          </button>
+
           <div className="logo-section">
             <img
               src="ChatGPT Image Jun 22, 2026, 07_52_50 PM.png"
@@ -593,16 +647,6 @@ const UserDash = ({ onLogout }) => {
           </div>
 
           <div className="top-right">
-            {isMobile && (
-              <button
-                type="button"
-                className="mobile-sidebar-toggle"
-                aria-label="Open menu"
-                onClick={handleSidebarToggle}
-              >
-                <Menu size={22} />
-              </button>
-            )}
             <button
               type="button"
               className="notification-btn"
@@ -622,6 +666,7 @@ const UserDash = ({ onLogout }) => {
                 <User size={24} />
               </div>
               <span>{currentUserName}</span>
+              <ChevronDown className="profile-chevron" size={16} />
             </div>
           </div>
         </header>
@@ -638,12 +683,6 @@ const UserDash = ({ onLogout }) => {
           {/* ================= SIDEBAR ================= */}
           <aside className="sidebar">
             <div className="sidebar-header">
-              <button
-                className="sidebar-toggle-btn"
-                onClick={handleSidebarToggle}
-              >
-                <Menu size={24} />
-              </button>
               {sidebarOpen && <h3 className="sidebar-title">Menu</h3>}
             </div>
 
@@ -799,7 +838,7 @@ const UserDash = ({ onLogout }) => {
 
                 {/* ================= ROW 1 ================= */}
                 <div className="card-row">
-                  <div className="dashboard-card">
+                  <div className="dashboard-card today-schedule-card">
                     <div className="card-header">
                       <CalendarDays />
                       Today's Schedules
@@ -825,33 +864,63 @@ const UserDash = ({ onLogout }) => {
                           </button>
                         </div>
                       ) : (
-                        <div className="medicine-list medicine-list--today">
-                          <div className="medicine-table-header">
-                            <span className="medicine-col medicine-name-col">Medicine</span>
-                            <span className="medicine-col medicine-dosage-col">Dosage</span>
-                            <span className="medicine-col medicine-time-col">Timing</span>
-                            <span className="medicine-col medicine-frequency-col">Frequency</span>
-                            <span className="medicine-col medicine-status-col">Status</span>
+                        <div className="today-timeline medicine-list--today">
+                          <div className="today-timeline-scroll-area">
+                          <div className="today-timeline-date-card">
+                            <CalendarDays size={24} />
+                            <span>Today</span>
+                            <strong>{todayScheduleDate}</strong>
                           </div>
-                          {schedulePageItems.map((medicine, index) => (
-                            <div key={medicine.id || index} className="medicine-item">
-                              <div className="medicine-info">
-                                <h5>{medicine.medicineName}</h5>
-                              </div>
-                              <div className="medicine-dosage-value">{medicine.dosage}</div>
-                              <div className="medicine-time-value">
-                                <Clock size={14} />
-                                {medicine.timing || medicine.time}
-                              </div>
-                              <div className="medicine-frequency-value">{medicine.frequency}</div>
-                              <div className="medicine-status">
-                                <span className={`status-badge ${medicine.status || "upcoming"}`}>
-                                  {medicine.status ? medicine.status.charAt(0).toUpperCase() + medicine.status.slice(1) : "Upcoming"}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
 
+                            <div className="today-timeline-track-wrap">
+                            <div className="today-timeline-scale">
+                              <span>00:00</span>
+                              <span>12:00</span>
+                              <span>24:00</span>
+                            </div>
+                            <div className="today-timeline-rows">
+                              {scheduleMedicineRows.map((row) => (
+                                <div key={row.name} className="today-timeline-row">
+                                  <div className="today-timeline-row-name">{row.name}</div>
+                                  <div className="today-timeline-track" style={{ minHeight: `${96 + Math.max(0, row.medicines.length - 1) * 8}px` }}>
+                                    <span className="today-timeline-node start" />
+                                    <span className="today-timeline-node mid" />
+                                    <span className="today-timeline-node end" />
+                                    {row.medicines.map((medicine, index) => {
+                                      const status = medicine.status || "upcoming";
+                                      return (
+                                        <div
+                                          key={medicine.id || `${row.name}-${index}`}
+                                          className={`today-timeline-medicine ${status}`}
+                                          style={{ left: `${getScheduleTimelinePosition(medicine)}%`, "--card-offset": `${(index - (row.medicines.length - 1) / 2) * 44}px` }}
+                                        >
+                                          <span className="today-timeline-pin" />
+                                          <div className="today-timeline-card">
+                                            <strong>{getScheduleTimeLabel(medicine)}</strong>
+                                            <small>
+                                              <Clock size={12} />
+                                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                                            </small>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  {row.notes && (
+                                    <div className="today-schedule-notes">
+                                      <div className="today-schedule-notes-label">
+                                        <FileText size={14} />
+                                        <span>Notes</span>
+                                      </div>
+                                      <p>{row.notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                          </div>
+                          </div>
                           <div className="dashboard-schedule-pagination">
                             <div className="schedule-page-info">
                               Showing {scheduleStartIndex + 1} to {Math.min(scheduleStartIndex + scheduleItemsPerPage, todaySchedule.length)} of {todaySchedule.length}
@@ -892,7 +961,7 @@ const UserDash = ({ onLogout }) => {
                     </div>
                   </div>
 
-                  <div className="dashboard-card">
+                  <div className="dashboard-card inventory-overview-card">
                     <div className="card-header">
                       <Package />
                       Inventory Overview
@@ -930,6 +999,26 @@ const UserDash = ({ onLogout }) => {
                             <span>{item.currentStock}</span>
                             <span>{item.minimumStock}</span>
                             <span>{item.expiryDate}</span>
+                            <div className="stock-mobile-top" aria-hidden="true">
+                              <span className="stock-mobile-name">{item.medicineName}</span>
+                            </div>
+                            <div className="stock-mobile-metrics" aria-hidden="true">
+                              <div className="stock-mobile-metric">
+                                <span className="stock-mobile-icon"><Package size={18} /></span>
+                                <strong>{item.currentStock}</strong>
+                                <small>Current</small>
+                              </div>
+                              <div className="stock-mobile-metric">
+                                <span className="stock-mobile-icon"><ShieldCheck size={18} /></span>
+                                <strong>{item.minimumStock}</strong>
+                                <small>Min</small>
+                              </div>
+                              <div className="stock-mobile-metric">
+                                <span className="stock-mobile-icon"><CalendarDays size={18} /></span>
+                                <strong>{item.expiryDate || "--"}</strong>
+                                <small>Expiry</small>
+                              </div>
+                            </div>
                           </div>
                         ))}
                         <button
@@ -1071,3 +1160,31 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
