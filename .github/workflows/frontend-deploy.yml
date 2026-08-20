@@ -1,0 +1,73 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches:
+      - Frontend1
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Deploy frontend to private app server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.APP_HOST }}
+          username: ${{ secrets.APP_USER }}
+          key: ${{ secrets.APP_SSH_PRIVATE_KEY }}
+
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          command_timeout: 25m
+
+          script: |
+            set -e
+
+            echo "Starting frontend deployment..."
+
+            sudo -u frontend1 bash -lc '
+              set -e
+
+              cd /opt/project/frontend1/Healthcare-Monitoring-Portal
+
+              git fetch origin Frontend1
+              git checkout Frontend1
+              git pull --ff-only origin Frontend1
+
+              printf "%s\n" \
+                "VITE_API_BASE_URL=/api" \
+                "VITE_USE_MOCK=false" \
+                > .env.production
+
+              rm -rf dist
+
+              npm ci
+              npm run build
+
+              test -f dist/index.html
+            '
+
+            sudo systemctl restart frontend
+
+            for attempt in 1 2 3 4 5 6; do
+              if curl -fsS http://127.0.0.1:8081/ >/dev/null; then
+                echo "Frontend deployment successful"
+                sudo systemctl is-active frontend
+                exit 0
+              fi
+
+              echo "Waiting for frontend: $attempt"
+              sleep 5
+            done
+
+            echo "Frontend failed to start"
+
+            sudo systemctl status frontend --no-pager -l
+            sudo journalctl -u frontend -n 100 --no-pager -l
+
+            exit 1
