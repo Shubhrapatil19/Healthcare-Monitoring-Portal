@@ -1,0 +1,65 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches:
+      - Backend1
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Deploy backend to private app server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.APP_HOST }}
+          username: ${{ secrets.APP_USER }}
+          key: ${{ secrets.APP_SSH_PRIVATE_KEY }}
+
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          command_timeout: 25m
+
+          script: |
+            set -e
+
+            echo "Starting backend deployment..."
+
+            sudo -u backend1 bash -lc '
+              set -e
+
+              cd /opt/project/backend1/Healthcare-Monitoring-Portal/healthcare-monitoring-system
+
+              git fetch origin Backend1
+              git checkout Backend1
+              git pull --ff-only origin Backend1
+
+              ./mvnw clean package -DskipTests
+
+              test -f target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
+            '
+
+            sudo systemctl restart healthcare
+
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              if curl -fsS http://127.0.0.1:5081/v3/api-docs >/dev/null; then
+                echo "Backend deployment successful"
+                sudo systemctl is-active healthcare
+                exit 0
+              fi
+
+              echo "Waiting for backend: $attempt"
+              sleep 5
+            done
+
+            echo "Backend failed to start"
+
+            sudo systemctl status healthcare --no-pager -l
+            sudo journalctl -u healthcare -n 100 --no-pager -l
+
+            exit 1
