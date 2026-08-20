@@ -7,7 +7,6 @@ import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterReposi
 import com.healthapp.healthcare_monitoring_system.auth.security.JwtService;
 import com.healthapp.healthcare_monitoring_system.auth.exception.UnauthorizedException;
 
-import com.healthapp.healthcare_monitoring_system.auth.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -76,10 +75,6 @@ public class LoginService {
         return new LoginResponseDto(
                 "Login successful",
                 token,
-                "Bearer",
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
                 user.getRole()
         );
     }

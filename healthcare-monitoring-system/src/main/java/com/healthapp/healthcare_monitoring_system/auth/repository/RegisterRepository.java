@@ -12,4 +12,5 @@ public interface RegisterRepository extends JpaRepository<RegisterEntity, Long> 
     boolean existsByEmailIgnoreCase(String email);
 
     Optional<RegisterEntity> findByVerificationToken(String token);
+    Optional<RegisterEntity> findByEmail(String email);
 }

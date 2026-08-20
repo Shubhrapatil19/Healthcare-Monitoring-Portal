@@ -22,6 +22,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -49,21 +50,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email =
                         jwtService.extractEmail(token);
 
+                Long userId =
+                        jwtService.extractUserId(token);
+
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                email,
+                                userId,
                                 null,
                                 List.of(
                                         new SimpleGrantedAuthority("USER")
                                 )
                         );
 
+                authentication.setDetails(email);
+
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authentication);
             }
 
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
             SecurityContextHolder.clearContext();
         }
 

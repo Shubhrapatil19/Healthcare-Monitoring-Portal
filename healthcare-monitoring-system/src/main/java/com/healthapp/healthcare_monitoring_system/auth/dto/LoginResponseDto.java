@@ -9,9 +9,5 @@ public class LoginResponseDto {
 
     private String message;
     private String token;
-    private String tokenType;
-    private Long userId;
-    private String fullName;
-    private String email;
     private String role;
 }
