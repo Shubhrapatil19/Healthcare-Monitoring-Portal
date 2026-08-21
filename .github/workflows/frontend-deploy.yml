@@ -3,7 +3,7 @@ name: Frontend Deploy
 on:
   push:
     branches:
-      - Frontend1
+      - Frontend
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - name: Deploy frontend to private app server
+      - name: Deploy frontend
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.APP_HOST }}
@@ -35,9 +35,12 @@ jobs:
 
               cd /opt/project/frontend1/Healthcare-Monitoring-Portal
 
-              git fetch origin Frontend1
-              git checkout Frontend1
-              git pull --ff-only origin Frontend1
+              echo "Current branch:"
+              git branch --show-current
+
+              git fetch origin Frontend
+              git checkout Frontend
+              git pull --ff-only origin Frontend
 
               printf "%s\n" \
                 "VITE_API_BASE_URL=/api" \
@@ -45,27 +48,30 @@ jobs:
                 > .env.production
 
               rm -rf dist
+              rm -rf .vite
 
               npm ci
               npm run build
 
               test -f dist/index.html
+
+              echo "Frontend build successful"
             '
 
             sudo systemctl restart frontend
 
-            for attempt in 1 2 3 4 5 6; do
+            for attempt in 1 2 3 4 5 6 7 8; do
               if curl -fsS http://127.0.0.1:8081/ >/dev/null; then
                 echo "Frontend deployment successful"
                 sudo systemctl is-active frontend
                 exit 0
               fi
 
-              echo "Waiting for frontend: $attempt"
+              echo "Waiting for frontend: attempt $attempt"
               sleep 5
             done
 
-            echo "Frontend failed to start"
+            echo "Frontend health check failed"
 
             sudo systemctl status frontend --no-pager -l
             sudo journalctl -u frontend -n 100 --no-pager -l
