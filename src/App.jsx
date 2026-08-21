@@ -10,7 +10,6 @@ import { Toaster } from "react-hot-toast";
 import UserRegister from "./Pages/User/UserRegister";
 import UserLogin from "./Pages/User/UserLogin";
 import UserDash from "./Pages/User/UserDash";
-import ConfirmLogin from "./Pages/User/ConfirmLogin";
 import UserForget from "./Pages/User/UserForget";
 import UserResetPassword from "./Pages/User/UserResetPassword";
 
@@ -25,198 +24,175 @@ function App() {
   // INITIAL VIEW
   // =========================================================
 
-  const getInitialView =
-    () => {
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
+  const getInitialView = () => {
+    const currentPath =
+      window.location.pathname.toLowerCase();
 
-      const tokenFromUrl =
-        params.get("token");
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
-      const currentPath =
-        window.location.pathname
-          .toLowerCase();
+    const resetToken =
+      params.get("token");
 
-      // =====================================================
-      // RESET PASSWORD EMAIL LINK
-      //
-      // Expected frontend URL:
-      // /reset-password?token=xxxx
-      // =====================================================
+    // =====================================================
+    // RESET PASSWORD EMAIL LINK
+    //
+    // Example:
+    // /reset-password?token=xxxxx
+    // =====================================================
 
+    if (
+      currentPath.includes(
+        "reset-password"
+      ) &&
+      resetToken
+    ) {
+      return "resetPassword";
+    }
+
+    // =====================================================
+    // ALREADY LOGGED IN
+    // =====================================================
+
+    const savedToken =
+      localStorage.getItem(
+        "token"
+      );
+
+    const savedRole =
+      localStorage.getItem(
+        "userRole"
+      );
+
+    const isLoggedIn =
+      localStorage.getItem(
+        "isLoggedIn"
+      );
+
+    if (
+      savedToken &&
+      isLoggedIn === "true"
+    ) {
       if (
-        tokenFromUrl &&
-        currentPath.includes(
-          "reset-password"
-        )
+        savedRole === "ADMIN"
       ) {
-        return "resetPassword";
+        return "adminDashboard";
       }
 
-      // =====================================================
-      // EMAIL VERIFICATION LINK
-      //
-      // If token exists and this is NOT reset-password,
-      // open email verification page.
-      // =====================================================
+      return "dashboard";
+    }
 
-      if (tokenFromUrl) {
-        return "confirmLogin";
-      }
+    // =====================================================
+    // DEFAULT
+    // =====================================================
 
-      // =====================================================
-      // ALREADY LOGGED IN
-      // =====================================================
-
-      const savedToken =
-        localStorage.getItem(
-          "token"
-        );
-
-      const savedRole =
-        localStorage.getItem(
-          "userRole"
-        );
-
-      const isLoggedIn =
-        localStorage.getItem(
-          "isLoggedIn"
-        );
-
-      if (
-        savedToken &&
-        isLoggedIn ===
-          "true"
-      ) {
-        if (
-          savedRole ===
-          "ADMIN"
-        ) {
-          return "adminDashboard";
-        }
-
-        return "dashboard";
-      }
-
-      return "login";
-    };
+    return "login";
+  };
 
   // =========================================================
   // CURRENT VIEW
   // =========================================================
 
-  const [
-    view,
-    setView,
-  ] =
-    useState(
-      getInitialView
-    );
+  const [view, setView] =
+    useState(getInitialView);
 
   // =========================================================
   // NAVIGATION
   // =========================================================
 
-  const handleNavigateToForget =
-    () => {
-      setView(
-        "forgetPassword"
-      );
-    };
+  const handleNavigateToForget = () => {
+    setView("forgetPassword");
+  };
 
-  const handleBackToLogin =
-    () => {
-      // =====================================================
-      // REMOVE TOKEN + RESET PATH FROM URL
-      // =====================================================
+  const handleBackToLogin = () => {
+    window.history.replaceState(
+      {},
+      document.title,
+      "/"
+    );
 
-      window.history.replaceState(
-        {},
-        document.title,
-        "/"
-      );
-
-      setView(
-        "login"
-      );
-    };
+    setView("login");
+  };
 
   // =========================================================
   // USER LOGIN SUCCESS
   // =========================================================
 
-  const handleUserLoginSuccess =
-    () => {
-      localStorage.setItem(
-        "isLoggedIn",
-        "true"
-      );
+  const handleUserLoginSuccess = () => {
+    localStorage.setItem(
+      "isLoggedIn",
+      "true"
+    );
 
-      localStorage.setItem(
-        "userRole",
-        "USER"
-      );
+    localStorage.setItem(
+      "userRole",
+      "USER"
+    );
 
-      setView(
-        "dashboard"
-      );
-    };
+    window.history.replaceState(
+      {},
+      document.title,
+      "/"
+    );
+
+    setView("dashboard");
+  };
 
   // =========================================================
   // ADMIN LOGIN SUCCESS
   // =========================================================
 
-  const handleAdminLoginSuccess =
-    () => {
-      localStorage.setItem(
-        "isLoggedIn",
-        "true"
-      );
+  const handleAdminLoginSuccess = () => {
+    localStorage.setItem(
+      "isLoggedIn",
+      "true"
+    );
 
-      localStorage.setItem(
-        "userRole",
-        "ADMIN"
-      );
+    localStorage.setItem(
+      "userRole",
+      "ADMIN"
+    );
 
-      setView(
-        "adminDashboard"
-      );
-    };
+    window.history.replaceState(
+      {},
+      document.title,
+      "/"
+    );
+
+    setView("adminDashboard");
+  };
 
   // =========================================================
   // LOGOUT
   // =========================================================
 
-  const handleLogout =
-    () => {
-      localStorage.removeItem(
-        "token"
-      );
+  const handleLogout = () => {
+    localStorage.removeItem(
+      "token"
+    );
 
-      localStorage.removeItem(
-        "isLoggedIn"
-      );
+    localStorage.removeItem(
+      "isLoggedIn"
+    );
 
-      localStorage.removeItem(
-        "userRole"
-      );
+    localStorage.removeItem(
+      "userRole"
+    );
 
-      localStorage.removeItem(
-        "currentUserName"
-      );
+    localStorage.removeItem(
+      "currentUserName"
+    );
 
-      window.history.replaceState(
-        {},
-        document.title,
-        "/"
-      );
+    window.history.replaceState(
+      {},
+      document.title,
+      "/"
+    );
 
-      setView(
-        "login"
-      );
-    };
+    setView("login");
+  };
 
   // =========================================================
   // UI
@@ -231,17 +207,10 @@ function App() {
           duration: 4000,
 
           style: {
-            borderRadius:
-              "10px",
-
-            padding:
-              "14px 20px",
-
-            fontSize:
-              "14px",
-
-            fontWeight:
-              "600",
+            borderRadius: "10px",
+            padding: "14px 20px",
+            fontSize: "14px",
+            fontWeight: "600",
           },
         }}
       />
@@ -251,12 +220,9 @@ function App() {
       ===================================================== */}
 
       {view === "register" ? (
-
         <UserRegister
           onSuccess={() =>
-            setView(
-              "login"
-            )
+            setView("login")
           }
         />
 
@@ -264,15 +230,14 @@ function App() {
 
         /* ===================================================
             LOGIN
+
             USER  = REAL API
             ADMIN = MOCK API
         =================================================== */
 
         <UserLogin
           onGoRegister={() =>
-            setView(
-              "register"
-            )
+            setView("register")
           }
 
           onLoginSuccess={
@@ -288,21 +253,7 @@ function App() {
           }
         />
 
-      ) : view ===
-        "confirmLogin" ? (
-
-        /* ===================================================
-            EMAIL VERIFICATION
-        =================================================== */
-
-        <ConfirmLogin
-          onBackToLogin={
-            handleBackToLogin
-          }
-        />
-
-      ) : view ===
-        "resetPassword" ? (
+      ) : view === "resetPassword" ? (
 
         /* ===================================================
             RESET PASSWORD
@@ -314,8 +265,7 @@ function App() {
           }
         />
 
-      ) : view ===
-        "forgetPassword" ? (
+      ) : view === "forgetPassword" ? (
 
         /* ===================================================
             FORGOT PASSWORD
@@ -323,14 +273,12 @@ function App() {
 
         <UserForget
           isOpen={true}
-
           onClose={
             handleBackToLogin
           }
         />
 
-      ) : view ===
-        "adminDashboard" ? (
+      ) : view === "adminDashboard" ? (
 
         /* ===================================================
             ADMIN DASHBOARD

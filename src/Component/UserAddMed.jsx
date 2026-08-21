@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+
 import {
   Clock3,
   FileText,
@@ -11,61 +12,154 @@ import {
   X,
 } from "lucide-react";
 
-import { addMedicine } from "../api/MockApi";
+import api from "../api/axiosInstance";
 
 import "./UserAddMed.css";
 
+// =========================================================
+// FREQUENCY UI CONFIG
+// =========================================================
+
 const FREQUENCY_CONFIG = {
-  "Once a day": { doses: 1, required: true },
-  "Twice a day": { doses: 2, required: true },
-  "Three times a day": { doses: 3, required: true },
-  "As needed": { doses: 1, required: false },
-  Weekly: { doses: 1, required: true },
+  "Once a day": {
+    doses: 1,
+    required: true,
+  },
+
+  "Twice a day": {
+    doses: 2,
+    required: true,
+  },
+
+  "Three times a day": {
+    doses: 3,
+    required: true,
+  },
 };
+
+// =========================================================
+// SWAGGER / BACKEND FREQUENCY VALUES
+// =========================================================
 
 const FREQUENCY_TO_BACKEND = {
-  "Once a day": "ONCE_DAILY",
-  "Twice a day": "TWICE_DAILY",
-  "Three times a day": "THRICE_DAILY",
-  "As needed": "AS_NEEDED",
-  Weekly: "WEEKLY",
+  "Once a day": "ONCE_A_DAY",
+  "Twice a day": "TWICE_A_DAY",
+  "Three times a day": "THREE_TIMES_A_DAY",
 };
 
+// =========================================================
+// BUILD DEFAULT TIMES
+// =========================================================
+
 const buildSuggestedTimings = (doseCount) => {
-  if (doseCount <= 0) return [];
+  if (doseCount <= 0) {
+    return [];
+  }
 
   const startHour = 8;
   const intervalHours = 24 / doseCount;
 
-  return Array.from({ length: doseCount }, (_, index) => {
-    const hour = Math.round(startHour + index * intervalHours) % 24;
-    return { time: `${String(hour).padStart(2, "0")}:00` };
-  });
+  return Array.from(
+    { length: doseCount },
+    (_, index) => {
+      const hour =
+        Math.round(
+          startHour +
+            index * intervalHours
+        ) % 24;
+
+      return {
+        time: `${String(hour).padStart(
+          2,
+          "0"
+        )}:00`,
+      };
+    }
+  );
 };
+
+// =========================================================
+// 24 HOUR → 12 HOUR
+// =========================================================
 
 const to12Hour = (time24) => {
-  if (!time24) return { hour12: null, minute: "00", period: "AM" };
+  if (!time24) {
+    return {
+      hour12: null,
+      minute: "00",
+      period: "AM",
+    };
+  }
 
-  const [h, m] = time24.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
+  const [h, m] =
+    time24
+      .split(":")
+      .map(Number);
+
+  const period =
+    h >= 12 ? "PM" : "AM";
+
   let hour12 = h % 12;
-  if (hour12 === 0) hour12 = 12;
 
-  return { hour12, minute: String(m).padStart(2, "0"), period };
+  if (hour12 === 0) {
+    hour12 = 12;
+  }
+
+  return {
+    hour12,
+    minute: String(m).padStart(
+      2,
+      "0"
+    ),
+    period,
+  };
 };
 
-const buildTiming24 = (time24, period) => {
-  if (!time24) return "";
+// =========================================================
+// BUILD 24 HOUR TIME
+// =========================================================
 
-  const { hour12, minute } = to12Hour(time24);
-  let h = hour12 % 12;
-  if (period === "PM") h += 12;
+const buildTiming24 = (
+  time24,
+  period
+) => {
+  if (!time24) {
+    return "";
+  }
 
-  return `${String(h).padStart(2, "0")}:${minute}`;
+  const {
+    hour12,
+    minute,
+  } = to12Hour(time24);
+
+  let hour =
+    hour12 % 12;
+
+  if (period === "PM") {
+    hour += 12;
+  }
+
+  return `${String(hour).padStart(
+    2,
+    "0"
+  )}:${minute}`;
 };
 
-const AddMedicineModal = ({ onClose }) => {
-  const [formData, setFormData] = useState({
+// =========================================================
+// COMPONENT
+// =========================================================
+
+const AddMedicineModal = ({
+  onClose,
+}) => {
+  // =======================================================
+  // FORM STATE
+  // =======================================================
+
+  const [
+    formData,
+    setFormData,
+  ] = useState({
     medicineName: "",
     dosage: "",
     timings: [],
@@ -75,15 +169,44 @@ const AddMedicineModal = ({ onClose }) => {
     notes: "",
   });
 
-  const [errors, setErrors] = useState({});
-  const [frequencyDropdownOpen, setFrequencyDropdownOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [
+    errors,
+    setErrors,
+  ] = useState({});
 
-  const doseCount = formData.timings.length;
-  const intervalHours = doseCount > 1 ? Math.round(24 / doseCount) : null;
+  const [
+    frequencyDropdownOpen,
+    setFrequencyDropdownOpen,
+  ] = useState(false);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  // =======================================================
+  // DERIVED VALUES
+  // =======================================================
+
+  const doseCount =
+    formData.timings.length;
+
+  const intervalHours =
+    doseCount > 1
+      ? Math.round(
+          24 / doseCount
+        )
+      : null;
+
+  // =======================================================
+  // INPUT CHANGE
+  // =======================================================
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value,
+    } = e.target;
 
     setFormData((prev) => ({
       ...prev,
@@ -96,134 +219,347 @@ const AddMedicineModal = ({ onClose }) => {
     }));
   };
 
-  const handleFrequencySelect = (freq) => {
-    const doseCountForFrequency = FREQUENCY_CONFIG[freq]?.doses || 0;
+  // =======================================================
+  // FREQUENCY
+  // =======================================================
+
+  const handleFrequencySelect = (
+    frequency
+  ) => {
+    const doseCountForFrequency =
+      FREQUENCY_CONFIG[
+        frequency
+      ]?.doses || 0;
 
     setFormData((prev) => ({
       ...prev,
-      frequency: freq,
-      timings: buildSuggestedTimings(doseCountForFrequency),
+
+      frequency,
+
+      timings:
+        buildSuggestedTimings(
+          doseCountForFrequency
+        ),
     }));
 
-    setFrequencyDropdownOpen(false);
-    setErrors((prev) => ({ ...prev, frequency: "", timing: "" }));
+    setFrequencyDropdownOpen(
+      false
+    );
+
+    setErrors((prev) => ({
+      ...prev,
+      frequency: "",
+      timing: "",
+    }));
   };
 
-  const handleTimingChange = (index, value) => {
-    setFormData((prev) => {
-      const updated = [...prev.timings];
-      updated[index] = { ...updated[index], time: value };
-      return { ...prev, timings: updated };
-    });
+  // =======================================================
+  // TIME
+  // =======================================================
 
-    setErrors((prev) => ({ ...prev, timing: "" }));
-  };
-
-  const handleTimingPeriodChange = (index, newPeriod) => {
+  const handleTimingChange = (
+    index,
+    value
+  ) => {
     setFormData((prev) => {
-      const updated = [...prev.timings];
-      const current = updated[index]?.time || "";
+      const updated = [
+        ...prev.timings,
+      ];
+
       updated[index] = {
         ...updated[index],
-        time: buildTiming24(current, newPeriod),
+        time: value,
       };
-      return { ...prev, timings: updated };
+
+      return {
+        ...prev,
+        timings: updated,
+      };
     });
 
-    setErrors((prev) => ({ ...prev, timing: "" }));
+    setErrors((prev) => ({
+      ...prev,
+      timing: "",
+    }));
   };
+
+  const handleTimingPeriodChange = (
+    index,
+    newPeriod
+  ) => {
+    setFormData((prev) => {
+      const updated = [
+        ...prev.timings,
+      ];
+
+      const current =
+        updated[index]?.time || "";
+
+      updated[index] = {
+        ...updated[index],
+
+        time: buildTiming24(
+          current,
+          newPeriod
+        ),
+      };
+
+      return {
+        ...prev,
+        timings: updated,
+      };
+    });
+
+    setErrors((prev) => ({
+      ...prev,
+      timing: "",
+    }));
+  };
+
+  // =======================================================
+  // VALIDATION
+  // =======================================================
 
   const validate = () => {
     const nextErrors = {};
 
-    if (!formData.medicineName.trim()) {
-      nextErrors.medicineName = "Medicine name is required";
+    if (
+      !formData.medicineName.trim()
+    ) {
+      nextErrors.medicineName =
+        "Medicine name is required";
     }
 
-    if (!formData.dosage.trim()) {
-      nextErrors.dosage = "Dosage is required";
+    if (
+      !formData.dosage.trim()
+    ) {
+      nextErrors.dosage =
+        "Dosage is required";
     }
 
-    if (!formData.frequency) {
-      nextErrors.frequency = "Select frequency";
+    if (
+      !formData.frequency
+    ) {
+      nextErrors.frequency =
+        "Select frequency";
     }
 
-    const config = FREQUENCY_CONFIG[formData.frequency];
+    const config =
+      FREQUENCY_CONFIG[
+        formData.frequency
+      ];
+
     if (config?.required) {
       const hasEmptyTiming =
-        formData.timings.length === 0 ||
-        formData.timings.some((timing) => !timing.time);
+        formData.timings.length ===
+          0 ||
+        formData.timings.some(
+          (timing) =>
+            !timing.time
+        );
 
       if (hasEmptyTiming) {
-        nextErrors.timing = "Please set a time for every dose";
+        nextErrors.timing =
+          "Please set a time for every dose";
       }
     }
 
-    if (!formData.startDate) {
-      nextErrors.startDate = "Start date is required";
+    if (
+      !formData.startDate
+    ) {
+      nextErrors.startDate =
+        "Start date is required";
+    }
+
+    if (
+      formData.endDate &&
+      formData.startDate &&
+      formData.endDate <
+        formData.startDate
+    ) {
+      nextErrors.endDate =
+        "End date cannot be before start date";
     }
 
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+
+    return (
+      Object.keys(nextErrors)
+        .length === 0
+    );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // =======================================================
+  // ADD MEDICINE - REAL API
+  //
+  // POST /api/medicines
+  // =======================================================
 
-    if (!validate()) return;
+  const handleSubmit =
+    async (e) => {
+      e.preventDefault();
 
-    setLoading(true);
+      if (!validate()) {
+        return;
+      }
 
-    try {
-      const timings = formData.timings
-        .map((item) => item.time)
-        .filter(Boolean);
-      const firstTime = timings[0] || "";
-      const startTiming = firstTime ? `${firstTime}:00` : "";
+      setLoading(true);
 
-      const response = await addMedicine({
-        medicineName: formData.medicineName.trim(),
-        dosage: formData.dosage.trim(),
-        timings,
-        startTiming,
-        timing: firstTime,
-        frequency: FREQUENCY_TO_BACKEND[formData.frequency],
-        startDate: formData.startDate,
-        endDate: formData.endDate || undefined,
-        notes: formData.notes.trim(),
-      });
+      try {
+        // ================================================
+        // SWAGGER FIELD: doseTimes
+        // ================================================
 
-      localStorage.setItem("medicineAdded", "true");
+        const doseTimes =
+          formData.timings
+            .map(
+              (item) =>
+                item.time
+            )
+            .filter(Boolean);
 
-      toast.success(response.data?.message || "Medicine added successfully!", {
-        duration: 3000,
-      });
+        // ================================================
+        // SWAGGER REQUEST BODY
+        // ================================================
 
-      onClose(formData);
-    } catch (error) {
-      console.log("Add Medicine error:", error.response?.data || error.message);
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to add medicine. Please try again.",
-        { duration: 4000 }
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+        const payload = {
+          medicineName:
+            formData.medicineName.trim(),
+
+          dosage:
+            formData.dosage.trim(),
+
+          frequency:
+            FREQUENCY_TO_BACKEND[
+              formData.frequency
+            ],
+
+          doseTimes,
+
+          startDate:
+            formData.startDate,
+
+          notes:
+            formData.notes.trim(),
+        };
+
+        // End date optional ho to
+        // empty string mat bhejo
+        if (formData.endDate) {
+          payload.endDate =
+            formData.endDate;
+        }
+
+        console.log(
+          "ADD MEDICINE PAYLOAD:",
+          payload
+        );
+
+        // ================================================
+        // REAL API CALL
+        // ================================================
+
+        const response =
+          await api.post(
+            "/api/medicines",
+            payload
+          );
+
+        console.log(
+          "ADD MEDICINE RESPONSE:",
+          response.data
+        );
+
+        localStorage.setItem(
+          "medicineAdded",
+          "true"
+        );
+
+        toast.success(
+          response?.data?.message ||
+            "Medicine added successfully!",
+          {
+            duration: 3000,
+          }
+        );
+
+        // Parent page ko returned medicine
+        // pass kar sakte hain
+        if (
+          typeof onClose ===
+          "function"
+        ) {
+          onClose(
+            response?.data ||
+              payload
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Add Medicine API Error:",
+          error?.response
+            ?.status,
+          error?.response
+            ?.data ||
+            error.message
+        );
+
+        const message =
+          error?.response
+            ?.data
+            ?.message ||
+          error?.response
+            ?.data
+            ?.error ||
+          error?.message ||
+          "Failed to add medicine. Please try again.";
+
+        toast.error(
+          message,
+          {
+            duration: 4000,
+          }
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  // =======================================================
+  // UI
+  // =======================================================
 
   return (
-    <div className="add-med-overlay" onMouseDown={onClose}>
-      <div className="add-med-modal" onMouseDown={(e) => e.stopPropagation()}>
+    <div
+      className="add-med-overlay"
+      onMouseDown={onClose}
+    >
+      <div
+        className="add-med-modal"
+        onMouseDown={(e) =>
+          e.stopPropagation()
+        }
+      >
+        {/* HEADER */}
+
         <div className="add-med-header">
           <div className="add-med-title-wrap">
+
             <div className="add-med-title-icon">
               <Pill size={22} />
             </div>
+
             <div>
-              <h2>Add New Medicine</h2>
-              <p>Create medicine schedule and reminder timings</p>
+              <h2>
+                Add New Medicine
+              </h2>
+
+              <p>
+                Create medicine schedule
+                and reminder timings
+              </p>
             </div>
+
           </div>
 
           <button
@@ -236,200 +572,457 @@ const AddMedicineModal = ({ onClose }) => {
           </button>
         </div>
 
-        <form className="add-med-form" onSubmit={handleSubmit}>
+        {/* FORM */}
+
+        <form
+          className="add-med-form"
+          onSubmit={handleSubmit}
+        >
+          {/* =============================================
+              MEDICINE DETAILS
+          ============================================= */}
+
           <div className="add-med-section">
+
             <div className="add-med-section-title">
               <Pill size={18} />
-              <span>Medicine Details</span>
+
+              <span>
+                Medicine Details
+              </span>
             </div>
 
             <div className="add-med-grid">
+
               <div className="add-med-field">
-                <label>Medicine Name *</label>
+                <label>
+                  Medicine Name *
+                </label>
+
                 <input
                   type="text"
                   name="medicineName"
                   placeholder="e.g., Metformin"
-                  value={formData.medicineName}
-                  onChange={handleChange}
+                  value={
+                    formData.medicineName
+                  }
+                  onChange={
+                    handleChange
+                  }
                 />
-                <span className="add-med-error">{errors.medicineName}</span>
+
+                <span className="add-med-error">
+                  {
+                    errors.medicineName
+                  }
+                </span>
               </div>
 
               <div className="add-med-field">
-                <label>Dosage *</label>
+                <label>
+                  Dosage *
+                </label>
+
                 <input
                   type="text"
                   name="dosage"
                   placeholder="e.g., 500 mg"
-                  value={formData.dosage}
-                  onChange={handleChange}
+                  value={
+                    formData.dosage
+                  }
+                  onChange={
+                    handleChange
+                  }
                 />
-                <span className="add-med-error">{errors.dosage}</span>
+
+                <span className="add-med-error">
+                  {
+                    errors.dosage
+                  }
+                </span>
               </div>
+
             </div>
           </div>
 
+          {/* =============================================
+              SCHEDULE
+          ============================================= */}
+
           <div className="add-med-section">
+
             <div className="add-med-section-title">
               <Repeat size={18} />
-              <span>Schedule</span>
+
+              <span>
+                Schedule
+              </span>
             </div>
 
             <div className="add-med-grid">
+
+              {/* FREQUENCY */}
+
               <div className="add-med-field">
-                <label>Frequency *</label>
+                <label>
+                  Frequency *
+                </label>
+
                 <div
                   className={`add-med-select-wrap ${
-                    frequencyDropdownOpen ? "is-open" : ""
-                  } ${errors.frequency ? "add-med-select-error" : ""}`}
+                    frequencyDropdownOpen
+                      ? "is-open"
+                      : ""
+                  } ${
+                    errors.frequency
+                      ? "add-med-select-error"
+                      : ""
+                  }`}
                 >
                   <button
                     type="button"
                     className="add-med-select-trigger"
                     onClick={() =>
-                      setFrequencyDropdownOpen((open) => !open)
+                      setFrequencyDropdownOpen(
+                        (open) =>
+                          !open
+                      )
                     }
                   >
-                    <span>{formData.frequency || "Select frequency"}</span>
-                    <ChevronDown size={18} />
+                    <span>
+                      {formData.frequency ||
+                        "Select frequency"}
+                    </span>
+
+                    <ChevronDown
+                      size={18}
+                    />
                   </button>
 
                   {frequencyDropdownOpen && (
                     <div className="add-med-select-menu">
-                      {Object.keys(FREQUENCY_CONFIG).map((frequency) => {
-                        const selected = formData.frequency === frequency;
-                        const config = FREQUENCY_CONFIG[frequency];
 
-                        return (
-                          <button
-                            type="button"
-                            key={frequency}
-                            className={`add-med-select-option ${
-                              selected ? "selected" : ""
-                            }`}
-                            onClick={() => handleFrequencySelect(frequency)}
-                          >
-                            <span>{frequency}</span>
-                            <em>
-                              {config.required
-                                ? `${config.doses} dose${config.doses > 1 ? "s" : ""}`
-                                : "Optional"}
-                            </em>
-                          </button>
-                        );
-                      })}
+                      {Object.keys(
+                        FREQUENCY_CONFIG
+                      ).map(
+                        (
+                          frequency
+                        ) => {
+                          const selected =
+                            formData.frequency ===
+                            frequency;
+
+                          const config =
+                            FREQUENCY_CONFIG[
+                              frequency
+                            ];
+
+                          return (
+                            <button
+                              type="button"
+                              key={
+                                frequency
+                              }
+                              className={`add-med-select-option ${
+                                selected
+                                  ? "selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                handleFrequencySelect(
+                                  frequency
+                                )
+                              }
+                            >
+                              <span>
+                                {
+                                  frequency
+                                }
+                              </span>
+
+                              <em>
+                                {
+                                  config.doses
+                                }{" "}
+                                dose
+                                {config.doses >
+                                1
+                                  ? "s"
+                                  : ""}
+                              </em>
+                            </button>
+                          );
+                        }
+                      )}
+
                     </div>
                   )}
                 </div>
-                <span className="add-med-error">{errors.frequency}</span>
+
+                <span className="add-med-error">
+                  {
+                    errors.frequency
+                  }
+                </span>
               </div>
 
+              {/* DATE RANGE */}
+
               <div className="add-med-field add-med-date-range">
-                <label>Date Range</label>
+
+                <label>
+                  Date Range
+                </label>
+
                 <div className="add-med-date-grid">
+
                   <div>
                     <input
                       type="date"
                       name="startDate"
-                      value={formData.startDate}
-                      onChange={handleChange}
+                      value={
+                        formData.startDate
+                      }
+                      onChange={
+                        handleChange
+                      }
                     />
-                    <small>Start *</small>
+
+                    <small>
+                      Start *
+                    </small>
                   </div>
+
                   <div>
                     <input
                       type="date"
                       name="endDate"
-                      value={formData.endDate}
-                      onChange={handleChange}
+                      value={
+                        formData.endDate
+                      }
+                      onChange={
+                        handleChange
+                      }
                     />
-                    <small>End</small>
+
+                    <small>
+                      End
+                    </small>
                   </div>
+
                 </div>
-                <span className="add-med-error">{errors.startDate}</span>
+
+                <span className="add-med-error">
+                  {
+                    errors.startDate
+                  }
+
+                  {errors.endDate &&
+                    ` ${errors.endDate}`}
+                </span>
               </div>
+
             </div>
+
+            {/* ===========================================
+                DOSE TIMES
+            =========================================== */}
 
             {doseCount > 0 && (
               <div className="add-med-timing-panel">
+
                 <div className="add-med-timing-heading">
+
                   <div>
-                    <Clock3 size={18} />
-                    <span>Dose Timing{doseCount > 1 ? "s" : ""}</span>
+                    <Clock3
+                      size={18}
+                    />
+
+                    <span>
+                      Dose Timing
+                      {doseCount > 1
+                        ? "s"
+                        : ""}
+                    </span>
                   </div>
-                  {intervalHours && <em>~{intervalHours}h apart</em>}
+
+                  {intervalHours && (
+                    <em>
+                      ~
+                      {
+                        intervalHours
+                      }
+                      h apart
+                    </em>
+                  )}
+
                 </div>
 
                 <div className="add-med-timing-list">
-                  {formData.timings.map((timing, index) => {
-                    const { period } = to12Hour(timing.time);
 
-                    return (
-                      <div className="add-med-timing-row" key={index}>
-                        <span>Dose {index + 1}</span>
-                        <div className="add-med-time-control">
-                          <input
-                            type="time"
-                            value={timing.time}
-                            onChange={(e) =>
-                              handleTimingChange(index, e.target.value)
-                            }
-                          />
-                          <select
-                            value={period}
-                            onChange={(e) =>
-                              handleTimingPeriodChange(index, e.target.value)
-                            }
-                          >
-                            <option value="AM">AM</option>
-                            <option value="PM">PM</option>
-                          </select>
+                  {formData.timings.map(
+                    (
+                      timing,
+                      index
+                    ) => {
+                      const {
+                        period,
+                      } =
+                        to12Hour(
+                          timing.time
+                        );
+
+                      return (
+                        <div
+                          className="add-med-timing-row"
+                          key={
+                            index
+                          }
+                        >
+                          <span>
+                            Dose{" "}
+                            {index +
+                              1}
+                          </span>
+
+                          <div className="add-med-time-control">
+
+                            <input
+                              type="time"
+                              value={
+                                timing.time
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                handleTimingChange(
+                                  index,
+                                  e
+                                    .target
+                                    .value
+                                )
+                              }
+                            />
+
+                            <select
+                              value={
+                                period
+                              }
+                              onChange={(
+                                e
+                              ) =>
+                                handleTimingPeriodChange(
+                                  index,
+                                  e
+                                    .target
+                                    .value
+                                )
+                              }
+                            >
+                              <option value="AM">
+                                AM
+                              </option>
+
+                              <option value="PM">
+                                PM
+                              </option>
+                            </select>
+
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    }
+                  )}
+
                 </div>
 
-                <span className="add-med-error">{errors.timing}</span>
+                <span className="add-med-error">
+                  {
+                    errors.timing
+                  }
+                </span>
+
               </div>
             )}
           </div>
 
+          {/* =============================================
+              NOTES
+          ============================================= */}
+
           <div className="add-med-section">
+
             <div className="add-med-section-title">
-              <FileText size={18} />
-              <span>Notes</span>
+              <FileText
+                size={18}
+              />
+
+              <span>
+                Notes
+              </span>
             </div>
 
             <div className="add-med-field">
+
               <textarea
                 name="notes"
                 placeholder="Add instructions, meal timing, or doctor notes"
-                value={formData.notes}
-                onChange={handleChange}
+                value={
+                  formData.notes
+                }
+                onChange={
+                  handleChange
+                }
                 rows="3"
               />
+
             </div>
           </div>
 
+          {/* =============================================
+              ACTIONS
+          ============================================= */}
+
           <div className="add-med-actions">
+
             <button
               type="button"
               className="add-med-btn add-med-btn-secondary"
-              onClick={onClose}
-              disabled={loading}
+              onClick={
+                onClose
+              }
+              disabled={
+                loading
+              }
             >
               Cancel
             </button>
+
             <button
               type="submit"
               className="add-med-btn add-med-btn-primary"
-              disabled={loading}
+              disabled={
+                loading
+              }
             >
-              {loading ? <Loader2 size={16} className="spin" /> : <Save size={16} />}
-              <span>{loading ? "Saving..." : "Save Medicine"}</span>
+              {loading ? (
+                <Loader2
+                  size={16}
+                  className="spin"
+                />
+              ) : (
+                <Save
+                  size={16}
+                />
+              )}
+
+              <span>
+                {loading
+                  ? "Saving..."
+                  : "Save Medicine"}
+              </span>
             </button>
+
           </div>
         </form>
       </div>
