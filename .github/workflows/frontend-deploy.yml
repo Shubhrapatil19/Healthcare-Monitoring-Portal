@@ -29,17 +29,14 @@ jobs:
 
             sudo -u frontend1 bash -lc '
               set -e
+              cd /opt/project/frontend1/Healthcare-Monitoring-Portal
 
-              cd /opt/project/frontend/frontend1/Healthcare-Monitoring-Portal
-
-              git fetch origin Frontend
               git checkout Frontend
               git pull --ff-only origin Frontend
 
               printf "%s\n" \
                 "VITE_USE_MOCK=false" \
-                "VITE_API_BASE_URL=/api" \
-                > .env
+                "VITE_API_BASE_URL=/api" > .env
 
               rm -rf dist .vite
 
@@ -58,6 +55,3 @@ jobs:
             sudo systemctl restart frontend
             sleep 3
             sudo systemctl is-active frontend
-            curl --fail --silent http://127.0.0.1:8081/ > /dev/null
-
-            echo "Frontend deployed successfully"
