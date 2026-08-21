@@ -80,6 +80,8 @@ const UserDash = ({ onLogout }) => {
   // Reminder data (mocked — no real reminder engine without a backend)
   const [calendarData, setCalendarData] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
+  // Workable legends: track which statuses are visible
+  const [visibleStatuses, setVisibleStatuses] = useState({ taken: true, missed: true });
 
   const monthLabel = new Date(calendarYear, calendarMonth, 1).toLocaleString("en-US", {
     month: "long",
@@ -198,15 +200,27 @@ const UserDash = ({ onLogout }) => {
       return " past-date";
     }
 
+    // If statuses exist but are all filtered out by legend toggle, 
+    // still show as normal date but faded.
+    if (statuses && statuses.length > 0) {
+      const anyVisible = statuses.some((s) => visibleStatuses[s]);
+      if (!anyVisible) {
+        return `${isToday ? " today" : ""} filtered-out`;
+      }
+    }
+
     let statusClass = "";
     if (statuses && statuses.length > 0) {
-      if (statuses.includes("missed")) statusClass = " missed";
-      else if (statuses.includes("taken")) statusClass = " taken";
-      else if (statuses.includes("snoozed")) statusClass = " snoozed";
-      else statusClass = " upcoming";
+      if (statuses.includes("missed") && visibleStatuses.missed) statusClass = " missed";
+      else if (statuses.includes("taken") && visibleStatuses.taken) statusClass = " taken";
     }
 
     return `${isToday ? " today" : ""}${statusClass}`;
+  };
+
+  // Toggle a legend status filter
+  const toggleStatusFilter = (status) => {
+    setVisibleStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
 
   const [stockItems, setStockItems] = useState([]);
@@ -313,7 +327,8 @@ const UserDash = ({ onLogout }) => {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, []);
+
   const handleSidebarToggle = () => {
     const newState = !sidebarOpen;
     setSidebarOpen(newState);
@@ -428,6 +443,7 @@ const UserDash = ({ onLogout }) => {
     fetchTodaySchedule();
     fetchMyMedicines();
     fetchDashboardSummary();
+    fetchCalendarData();
   };
 
   // Called after stock is successfully added, to refresh the Inventory
@@ -1121,12 +1137,24 @@ const UserDash = ({ onLogout }) => {
                       <div className="calendar-footer">
                         <div className="calendar-legend">
                           <div className="legend-item">
-                            <div className="legend-dot taken"></div>
-                            <span>Taken</span>
+                            <button
+                              type="button"
+                              className={`legend-toggle ${visibleStatuses.taken ? "active" : ""}`}
+                              onClick={() => toggleStatusFilter("taken")}
+                            >
+                              <span className="legend-dot taken"></span>
+                              <span>Taken</span>
+                            </button>
                           </div>
                           <div className="legend-item">
-                            <div className="legend-dot missed"></div>
-                            <span>Missed</span>
+                            <button
+                              type="button"
+                              className={`legend-toggle ${visibleStatuses.missed ? "active" : ""}`}
+                              onClick={() => toggleStatusFilter("missed")}
+                            >
+                              <span className="legend-dot missed"></span>
+                              <span>Missed</span>
+                            </button>
                           </div>
                         </div>
 

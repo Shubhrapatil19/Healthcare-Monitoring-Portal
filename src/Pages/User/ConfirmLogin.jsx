@@ -1,103 +1,249 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { confirmLoginToken, getProfile } from "../../api/mockApi";
+
+import api from "../../api/axiosInstance";
+
 import "./ConfirmLogin.css";
 
-// NOTE: With no real backend, UserLogin now logs the user in
-// immediately (see mockApi.loginUser) instead of sending a
-// confirmation email. This page is kept only for compatibility if
-// something still links here — it simply checks that a token already
-// exists in localStorage from the mock login step.
-const ConfirmLogin = ({ onLoginSuccess }) => {
+const ConfirmLogin = ({ onBackToLogin }) => {
+  // =========================================================
+  // GET TOKEN FROM URL
+  // Example:
+  // /verify-email?token=xxxx
+  // =========================================================
+
   const params = new URLSearchParams(window.location.search);
   const verifyToken = params.get("token");
 
+  // =========================================================
+  // STATE
+  // =========================================================
+
   const [loading, setLoading] = useState(false);
-  const [verificationFailed, setVerificationFailed] = useState(!verifyToken);
   const [verified, setVerified] = useState(false);
+
+  const [verificationFailed, setVerificationFailed] = useState(
+    !verifyToken
+  );
+
   const [errorMessage, setErrorMessage] = useState("");
 
-  const confirmLogin = async () => {
+  // =========================================================
+  // VERIFY EMAIL
+  //
+  // REAL API:
+  // GET /api/auth/verify-email?token=...
+  // =========================================================
+
+  const verifyEmail = async () => {
     if (!verifyToken) {
-      toast.error("Invalid confirmation link.");
+      setVerificationFailed(true);
+      setErrorMessage("Verification token is missing.");
+
+      toast.error("Invalid verification link.");
+
       return;
     }
 
     setLoading(true);
+    setErrorMessage("");
 
     try {
-      // ================= MOCK: CONFIRM LOGIN (no backend) =================
-      const response = await confirmLoginToken(verifyToken);
-      // ========================================================================
-
-      if (!response.data.token) {
-        setLoading(false);
-        setVerificationFailed(true);
-        setErrorMessage("Confirmation link expired or already used.");
-        toast.error("Confirmation link expired or already used.");
-        return;
-      }
-
-      // Fetch profile to make sure the display name is up to date
-      try {
-        const profileResponse = await getProfile();
-        if (profileResponse.data?.fullName) {
-          localStorage.setItem("currentUserName", profileResponse.data.fullName);
+      const response = await api.get(
+        "/api/auth/verify-email",
+        {
+          params: {
+            token: verifyToken,
+          },
         }
-      } catch {
-        // Non-fatal — name will just stay whatever was already stored
-      }
+      );
 
       setVerified(true);
-      toast.success("Login Successful");
+      setVerificationFailed(false);
+
+      toast.success(
+        response?.data?.message ||
+          "Email verified successfully!"
+      );
+
+      // =====================================================
+      // REMOVE TOKEN FROM URL
+      // =====================================================
+
+      window.history.replaceState(
+        {},
+        document.title,
+        "/"
+      );
+
+      // =====================================================
+      // AFTER VERIFICATION → LOGIN PAGE
+      // =====================================================
 
       setTimeout(() => {
-        onLoginSuccess?.();
+        if (typeof onBackToLogin === "function") {
+          onBackToLogin();
+        } else {
+          window.location.href = "/";
+        }
       }, 1500);
     } catch (error) {
-      setLoading(false);
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Invalid or expired verification link.";
+
+      setVerified(false);
       setVerificationFailed(true);
-      setErrorMessage(error.response?.data?.message || "Invalid or expired confirmation link.");
-      toast.error(error.response?.data?.message || "Invalid or expired confirmation link.");
+      setErrorMessage(message);
+
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // =========================================================
+  // BACK TO LOGIN
+  // =========================================================
+
+  const goBackToLogin = () => {
+    window.history.replaceState(
+      {},
+      document.title,
+      "/"
+    );
+
+    if (typeof onBackToLogin === "function") {
+      onBackToLogin();
+    } else {
+      window.location.href = "/";
+    }
+  };
+
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <div className="confirm-login-page">
+
+      {/* =====================================================
+          LOADING
+      ===================================================== */}
+
       {loading ? (
         <div className="confirm-card">
+
           <div className="loader"></div>
-          <h2>Verifying your login...</h2>
-          <p>Please wait while we securely verify your account.</p>
+
+          <h2>
+            Verifying Your Email...
+          </h2>
+
+          <p>
+            Please wait while we securely verify your
+            email address.
+          </p>
+
         </div>
       ) : verified ? (
+
+        /* ===================================================
+            SUCCESS
+        =================================================== */
+
         <div className="confirm-card">
-          <h2>Login Successful</h2>
-          <p>Redirecting to your dashboard...</p>
+
+          <h2>
+            Email Verified Successfully
+          </h2>
+
+          <p>
+            Your email address has been verified.
+            Redirecting to login...
+          </p>
+
         </div>
+
       ) : verificationFailed && !verifyToken ? (
+
+        /* ===================================================
+            TOKEN MISSING
+        =================================================== */
+
         <div className="confirm-card">
-          <h2>Invalid Link</h2>
-          <p>This confirmation link is missing required information.</p>
-          <button onClick={() => (window.location.href = "/")}>
+
+          <h2>
+            Invalid Verification Link
+          </h2>
+
+          <p>
+            This verification link is missing the
+            required token.
+          </p>
+
+          <button
+            type="button"
+            onClick={goBackToLogin}
+          >
             Back to Login
           </button>
+
         </div>
+
       ) : verificationFailed ? (
+
+        /* ===================================================
+            VERIFICATION FAILED
+        =================================================== */
+
         <div className="confirm-card">
-          <h2>Verification Failed</h2>
-          <p>{errorMessage || "The confirmation link is invalid or has expired."}</p>
-          <button onClick={() => (window.location.href = "/")}>
+
+          <h2>
+            Verification Failed
+          </h2>
+
+          <p>
+            {errorMessage ||
+              "The verification link is invalid or has expired."}
+          </p>
+
+          <button
+            type="button"
+            onClick={goBackToLogin}
+          >
             Back to Login
           </button>
+
         </div>
+
       ) : (
+
+        /* ===================================================
+            VERIFY EMAIL
+        =================================================== */
+
         <div className="confirm-card">
-          <h2>Confirm Your Login</h2>
-          <p>Click the button below to confirm this login was you.</p>
-          <button onClick={confirmLogin}>
-            Yes, it&apos;s me
+
+          <h2>
+            Verify Your Email
+          </h2>
+
+          <p>
+            Click the button below to verify your
+            email address.
+          </p>
+
+          <button
+            type="button"
+            onClick={verifyEmail}
+            disabled={loading}
+          >
+            Verify Email
           </button>
+
         </div>
       )}
     </div>

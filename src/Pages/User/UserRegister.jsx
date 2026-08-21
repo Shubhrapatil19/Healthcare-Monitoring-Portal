@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { registerUser } from "../../api/MockApi";
+import api from "../../api/axiosInstance";
 
 import {
   User,
@@ -235,12 +235,16 @@ const UserRegister = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await registerUser({
-        fullName: formData.fullName.trim(),
-        email: formData.email,
-        mobile: formData.mobile,
-        password: formData.password,
-      });
+      const response = await api.post(
+        "/api/auth/register",
+        {
+          fullName: formData.fullName.trim(),
+          email: formData.email,
+          mobile: formData.mobile,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        }
+      );
 
       // =====================================================
       // IMPORTANT:
@@ -250,7 +254,6 @@ const UserRegister = ({ onSuccess }) => {
 
       localStorage.removeItem("profileCompleted");
       localStorage.removeItem("profileData");
-      localStorage.removeItem("mockProfile");
 
       // =====================================================
       // SAVE BASIC REGISTERED USER DATA
@@ -305,6 +308,8 @@ const UserRegister = ({ onSuccess }) => {
     } catch (error) {
       const message =
         error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
         "Registration failed. Please try again.";
 
       if (

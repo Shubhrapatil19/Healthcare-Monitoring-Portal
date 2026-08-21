@@ -1,12 +1,10 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { loginUser } from "../../api/MockApi";
+import api from "../../api/axiosInstance";
 import { loginAdmin } from "../../api/AdminMockApi";
 
 import "./UserLogin.css";
-
-import UserForget from "./UserForget";
 
 import {
   FaEnvelope,
@@ -22,6 +20,7 @@ const UserLogin = ({
   onGoRegister,
   onLoginSuccess,
   onAdminLoginSuccess,
+  onGoForget,
 }) => {
   // =========================================================
   // REMEMBERED EMAIL
@@ -39,9 +38,6 @@ const UserLogin = ({
 
   const [rememberMe, setRememberMe] =
     useState(!!rememberedEmail);
-
-  const [isForgetOpen, setIsForgetOpen] =
-    useState(false);
 
   const [formData, setFormData] =
     useState({
@@ -230,7 +226,8 @@ const UserLogin = ({
 
   // =========================================================
   // LOGIN
-  // SAME LOGIN PAGE FOR USER + ADMIN
+  // USER = REAL API
+  // ADMIN = ADMIN MOCK API
   // =========================================================
 
   const handleLogin = async (e) => {
@@ -243,29 +240,19 @@ const UserLogin = ({
     setLoading(true);
 
     try {
-      const normalizedEmail =
-        formData.email
-          .trim()
-          .toLowerCase();
-
-      let response;
+      const normalizedEmail = formData.email
+        .trim()
+        .toLowerCase();
 
       // =====================================================
-      // ADMIN LOGIN
+      // ADMIN LOGIN - MOCK API
       // =====================================================
 
-      if (
-        normalizedEmail ===
-        ADMIN_EMAIL
-      ) {
-        response =
-          await loginAdmin({
-            email:
-              normalizedEmail,
-
-            password:
-              formData.password,
-          });
+      if (normalizedEmail === ADMIN_EMAIL) {
+        const response = await loginAdmin({
+          email: normalizedEmail,
+          password: formData.password,
+        });
 
         handleRememberEmail();
 
@@ -285,17 +272,34 @@ const UserLogin = ({
       }
 
       // =====================================================
-      // NORMAL USER LOGIN
+      // NORMAL USER LOGIN - REAL API
+      // POST /api/auth/login
       // =====================================================
 
-      response =
-        await loginUser({
-          email:
-            normalizedEmail,
+      const response = await api.post(
+        "/api/auth/login",
+        {
+          email: normalizedEmail,
+          password: formData.password,
+          rememberMe,
+        }
+      );
 
-          password:
-            formData.password,
-        });
+      const token = response?.data?.token;
+      const role = response?.data?.role;
+
+      if (!token) {
+        throw new Error(
+          "Login response did not include token."
+        );
+      }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem(
+        "userRole",
+        role || "USER"
+      );
 
       handleRememberEmail();
 
@@ -312,14 +316,13 @@ const UserLogin = ({
       }
     } catch (error) {
       const errorMessage =
-        error?.response?.data
-          ?.message ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         error?.message ||
         "Login failed. Please try again.";
 
       setErrors((prev) => ({
         ...prev,
-
         password:
           "Incorrect email or password",
       }));
@@ -649,9 +652,11 @@ const UserLogin = ({
                 <button
                   type="button"
                   className="forget-link"
-                  onClick={() =>
-                    setIsForgetOpen(true)
-                  }
+                  onClick={() => {
+                    if (typeof onGoForget === "function") {
+                      onGoForget();
+                    }
+                  }}
                 >
                   Forget Password?
                 </button>
@@ -699,17 +704,6 @@ const UserLogin = ({
           </div>
         </div>
       </div>
-
-      {/* =====================================================
-          FORGOT PASSWORD MODAL
-      ===================================================== */}
-
-      <UserForget
-        isOpen={isForgetOpen}
-        onClose={() =>
-          setIsForgetOpen(false)
-        }
-      />
 
       {/* =====================================================
           FOOTER
