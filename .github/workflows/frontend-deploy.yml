@@ -9,10 +9,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
 
     steps:
-      - name: Deploy frontend
+      - name: Deploy Frontend
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.APP_HOST }}
@@ -28,52 +27,37 @@ jobs:
           script: |
             set -e
 
-            echo "Starting frontend deployment..."
-
             sudo -u frontend1 bash -lc '
               set -e
 
-              cd /opt/project/frontend1/Healthcare-Monitoring-Portal
-
-              echo "Current branch:"
-              git branch --show-current
+              cd /opt/project/frontend/frontend1/Healthcare-Monitoring-Portal
 
               git fetch origin Frontend
               git checkout Frontend
               git pull --ff-only origin Frontend
 
               printf "%s\n" \
-                "VITE_API_BASE_URL=/api" \
                 "VITE_USE_MOCK=false" \
-                > .env.production
+                "VITE_API_BASE_URL=/api" \
+                > .env
 
-              rm -rf dist
-              rm -rf .vite
+              rm -rf dist .vite
 
-              npm ci
+              export NODE_OPTIONS="--max-old-space-size=768"
+
+              npm ci --no-audit --no-fund
               npm run build
 
               test -f dist/index.html
 
-              echo "Frontend build successful"
+              printf "%s\n" \
+                "{\"rewrites\":[{\"source\":\"**\",\"destination\":\"/index.html\"}]}" \
+                > dist/serve.json
             '
 
             sudo systemctl restart frontend
+            sleep 3
+            sudo systemctl is-active frontend
+            curl --fail --silent http://127.0.0.1:8081/ > /dev/null
 
-            for attempt in 1 2 3 4 5 6 7 8; do
-              if curl -fsS http://127.0.0.1:8081/ >/dev/null; then
-                echo "Frontend deployment successful"
-                sudo systemctl is-active frontend
-                exit 0
-              fi
-
-              echo "Waiting for frontend: attempt $attempt"
-              sleep 5
-            done
-
-            echo "Frontend health check failed"
-
-            sudo systemctl status frontend --no-pager -l
-            sudo journalctl -u frontend -n 100 --no-pager -l
-
-            exit 1
+            echo "Frontend deployed successfully"
