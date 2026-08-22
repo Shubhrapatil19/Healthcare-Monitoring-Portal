@@ -344,6 +344,16 @@ const AddMedicineModal = ({
         "Select frequency";
     }
 
+    if (
+      formData.frequency &&
+      !FREQUENCY_TO_BACKEND[
+        formData.frequency
+      ]
+    ) {
+      nextErrors.frequency =
+        "Selected frequency is not supported by backend";
+    }
+
     const config =
       FREQUENCY_CONFIG[
         formData.frequency
@@ -439,20 +449,24 @@ const AddMedicineModal = ({
           startDate:
             formData.startDate,
 
+          ...(formData.endDate
+            ? {
+                endDate:
+                  formData.endDate,
+              }
+            : {}),
+
           notes:
             formData.notes.trim(),
         };
 
-        // End date optional ho to
-        // empty string mat bhejo
-        if (formData.endDate) {
-          payload.endDate =
-            formData.endDate;
-        }
-
         console.log(
           "ADD MEDICINE PAYLOAD:",
-          payload
+          JSON.stringify(
+            payload,
+            null,
+            2
+          )
         );
 
         // ================================================
@@ -496,12 +510,27 @@ const AddMedicineModal = ({
         }
       } catch (error) {
         console.error(
-          "Add Medicine API Error:",
-          error?.response
-            ?.status,
-          error?.response
-            ?.data ||
-            error.message
+          "ADD MEDICINE API ERROR:",
+          {
+            status:
+              error?.response
+                ?.status,
+
+            response:
+              error?.response
+                ?.data,
+
+            url:
+              error?.config
+                ?.url,
+
+            sentData:
+              error?.config
+                ?.data,
+
+            message:
+              error?.message,
+          }
         );
 
         const message =
