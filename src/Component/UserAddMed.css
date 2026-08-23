@@ -850,44 +850,53 @@
 
 
 /* =========================================================
-   DATE RANGE
+   DATE RANGE - UPDATED
 ========================================================= */
 
 .add-med-date-grid {
   display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
 }
 
-
-/* =========================================================
-   DATE INPUT
-========================================================= */
-
-.add-med-date-grid input[type="date"] {
+.add-med-date-grid > div {
   min-width: 0;
 }
 
+.add-med-date-grid input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid #cfdce8;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
 
-/* =========================================================
-   DATE LABEL
-========================================================= */
+.add-med-date-grid input[type="date"]:hover {
+  border-color: #9ccfcd;
+}
+
+.add-med-date-grid input[type="date"]:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
 
 .add-med-date-grid small {
   display: block;
-
   margin-top: 5px;
-
   color: #64748b;
-
   font-size: 11px;
-
   font-weight: 700;
 }
-
 
 /* =========================================================
    VALIDATION ERROR
@@ -895,227 +904,156 @@
 
 .add-med-error {
   display: block;
-
   color: #dc2626;
-
   font-size: 11px;
-
   font-weight: 700;
 }
 
-
 .add-med-error:empty {
   min-height: 0;
-
   margin-top: 0;
 }
 
-
 .add-med-error:not(:empty) {
   min-height: 16px;
-
   margin-top: 5px;
 }
 
-
 /* =========================================================
-   DOSE TIMING PANEL
+   DOSE TIMING PANEL - UPDATED
 ========================================================= */
 
 .add-med-timing-panel {
   margin-top: 12px;
-
   padding: 12px;
-
-  border:
-    1px solid
-    #ccefe9;
-
+  border: 1px solid #ccefe9;
   border-radius: 9px;
-
   background: #f0fdfa;
 }
-
-
-/* =========================================================
-   TIMING HEADER
-========================================================= */
 
 .add-med-timing-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 10px;
-
   margin-bottom: 10px;
 }
-
-
-/* =========================================================
-   TIMING HEADER LEFT
-========================================================= */
 
 .add-med-timing-heading div {
   display: flex;
   align-items: center;
-
   gap: 8px;
-
   color: #0f766e;
-
   font-size: 13px;
-
   font-weight: 800;
 }
-
-
-/* =========================================================
-   INTERVAL BADGE
-========================================================= */
 
 .add-med-timing-heading em {
   flex: none;
-
   padding: 4px 9px;
-
   border-radius: 999px;
-
   background: #ffffff;
-
   color: #0f766e;
-
   font-size: 11px;
-
   font-style: normal;
-
   font-weight: 800;
-
-  box-shadow:
-    0 1px 3px
-    rgba(
-      15,
-      23,
-      42,
-      0.06
-    );
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
-
-
-/* =========================================================
-   TIMING LIST
-========================================================= */
 
 .add-med-timing-list {
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(
-        0,
-        1fr
-      )
-    );
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-
-/* =========================================================
-   TIMING CARD
-========================================================= */
-
 .add-med-timing-row {
   min-width: 0;
-
   padding: 10px;
-
-  border:
-    1px solid
-    #dbe8f0;
-
+  border: 1px solid #dbe8f0;
   border-radius: 8px;
-
   background: #ffffff;
 }
 
-
-/* =========================================================
-   DOSE LABEL
-========================================================= */
-
 .add-med-timing-row > span {
   display: block;
-
   margin-bottom: 8px;
-
   color: #0f766e;
-
   font-size: 12px;
-
   font-weight: 800;
 }
-
-
-/* =========================================================
-   TIME CONTROL
-========================================================= */
 
 .add-med-time-control {
   display: grid;
-
-  grid-template-columns:
-    minmax(
-      0,
-      1fr
-    )
-    76px;
-
+  grid-template-columns: minmax(0, 1fr) 78px;
+  align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
-
-/* =========================================================
-   TIME INPUT
-========================================================= */
-
-.add-med-time-control
-input[type="time"] {
+.add-med-time-control input[type="time"] {
+  width: 100%;
   min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid #cfdce8;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
+.add-med-time-control input[type="time"]:hover {
+  border-color: #9ccfcd;
+}
 
-/* =========================================================
-   AM PM SELECT
-========================================================= */
+.add-med-time-control input[type="time"]:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
 
 .add-med-time-control select {
-  padding-left: 8px;
-
-  padding-right: 8px;
-
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 9px 8px;
+  border: 1px solid #cfdce8;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
   color: #0f766e;
-
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 800;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
+.add-med-time-control select:hover {
+  border-color: #9ccfcd;
+  background: #f8fffe;
+}
 
-/* =========================================================
-   DATE / TIME PICKER ICON
-========================================================= */
+.add-med-time-control select:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
 
-.add-med-field
-input[type="date"]
-::-webkit-calendar-picker-indicator,
-.add-med-time-control
-input[type="time"]
-::-webkit-calendar-picker-indicator {
+.add-med-field input[type="date"]::-webkit-calendar-picker-indicator,
+.add-med-time-control input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-
   opacity: 0.75;
 }
 
+.add-med-field input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.add-med-time-control input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
 
 /* =========================================================
    ACTION BAR

@@ -116,6 +116,29 @@ const to12Hour = (time24) => {
 };
 
 // =========================================================
+// BACKEND DATE FORMAT: YYYY-MM-DD -> DD-MM-YYYY
+// =========================================================
+
+const formatDateForBackend = (date) => {
+  if (!date) return "";
+
+  const [year, month, day] = date.split("-");
+  return `${day}-${month}-${year}`;
+};
+
+// =========================================================
+// BACKEND TIME FORMAT: HH:mm -> hh:mm AM/PM
+// =========================================================
+
+const formatTimeForBackend = (time24) => {
+  if (!time24) return "";
+
+  const { hour12, minute, period } = to12Hour(time24);
+
+  return `${String(hour12).padStart(2, "0")}:${minute} ${period}`;
+};
+
+// =========================================================
 // BUILD 24 HOUR TIME
 // =========================================================
 
@@ -422,9 +445,10 @@ const AddMedicineModal = ({
 
         const doseTimes =
           formData.timings
-            .map(
-              (item) =>
+            .map((item) =>
+              formatTimeForBackend(
                 item.time
+              )
             )
             .filter(Boolean);
 
@@ -447,12 +471,16 @@ const AddMedicineModal = ({
           doseTimes,
 
           startDate:
-            formData.startDate,
+            formatDateForBackend(
+              formData.startDate
+            ),
 
           ...(formData.endDate
             ? {
                 endDate:
-                  formData.endDate,
+                  formatDateForBackend(
+                    formData.endDate
+                  ),
               }
             : {}),
 
