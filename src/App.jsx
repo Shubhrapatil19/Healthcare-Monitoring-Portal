@@ -3,104 +3,63 @@ import "./App.css";
 import { useState } from "react";
 import { Toaster } from "react-hot-toast";
 
-// =========================================================
-// USER PAGES
-// =========================================================
-
 import UserRegister from "./Pages/User/UserRegister";
 import UserLogin from "./Pages/User/UserLogin";
 import UserDash from "./Pages/User/UserDash";
 import UserForget from "./Pages/User/UserForget";
 import UserResetPassword from "./Pages/User/UserResetPassword";
 
-// =========================================================
-// ADMIN
-// =========================================================
-
 import AdminDashboard from "./Pages/Admin/AdminDashboard";
 
 function App() {
-  // =========================================================
-  // INITIAL VIEW
-  // =========================================================
-
   const getInitialView = () => {
     const currentPath =
       window.location.pathname.toLowerCase();
 
     const params =
-      new URLSearchParams(
-        window.location.search
-      );
+      new URLSearchParams(window.location.search);
 
-    const resetToken =
-      params.get("token");
+    const token = params.get("token");
 
-    // =====================================================
-    // RESET PASSWORD EMAIL LINK
-    //
-    // Example:
-    // /reset-password?token=xxxxx
-    // =====================================================
+    // Verify email link
+    // /verify-email?token=xxxxx
+    if (currentPath.includes("verify-email")) {
+      return "register";
+    }
 
+    // Reset password link
     if (
-      currentPath.includes(
-        "reset-password"
-      ) &&
-      resetToken
+      currentPath.includes("reset-password") &&
+      token
     ) {
       return "resetPassword";
     }
 
-    // =====================================================
-    // ALREADY LOGGED IN
-    // =====================================================
-
     const savedToken =
-      localStorage.getItem(
-        "token"
-      );
+      localStorage.getItem("token");
 
     const savedRole =
-      localStorage.getItem(
-        "userRole"
-      );
+      localStorage.getItem("userRole");
 
     const isLoggedIn =
-      localStorage.getItem(
-        "isLoggedIn"
-      );
+      localStorage.getItem("isLoggedIn");
 
     if (
       savedToken &&
       isLoggedIn === "true"
     ) {
-      if (
-        savedRole === "ADMIN"
-      ) {
+      if (savedRole === "ADMIN") {
         return "adminDashboard";
       }
 
       return "dashboard";
     }
 
-    // =====================================================
-    // DEFAULT
-    // =====================================================
-
     return "login";
   };
 
-  // =========================================================
-  // CURRENT VIEW
-  // =========================================================
-
   const [view, setView] =
     useState(getInitialView);
-
-  // =========================================================
-  // NAVIGATION
-  // =========================================================
 
   const handleNavigateToForget = () => {
     setView("forgetPassword");
@@ -115,10 +74,6 @@ function App() {
 
     setView("login");
   };
-
-  // =========================================================
-  // USER LOGIN SUCCESS
-  // =========================================================
 
   const handleUserLoginSuccess = () => {
     localStorage.setItem(
@@ -140,10 +95,6 @@ function App() {
     setView("dashboard");
   };
 
-  // =========================================================
-  // ADMIN LOGIN SUCCESS
-  // =========================================================
-
   const handleAdminLoginSuccess = () => {
     localStorage.setItem(
       "isLoggedIn",
@@ -164,26 +115,11 @@ function App() {
     setView("adminDashboard");
   };
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
-
   const handleLogout = () => {
-    localStorage.removeItem(
-      "token"
-    );
-
-    localStorage.removeItem(
-      "isLoggedIn"
-    );
-
-    localStorage.removeItem(
-      "userRole"
-    );
-
-    localStorage.removeItem(
-      "currentUserName"
-    );
+    localStorage.removeItem("token");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("currentUserName");
 
     window.history.replaceState(
       {},
@@ -194,10 +130,6 @@ function App() {
     setView("login");
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
-
   return (
     <>
       <Toaster
@@ -205,7 +137,6 @@ function App() {
         reverseOrder={false}
         toastOptions={{
           duration: 4000,
-
           style: {
             borderRadius: "10px",
             padding: "14px 20px",
@@ -215,87 +146,45 @@ function App() {
         }}
       />
 
-      {/* =====================================================
-          REGISTER
-      ===================================================== */}
-
       {view === "register" ? (
         <UserRegister
-          onSuccess={() =>
-            setView("login")
-          }
+          onSuccess={handleBackToLogin}
         />
-
       ) : view === "login" ? (
-
-        /* ===================================================
-            LOGIN
-
-            USER  = REAL API
-            ADMIN = MOCK API
-        =================================================== */
-
         <UserLogin
           onGoRegister={() =>
             setView("register")
           }
-
           onLoginSuccess={
             handleUserLoginSuccess
           }
-
           onAdminLoginSuccess={
             handleAdminLoginSuccess
           }
-
           onGoForget={
             handleNavigateToForget
           }
         />
-
       ) : view === "resetPassword" ? (
-
-        /* ===================================================
-            RESET PASSWORD
-        =================================================== */
-
         <UserResetPassword
           onBackToLogin={
             handleBackToLogin
           }
         />
-
       ) : view === "forgetPassword" ? (
-
-        /* ===================================================
-            FORGOT PASSWORD
-        =================================================== */
-
         <UserForget
           isOpen={true}
           onClose={
             handleBackToLogin
           }
         />
-
       ) : view === "adminDashboard" ? (
-
-        /* ===================================================
-            ADMIN DASHBOARD
-        =================================================== */
-
         <AdminDashboard
           onLogout={
             handleLogout
           }
         />
-
       ) : (
-
-        /* ===================================================
-            USER DASHBOARD
-        =================================================== */
-
         <UserDash
           onLogout={
             handleLogout

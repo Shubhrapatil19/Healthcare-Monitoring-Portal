@@ -993,3 +993,115 @@
     padding: 11px 14px;
   }
 }
+
+/* Add at the bottom of UserRegister.css */
+
+.verify-email-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(7px);
+}
+
+.verify-email-modal {
+  width: min(420px, 100%);
+  padding: 34px 28px;
+  border: 1px solid #dce8ef;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
+}
+
+.verify-email-modal h2 {
+  margin: 16px 0 8px;
+  color: #0f766e;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.verify-email-modal p {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.verify-email-modal p strong {
+  color: #0f766e;
+}
+
+.verify-success-icon,
+.verify-error-icon {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.verify-success-icon {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.verify-error-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.verify-login-btn {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verify-login-btn:hover {
+  background: #115e59;
+}
+
+.verify-email-loader {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border: 4px solid #ccfbf1;
+  border-top-color: #0f766e;
+  border-radius: 50%;
+  animation: verifyEmailSpin 0.8s linear infinite;
+}
+
+@keyframes verifyEmailSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 480px) {
+  .verify-email-overlay {
+    padding: 16px;
+  }
+
+  .verify-email-modal {
+    padding: 28px 20px;
+    border-radius: 15px;
+  }
+
+  .verify-email-modal h2 {
+    font-size: 20px;
+  }
+}

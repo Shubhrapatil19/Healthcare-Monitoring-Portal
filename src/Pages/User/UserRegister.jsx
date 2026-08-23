@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import api from "../../api/axiosInstance";
@@ -39,6 +39,134 @@ const UserRegister = ({ onSuccess }) => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const [
+    registrationSuccess,
+    setRegistrationSuccess,
+  ] = useState(false);
+
+  const verificationPath =
+    window.location.pathname
+      .toLowerCase()
+      .includes("verify-email");
+
+  const verificationToken =
+    new URLSearchParams(
+      window.location.search
+    ).get("token");
+
+  const [
+    showVerifyModal,
+    setShowVerifyModal,
+  ] = useState(verificationPath);
+
+  const [
+    verifyLoading,
+    setVerifyLoading,
+  ] = useState(
+    verificationPath &&
+      Boolean(verificationToken)
+  );
+
+  const [
+    verifySuccess,
+    setVerifySuccess,
+  ] = useState(false);
+
+  const [
+    verifyError,
+    setVerifyError,
+  ] = useState(
+    verificationPath &&
+      !verificationToken
+      ? "Verification token is missing."
+      : ""
+  );
+
+  useEffect(() => {
+    if (
+      !verificationPath ||
+      !verificationToken
+    ) {
+      return;
+    }
+
+    let active = true;
+
+    const verifyEmail = async () => {
+      setVerifyLoading(true);
+
+      try {
+        const response =
+          await api.get(
+            "/api/auth/verify-email",
+            {
+              params: {
+                token:
+                  verificationToken,
+              },
+            }
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setVerifySuccess(true);
+        setVerifyError("");
+
+        toast.success(
+          response?.data?.message ||
+            "Email verified successfully!"
+        );
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Verification link is invalid or expired.";
+
+        setVerifySuccess(false);
+        setVerifyError(message);
+
+        toast.error(message);
+      } finally {
+        if (active) {
+          setVerifyLoading(false);
+        }
+      }
+    };
+
+    void verifyEmail();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    verificationPath,
+    verificationToken,
+  ]);
+
+  const handleVerificationToLogin =
+    () => {
+      window.history.replaceState(
+        {},
+        document.title,
+        "/"
+      );
+
+      setShowVerifyModal(false);
+
+      if (
+        typeof onSuccess ===
+        "function"
+      ) {
+        onSuccess();
+      }
+    };
 
   // =========================================================
   // PASSWORD VALIDATION
@@ -275,7 +403,7 @@ const UserRegister = ({ onSuccess }) => {
 
       toast.success(
         response?.data?.message ||
-          "Account created successfully! Redirecting to login...",
+          "Registration successful. Please check your email and verify your account.",
         {
           duration: 4000,
 
@@ -300,11 +428,7 @@ const UserRegister = ({ onSuccess }) => {
         }
       );
 
-      setTimeout(() => {
-        if (typeof onSuccess === "function") {
-          onSuccess();
-        }
-      }, 1500);
+      setRegistrationSuccess(true);
     } catch (error) {
       const message =
         error.response?.data?.message ||
@@ -367,6 +491,113 @@ const UserRegister = ({ onSuccess }) => {
 
   return (
     <div className="register-page">
+
+      {registrationSuccess &&
+        !showVerifyModal && (
+          <div className="verify-email-overlay">
+            <div className="verify-email-modal">
+              <div className="verify-success-icon">
+                ✓
+              </div>
+
+              <h2>
+                Registration Successful
+              </h2>
+
+              <p>
+                We sent a verification link to
+                <strong>
+                  {" "}
+                  {formData.email}
+                </strong>
+                .
+                <br />
+                Please open your email and click
+                <strong>
+                  {" "}
+                  Verify Email
+                </strong>
+                {" "}
+                to continue.
+              </p>
+            </div>
+          </div>
+        )}
+
+      {showVerifyModal && (
+        <div className="verify-email-overlay">
+          <div className="verify-email-modal">
+
+            {verifyLoading ? (
+              <>
+                <div className="verify-email-loader">
+                </div>
+
+                <h2>
+                  Verifying Your Email...
+                </h2>
+
+                <p>
+                  Please wait while we securely
+                  verify your email address.
+                </p>
+              </>
+            ) : verifySuccess ? (
+              <>
+                <div className="verify-success-icon">
+                  ✓
+                </div>
+
+                <h2>
+                  Email Verified Successfully
+                </h2>
+
+                <p>
+                  Your email address has been
+                  verified. You can now login
+                  to your account.
+                </p>
+
+                <button
+                  type="button"
+                  className="verify-login-btn"
+                  onClick={
+                    handleVerificationToLogin
+                  }
+                >
+                  Go to Login
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="verify-error-icon">
+                  !
+                </div>
+
+                <h2>
+                  Verification Failed
+                </h2>
+
+                <p>
+                  {verifyError ||
+                    "Unable to verify your email address."}
+                </p>
+
+                <button
+                  type="button"
+                  className="verify-login-btn"
+                  onClick={
+                    handleVerificationToLogin
+                  }
+                >
+                  Back to Login
+                </button>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
       <header className="login-header">
         <div className="header-left">
           <div className="logo-box">
