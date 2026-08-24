@@ -73,13 +73,21 @@ public class ReminderService {
     }
 
     /** Today's Reminder section. */
+    /**
+     * Today's Reminder section.
+     * A snoozed reminder stays hidden until its snoozeUntil time has passed,
+     * then it automatically re-appears here (15-min snooze cycle).
+     */
     public List<ReminderResponseDto> getTodayReminders() {
 
         RegisterEntity user = getLoggedInUser();
 
+        LocalDateTime now = LocalDateTime.now();
+
         return reminderRepository.findByUserIdAndDoseLog_ScheduledDate(user.getId(), LocalDate.now())
                 .stream()
                 .filter(r -> !"TAKEN".equals(r.getStatus()))
+                .filter(r -> r.getSnoozeUntil() == null || !r.getSnoozeUntil().isAfter(now))
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -115,7 +123,10 @@ public class ReminderService {
     }
 
     /** "Snooze" button — pushes reminder N minutes (default 5) into the future. */
-    public ReminderResponseDto snooze(Long reminderId, int minutes) {
+    private static final int SNOOZE_MINUTES = 15;
+
+    /** "Snooze" button — always pushes reminder 15 minutes into the future, every time. */
+    public ReminderResponseDto snooze(Long reminderId) {
 
         RegisterEntity user = getLoggedInUser();
 
@@ -123,7 +134,7 @@ public class ReminderService {
                 reminderRepository.findByIdAndUserId(reminderId, user.getId())
                         .orElseThrow(() -> new IllegalArgumentException("Reminder not found."));
 
-        reminder.setSnoozeUntil(LocalDateTime.now().plusMinutes(minutes));
+        reminder.setSnoozeUntil(LocalDateTime.now().plusMinutes(SNOOZE_MINUTES));
         reminder.setSnoozeCount(reminder.getSnoozeCount() + 1);
         reminder.setStatus("PENDING");
 

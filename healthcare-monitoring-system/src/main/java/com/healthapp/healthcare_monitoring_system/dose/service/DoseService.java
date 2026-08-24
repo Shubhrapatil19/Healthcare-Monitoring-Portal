@@ -134,14 +134,15 @@ public class DoseService {
                 .collect(Collectors.toList());
     }
 
-    /** Calendar view for a given month — one entry per date that has dose logs. */
-    public List<CalendarResponseDto> getCalendar(int year, int month) {
+
+
+    public List<CalendarResponseDto> getCalendar() {
 
         RegisterEntity user = getLoggedInUser();
 
-        YearMonth yearMonth = YearMonth.of(year, month);
-        LocalDate start = yearMonth.atDay(1);
-        LocalDate end = yearMonth.atEndOfMonth();
+        YearMonth currentMonth = YearMonth.now();
+        LocalDate start = currentMonth.atDay(1);
+        LocalDate end = currentMonth.atEndOfMonth();
 
         List<MedicineDoseLogEntity> logs =
                 doseLogRepository.findByUserIdAndScheduledDateBetween(user.getId(), start, end);
@@ -155,23 +156,18 @@ public class DoseService {
                     LocalDate date = entry.getKey();
                     List<MedicineDoseLogEntity> dayLogs = entry.getValue();
 
-                    long taken = dayLogs.stream().filter(l -> l.getStatus() == DoseStatus.TAKEN).count();
-                    long missed = dayLogs.stream().filter(l -> l.getStatus() == DoseStatus.MISSED).count();
-                    long pending = dayLogs.stream().filter(l -> l.getStatus() == DoseStatus.PENDING).count();
+                    boolean anyMissed = dayLogs.stream().anyMatch(l -> l.getStatus() == DoseStatus.MISSED);
+                    boolean anyTaken = dayLogs.stream().anyMatch(l -> l.getStatus() == DoseStatus.TAKEN);
 
-                    String overall;
-                    if (pending > 0) {
-                        overall = "PENDING";
-                    } else if (missed > 0 && taken == 0) {
-                        overall = "MISSED";
-                    } else if (missed > 0) {
-                        overall = "PARTIAL";
-                    } else {
-                        overall = "TAKEN";
+                    if (anyMissed) {
+                        return new CalendarResponseDto(date, "MISSED");
                     }
-
-                    return new CalendarResponseDto(date, taken, missed, pending, overall);
+                    if (anyTaken) {
+                        return new CalendarResponseDto(date, "TAKEN");
+                    }
+                    return null;
                 })
+                .filter(java.util.Objects::nonNull)
                 .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
                 .collect(Collectors.toList());
     }

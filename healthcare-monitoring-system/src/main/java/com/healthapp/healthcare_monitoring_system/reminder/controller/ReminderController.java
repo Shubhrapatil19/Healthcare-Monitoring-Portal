@@ -1,7 +1,6 @@
 package com.healthapp.healthcare_monitoring_system.reminder.controller;
 
 import com.healthapp.healthcare_monitoring_system.reminder.dto.ReminderResponseDto;
-import com.healthapp.healthcare_monitoring_system.reminder.dto.SnoozeRequestDto;
 import com.healthapp.healthcare_monitoring_system.reminder.service.ReminderService;
 
 import org.springframework.http.ResponseEntity;
@@ -19,40 +18,27 @@ public class ReminderController {
         this.reminderService = reminderService;
     }
 
-    // Today's Reminder section
     @GetMapping("/today")
     public List<ReminderResponseDto> getTodayReminders() {
         return reminderService.getTodayReminders();
     }
 
-    // Reminder history section
     @GetMapping("/history")
     public List<ReminderResponseDto> getHistory() {
         return reminderService.getReminderHistory();
     }
 
-    // "Taken" button
     @PatchMapping("/{reminderId}/taken")
     public ReminderResponseDto markTaken(@PathVariable Long reminderId) {
         return reminderService.markTaken(reminderId);
     }
 
-    // "Snooze" button
+    // Snooze — no request body needed anymore, always 15 minutes
     @PatchMapping("/{reminderId}/snooze")
-    public ReminderResponseDto snooze(
-            @PathVariable Long reminderId,
-            @RequestBody(required = false) SnoozeRequestDto request
-    ) {
-
-        int minutes =
-                (request == null || request.getSnoozeMinutes() == null)
-                        ? 5
-                        : request.getSnoozeMinutes();
-
-        return reminderService.snooze(reminderId, minutes);
+    public ReminderResponseDto snooze(@PathVariable Long reminderId) {
+        return reminderService.snooze(reminderId);
     }
 
-    // Delete one reminder history entry
     @DeleteMapping("/{reminderId}")
     public ResponseEntity<Void> deleteReminder(@PathVariable Long reminderId) {
         reminderService.deleteReminder(reminderId);

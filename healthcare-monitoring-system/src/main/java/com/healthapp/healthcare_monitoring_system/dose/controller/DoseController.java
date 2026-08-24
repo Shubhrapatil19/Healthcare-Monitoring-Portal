@@ -26,13 +26,9 @@ public class DoseController {
         return doseService.getTodaySchedule();
     }
 
-    // Calendar section -> /api/doses/calendar?year=2026&month=8
     @GetMapping("/calendar")
-    public List<CalendarResponseDto> getCalendar(
-            @RequestParam int year,
-            @RequestParam int month
-    ) {
-        return doseService.getCalendar(year, month);
+    public List<CalendarResponseDto> getCalendar() {
+        return doseService.getCalendar();
     }
 
     // Manually mark a dose Taken/Missed

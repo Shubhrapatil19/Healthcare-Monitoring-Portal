@@ -15,10 +15,6 @@ public class CalendarResponseDto {
     @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate date;
 
-    private long takenCount;
-    private long missedCount;
-    private long pendingCount;
-
-    // TAKEN, MISSED, PARTIAL, PENDING
-    private String overallStatus;
+    // Only two possible values: "TAKEN" or "MISSED"
+    private String status;
 }

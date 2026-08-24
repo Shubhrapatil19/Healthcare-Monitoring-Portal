@@ -44,7 +44,9 @@ public class MedicineInventoryService {
 
         // "medicine name" dropdown must only allow medicines already in My Medicine
         MedicineEntity medicine =
-                medicineRepository.findByIdAndUserId(request.getMedicineId(), user.getId())
+                medicineRepository.findByUserIdAndMedicineNameIgnoreCase(
+                                user.getId(), request.getMedicineName().trim()
+                        )
                         .orElseThrow(() -> new IllegalArgumentException("This medicine is not available"));
 
         if (inventoryRepository.existsByMedicineIdAndUserId(medicine.getId(), user.getId())) {

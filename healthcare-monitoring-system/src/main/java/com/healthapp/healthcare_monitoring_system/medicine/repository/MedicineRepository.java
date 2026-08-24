@@ -18,4 +18,7 @@ public interface MedicineRepository extends JpaRepository<MedicineEntity, Long> 
     List<MedicineEntity> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
             LocalDate date1, LocalDate date2
     );
+
+    // NEW — used by Add Stock, so the form can send medicine NAME instead of ID
+    Optional<MedicineEntity> findByUserIdAndMedicineNameIgnoreCase(Long userId, String medicineName);
 }
