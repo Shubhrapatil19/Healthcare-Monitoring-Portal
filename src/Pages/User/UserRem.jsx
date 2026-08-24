@@ -233,8 +233,14 @@ const UserRem = ({
 
     void loadReminders();
 
+    const intervalId = setInterval(
+      loadReminders,
+      5000
+    );
+
     return () => {
       active = false;
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -244,9 +250,6 @@ const UserRem = ({
 
   const displayHistory =
     historyReminders;
-
-  const displayPending =
-    pendingReminders;
 
   // =========================================================
   // FORMAT DATE
@@ -307,7 +310,14 @@ const UserRem = ({
     }
 
     const time =
-      String(timeValue);
+      String(timeValue).trim();
+
+    if (/\b(?:AM|PM)\b/i.test(time)) {
+      return time.replace(
+        /\s+/g,
+        " "
+      ).toUpperCase();
+    }
 
     const [
       hoursRaw,
@@ -341,6 +351,110 @@ const UserRem = ({
       "0"
     )} ${ampm}`;
   };
+
+  const parseReminderDateTime = (reminder) => {
+    const time = String(
+      getReminderTime(reminder)
+    ).trim();
+
+    if (!time) {
+      return null;
+    }
+
+    const dateValue =
+      reminder?.scheduledDate ||
+      reminder?.date ||
+      new Date();
+
+    let year;
+    let month;
+    let day;
+
+    if (typeof dateValue === "string") {
+      const isoMatch = dateValue.match(
+        /^(\d{4})-(\d{2})-(\d{2})/
+      );
+      const dashMatch = dateValue.match(
+        /^(\d{2})-(\d{2})-(\d{4})/
+      );
+
+      if (isoMatch) {
+        year = Number(isoMatch[1]);
+        month = Number(isoMatch[2]) - 1;
+        day = Number(isoMatch[3]);
+      } else if (dashMatch) {
+        day = Number(dashMatch[1]);
+        month = Number(dashMatch[2]) - 1;
+        year = Number(dashMatch[3]);
+      }
+    }
+
+    if (
+      year == null ||
+      month == null ||
+      day == null
+    ) {
+      const fallbackDate = new Date(dateValue);
+
+      if (Number.isNaN(fallbackDate.getTime())) {
+        const todayDate = new Date();
+        year = todayDate.getFullYear();
+        month = todayDate.getMonth();
+        day = todayDate.getDate();
+      } else {
+        year = fallbackDate.getFullYear();
+        month = fallbackDate.getMonth();
+        day = fallbackDate.getDate();
+      }
+    }
+
+    const match = time.match(
+      /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i
+    );
+
+    if (!match) {
+      return null;
+    }
+
+    let hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    const period = match[3]?.toUpperCase();
+
+    if (period === "PM" && hours < 12) {
+      hours += 12;
+    }
+
+    if (period === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    return new Date(
+      year,
+      month,
+      day,
+      hours,
+      minutes,
+      0,
+      0
+    );
+  };
+
+  const shouldShowReminder = (reminder) => {
+    const scheduledAt = parseReminderDateTime(reminder);
+
+    if (!scheduledAt) {
+      return true;
+    }
+
+    const showFrom = new Date(
+      scheduledAt.getTime() - 10 * 60 * 1000
+    );
+
+    return new Date() >= showFrom;
+  };
+
+  const displayPending =
+    pendingReminders.filter(shouldShowReminder);
 
   // =========================================================
   // TAKEN TOAST
@@ -639,7 +753,7 @@ const UserRem = ({
           typeof onReminderActionComplete ===
           "function"
         ) {
-          await onReminderActionComplete();
+          await onReminderActionComplete("taken", reminder);
         }
       } catch (error) {
         console.error(
@@ -1537,3 +1651,12 @@ const UserRem = ({
 };
 
 export default UserRem;
+
+
+
+
+
+
+
+
+

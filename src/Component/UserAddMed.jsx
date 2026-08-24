@@ -35,6 +35,16 @@ const FREQUENCY_CONFIG = {
     doses: 3,
     required: true,
   },
+
+  "As needed": {
+    doses: 1,
+    required: true,
+  },
+
+  Weekly: {
+    doses: 1,
+    required: true,
+  },
 };
 
 // =========================================================
@@ -44,7 +54,9 @@ const FREQUENCY_CONFIG = {
 const FREQUENCY_TO_BACKEND = {
   "Once a day": "ONCE_A_DAY",
   "Twice a day": "TWICE_A_DAY",
-  "Three times a day": "THREE_TIMES_A_DAY",
+  "Three times a day": "THRICE_A_DAY",
+  "As needed": "AS_NEEDED",
+  Weekly: "WEEKLY",
 };
 
 // =========================================================
@@ -52,29 +64,14 @@ const FREQUENCY_TO_BACKEND = {
 // =========================================================
 
 const buildSuggestedTimings = (doseCount) => {
-  if (doseCount <= 0) {
-    return [];
-  }
+  const suggestedTimes = {
+    1: ["08:00"],
+    2: ["08:00", "20:00"],
+    3: ["08:00", "14:00", "20:00"],
+  };
 
-  const startHour = 8;
-  const intervalHours = 24 / doseCount;
-
-  return Array.from(
-    { length: doseCount },
-    (_, index) => {
-      const hour =
-        Math.round(
-          startHour +
-            index * intervalHours
-        ) % 24;
-
-      return {
-        time: `${String(hour).padStart(
-          2,
-          "0"
-        )}:00`,
-      };
-    }
+  return (suggestedTimes[doseCount] || []).map(
+    (time) => ({ time })
   );
 };
 
@@ -405,6 +402,13 @@ const AddMedicineModal = ({
     }
 
     if (
+      !formData.endDate
+    ) {
+      nextErrors.endDate =
+        "End date is required";
+    }
+
+    if (
       formData.endDate &&
       formData.startDate &&
       formData.endDate <
@@ -475,14 +479,10 @@ const AddMedicineModal = ({
               formData.startDate
             ),
 
-          ...(formData.endDate
-            ? {
-                endDate:
-                  formatDateForBackend(
-                    formData.endDate
-                  ),
-              }
-            : {}),
+          endDate:
+            formatDateForBackend(
+              formData.endDate
+            ),
 
           notes:
             formData.notes.trim(),
@@ -1088,3 +1088,10 @@ const AddMedicineModal = ({
 };
 
 export default AddMedicineModal;
+
+
+
+
+
+
+

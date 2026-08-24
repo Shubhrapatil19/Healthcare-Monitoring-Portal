@@ -1120,6 +1120,7 @@ const UserInvent = ({
         return;
       }
 
+
       if (
         !editDraft.expiryDate
       ) {
@@ -2185,7 +2186,7 @@ const UserInvent = ({
               <div className="chart-bars">
                 <div className="bar-group">
                   <div
-                    className="bar"
+                    className="bar in-stock"
                     style={{
                       height:
                         chartCounts.inStockH +
@@ -2204,7 +2205,7 @@ const UserInvent = ({
 
                 <div className="bar-group">
                   <div
-                    className="bar"
+                    className="bar low-stock"
                     style={{
                       height:
                         chartCounts.lowStockH +
@@ -2223,7 +2224,7 @@ const UserInvent = ({
 
                 <div className="bar-group">
                   <div
-                    className="bar"
+                    className="bar out-of-stock"
                     style={{
                       height:
                         chartCounts.outStockH +
@@ -2249,3 +2250,6 @@ const UserInvent = ({
 };
 
 export default UserInvent;
+
+
+

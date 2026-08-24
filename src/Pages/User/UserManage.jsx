@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import {
@@ -114,7 +114,7 @@ const UserManage = () => {
   // GET /api/medicines
   // =========================================================
 
-  const refreshMedicines = async () => {
+  const refreshMedicines = useCallback(async (showErrorToast = true) => {
     try {
       const response =
         await api.get(
@@ -136,15 +136,18 @@ const UserManage = () => {
           error.message
       );
 
-      toast.error(
-        error?.response?.data
-          ?.message ||
-          "Failed to load medicines."
-      );
+      if (showErrorToast) {
+        toast.error(
+          error?.response?.data
+            ?.message ||
+            "Failed to load medicines."
+        );
+      }
 
       return [];
     }
-  };
+
+  }, []);
 
   // =========================================================
   // INITIAL MEDICINE LOAD
@@ -223,6 +226,27 @@ const UserManage = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (editingId || deleting) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const intervalId = setInterval(
+      async () => {
+        if (cancelled) return;
+        await refreshMedicines(false);
+      },
+      5000
+    );
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [editingId, deleting, refreshMedicines]);
 
   // =========================================================
   // SEARCH
@@ -694,7 +718,7 @@ const UserManage = () => {
   // TIMING DISPLAY
   // =========================================================
 
-  const getDoseTimesDisplay = (
+  const getDoseTimes = (
     medicine
   ) => {
     if (
@@ -704,16 +728,33 @@ const UserManage = () => {
       medicine.doseTimes.length >
         0
     ) {
-      return medicine.doseTimes.join(
-        ", "
-      );
+      return medicine.doseTimes.filter(Boolean);
     }
 
-    return (
+    const timing =
       medicine.timing ||
       medicine.time ||
-      "—"
-    );
+      "";
+
+    return String(timing)
+      .split(",")
+      .map((time) => time.trim())
+      .filter(Boolean);
+  };
+
+  const getFrequencyDisplay = (
+    frequency
+  ) => {
+    const labels = {
+      ONCE_A_DAY: "Once a day",
+      TWICE_A_DAY: "Twice a day",
+      THRICE_A_DAY: "Three times a day",
+      THREE_TIMES_A_DAY: "Three times a day",
+      AS_NEEDED: "As needed",
+      WEEKLY: "Weekly",
+    };
+
+    return labels[frequency] || frequency || "—";
   };
 
   // =========================================================
@@ -1061,18 +1102,40 @@ const UserManage = () => {
                                 }
                               />
 
-                              {
-                                getDoseTimesDisplay(
+                              <div className="medicine-time-chips">
+                                {getDoseTimes(
                                   medicine
-                                )
-                              }
+                                ).length > 0 ? (
+                                  getDoseTimes(
+                                    medicine
+                                  ).map(
+                                    (
+                                      time,
+                                      index
+                                    ) => (
+                                      <span
+                                        className="medicine-time-chip"
+                                        key={`${time}-${index}`}
+                                      >
+                                        {time}
+                                      </span>
+                                    )
+                                  )
+                                ) : (
+                                  <span className="medicine-time-empty">
+                                    —
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             {/* FREQUENCY */}
 
                             <div className="medicine-frequency-value">
                               {
-                                medicine.frequency
+                                getFrequencyDisplay(
+                                  medicine.frequency
+                                )
                               }
                             </div>
 
@@ -1356,3 +1419,11 @@ const UserManage = () => {
 };
 
 export default UserManage;
+
+
+
+
+
+
+
+

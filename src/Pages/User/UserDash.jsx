@@ -158,6 +158,10 @@ const UserDash = ({ onLogout }) => {
 
   const [inventoryLoading, setInventoryLoading] = useState(true);
 
+  const [inventoryPage, setInventoryPage] = useState(1);
+
+  const inventoryItemsPerPage = 4;
+
   // =========================================================
   // CALENDAR
   // =========================================================
@@ -284,7 +288,49 @@ const UserDash = ({ onLogout }) => {
   // TODAY'S DOSES
   //
   // GET /api/doses/today
+  //
+  // NOTE:
+  // Backend /api/doses/today browser refresh par kabhi-kabhi
+  // empty return kar deta hai (doses sirf medicine create karte
+  // waqt generate hoti hain). Isliye hum today's schedule ko
+  // localStorage me cache karte hain. Refresh par agar API empty
+  // aaye to cached schedule dikhate hain taaki cards gayab na hon.
   // =========================================================
+
+  const TODAY_SCHEDULE_CACHE_KEY =
+    "todayScheduleCache";
+
+  const readTodayScheduleCache = () => {
+    try {
+      const raw =
+        localStorage.getItem(
+          TODAY_SCHEDULE_CACHE_KEY
+        );
+
+      if (!raw) return [];
+
+      const parsed = JSON.parse(raw);
+
+      return Array.isArray(parsed)
+        ? parsed
+        : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeTodayScheduleCache = (
+    doses
+  ) => {
+    try {
+      localStorage.setItem(
+        TODAY_SCHEDULE_CACHE_KEY,
+        JSON.stringify(doses)
+      );
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   const fetchTodaySchedule = async () => {
     try {
@@ -295,15 +341,25 @@ const UserDash = ({ onLogout }) => {
         ["doses", "todayDoses"]
       );
 
-      // Today's Schedule me sirf PENDING doses show hongi.
-      // Browser refresh ke baad pending dose backend se dobara aayegi,
-      // isliye woh tab tak visible rahegi jab tak status TAKEN/MISSED na ho.
+      // Today's Schedule me sirf un doses ko dikhao jo abhi
+      // TAKEN/MISSED nahi hui hain. Backend koi bhi status de sakta
+      // hai (PENDING/UPCOMING/SCHEDULED/ACTIVE), isliye sirf
+      // TAKEN/MISSED ko filter out karna sabse safe hai.
+      // Browser refresh ke baad bhi dose tab tak dikhegi
+      // jab tak use TAKEN/MISSED mark nahi kiya jaata.
+      const IS_COMPLETED_STATUS = new Set(["TAKEN", "MISSED"]);
+
       const pendingDoses = doses.filter(
         (dose) =>
-          String(
-            dose?.status || ""
-          ).toUpperCase() === "PENDING"
+          !IS_COMPLETED_STATUS.has(
+            String(dose?.status || "").toUpperCase()
+          )
       );
+
+      // Agar API ne doses return kiye to cache update karo.
+      if (pendingDoses.length > 0) {
+        writeTodayScheduleCache(pendingDoses);
+      }
 
       setTodaySchedule(pendingDoses);
 
@@ -314,7 +370,10 @@ const UserDash = ({ onLogout }) => {
         error?.response?.data || error.message
       );
 
-      setTodaySchedule([]);
+      // API fail hone par cached schedule dikhao.
+      const cached = readTodayScheduleCache();
+
+      setTodaySchedule(cached);
     } finally {
       setScheduleLoading(false);
     }
@@ -452,15 +511,27 @@ const UserDash = ({ onLogout }) => {
                   : [];
 
         // Initial page load / browser refresh par bhi
-        // Today's Schedule me sirf PENDING doses show karo.
+        // Today's Schedule me sirf un doses ko dikhao jo abhi
+        // TAKEN/MISSED nahi hui hain. Backend koi bhi status de sakta
+        // hai (PENDING/UPCOMING/SCHEDULED/ACTIVE), isliye sirf
+        // TAKEN/MISSED ko filter out karna sabse safe hai.
         const pendingSchedules = schedules.filter(
           (dose) =>
-            String(
-              dose?.status || ""
-            ).toUpperCase() === "PENDING"
+            !["TAKEN", "MISSED"].includes(
+              String(dose?.status || "").toUpperCase()
+            )
         );
 
-        setTodaySchedule(pendingSchedules);
+        // Agar API ne doses return kiye to cache update karo.
+        // Agar API empty return kare (browser refresh par aisa ho
+        // sakta hai) to cached schedule use karo taaki cards gayab na hon.
+        if (pendingSchedules.length > 0) {
+          writeTodayScheduleCache(pendingSchedules);
+          setTodaySchedule(pendingSchedules);
+        } else {
+          const cached = readTodayScheduleCache();
+          setTodaySchedule(cached);
+        }
 
         // ===============================================
         // INVENTORY
@@ -525,6 +596,46 @@ const UserDash = ({ onLogout }) => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // =========================================================
+  // AUTO-REFRESH (POLLING)
+  //
+  // Dashboard data ko har 5 second me auto-refresh karo
+  // taaki naye doses / status changes bina manual refresh
+  // ke dikh jaayein.
+  // =========================================================
+
+  const AUTO_REFRESH_INTERVAL_MS = 5000;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshAll = async () => {
+      if (cancelled) return;
+
+      try {
+        await Promise.all([
+          fetchTodaySchedule(),
+          fetchDashboardSummary(),
+          fetchInventory(),
+          fetchCalendarData(),
+        ]);
+      } catch {
+        // individual fetch functions handle errors
+      }
+    };
+
+    const intervalId = setInterval(
+      refreshAll,
+      AUTO_REFRESH_INTERVAL_MS
+    );
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // =========================================================
@@ -731,7 +842,74 @@ const UserDash = ({ onLogout }) => {
   // AFTER TAKEN / MISSED STATUS CHANGE
   // =========================================================
 
-  const handleDoseActionComplete = async () => {
+  const setCalendarDateStatus = (
+    reminder,
+    status
+  ) => {
+    const dateValue =
+      reminder?.scheduledDate ||
+      reminder?.date ||
+      new Date();
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return;
+    }
+
+    const dateKey =
+      `${date.getFullYear()}-` +
+      `${String(date.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(date.getDate()).padStart(2, "0")}`;
+
+    setCalendarData((prev) => {
+      const next = Array.isArray(prev) ? [...prev] : [];
+      const index = next.findIndex((item) => {
+        const itemDateValue =
+          item?.scheduledDate ||
+          item?.date ||
+          item?.reminderDate;
+        const itemDate = new Date(itemDateValue);
+
+        if (Number.isNaN(itemDate.getTime())) {
+          return false;
+        }
+
+        const itemKey =
+          `${itemDate.getFullYear()}-` +
+          `${String(itemDate.getMonth() + 1).padStart(2, "0")}-` +
+          `${String(itemDate.getDate()).padStart(2, "0")}`;
+
+        return itemKey === dateKey;
+      });
+
+      if (index >= 0) {
+        next[index] = {
+          ...next[index],
+          status: status.toUpperCase(),
+        };
+      } else {
+        next.push({
+          date: dateKey,
+          status: status.toUpperCase(),
+        });
+      }
+
+      return next;
+    });
+  };
+
+  const handleDoseActionComplete = async (
+    status,
+    reminder
+  ) => {
+    if (status && reminder) {
+      setCalendarDateStatus(
+        reminder,
+        status
+      );
+    }
+
     // Taken/Missed action complete hone ke baad:
     // 1) Today's Schedule refetch hoga
     // 2) Dashboard stat cards refetch honge
@@ -746,47 +924,28 @@ const UserDash = ({ onLogout }) => {
 
       fetchCalendarData(),
     ]);
+
+    if (status && reminder) {
+      setCalendarDateStatus(
+        reminder,
+        status
+      );
+    }
   };
 
   // =========================================================
-  // TODAY SCHEDULE PAGINATION
-  // =========================================================
-
-  const scheduleTotalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        todaySchedule.length /
-          scheduleItemsPerPage
-      )
-    );
-
-  const schedulePageSafe =
-    Math.min(
-      schedulePage,
-      scheduleTotalPages
-    );
-
-  const scheduleStartIndex =
-    (schedulePageSafe - 1) *
-    scheduleItemsPerPage;
-
-  const schedulePageItems =
-    todaySchedule.slice(
-      scheduleStartIndex,
-      scheduleStartIndex +
-        scheduleItemsPerPage
-    );
-
-  // =========================================================
   // GROUP DOSES BY MEDICINE
+  //
+  // Pehle saare doses ko medicine ke hisaab se group karo,
+  // phir grouped rows par pagination lagao. Isse page count
+  // aur "Showing X to Y of Z" hamesha sahi rahega.
   // =========================================================
 
-  const scheduleMedicineRows =
+  const allScheduleMedicineRows =
     useMemo(() => {
       const grouped = new Map();
 
-      schedulePageItems.forEach(
+      todaySchedule.forEach(
         (medicine) => {
           const name =
             medicine.medicineName ||
@@ -831,7 +990,69 @@ const UserDash = ({ onLogout }) => {
       return Array.from(
         grouped.values()
       );
-    }, [schedulePageItems]);
+    }, [todaySchedule]);
+
+  // =========================================================
+  // TODAY SCHEDULE PAGINATION
+  // =========================================================
+
+  const scheduleTotalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        allScheduleMedicineRows.length /
+          scheduleItemsPerPage
+      )
+    );
+
+  const schedulePageSafe =
+    Math.min(
+      schedulePage,
+      scheduleTotalPages
+    );
+
+  const scheduleStartIndex =
+    (schedulePageSafe - 1) *
+    scheduleItemsPerPage;
+
+  const schedulePageItems =
+    allScheduleMedicineRows.slice(
+      scheduleStartIndex,
+      scheduleStartIndex +
+        scheduleItemsPerPage
+    );
+
+
+  // =========================================================
+  // INVENTORY OVERVIEW PAGINATION
+  // =========================================================
+
+  const inventoryTotalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        inventoryData.length /
+          inventoryItemsPerPage
+      )
+    );
+
+  const inventoryPageSafe =
+    Math.min(
+      inventoryPage,
+      inventoryTotalPages
+    );
+
+  const inventoryStartIndex =
+    (inventoryPageSafe - 1) *
+    inventoryItemsPerPage;
+
+  const inventoryPageItems =
+    inventoryData.slice(
+      inventoryStartIndex,
+      inventoryStartIndex +
+        inventoryItemsPerPage
+    );
+
 
   // =========================================================
   // TODAY LABEL
@@ -1107,10 +1328,6 @@ const UserDash = ({ onLogout }) => {
       calendarYear ===
         todayYear;
 
-    if (isPastDate) {
-      return " past-date";
-    }
-
     if (
       statuses &&
       statuses.length > 0
@@ -1158,11 +1375,23 @@ const UserDash = ({ onLogout }) => {
       }
     }
 
+    if (statusClass) {
+      return `${
+        isToday
+          ? " today"
+          : ""
+      }${statusClass}`;
+    }
+
+    if (isPastDate) {
+      return " past-date";
+    }
+
     return `${
       isToday
         ? " today"
         : ""
-    }${statusClass}`;
+    }`;
   };
 
   // =========================================================
@@ -1807,7 +2036,7 @@ const UserDash = ({ onLogout }) => {
                               </div>
 
                               <div className="today-timeline-rows">
-                                {scheduleMedicineRows.map(
+                                {schedulePageItems.map(
                                   (row) => (
                                     <div
                                       key={
@@ -1945,11 +2174,11 @@ const UserDash = ({ onLogout }) => {
                               {Math.min(
                                 scheduleStartIndex +
                                   scheduleItemsPerPage,
-                                todaySchedule.length
+                                allScheduleMedicineRows.length
                               )}{" "}
                               of{" "}
                               {
-                                todaySchedule.length
+                                allScheduleMedicineRows.length
                               }
                             </div>
 
@@ -1957,7 +2186,7 @@ const UserDash = ({ onLogout }) => {
                               <button
                                 className="schedule-page-btn"
                                 disabled={
-                                  schedulePage ===
+                                  schedulePageSafe ===
                                   1
                                 }
                                 onClick={() =>
@@ -1996,7 +2225,7 @@ const UserDash = ({ onLogout }) => {
                                       page
                                     }
                                     className={`schedule-page-btn schedule-page-num ${
-                                      schedulePage ===
+                                      schedulePageSafe ===
                                       page
                                         ? "active"
                                         : ""
@@ -2017,7 +2246,7 @@ const UserDash = ({ onLogout }) => {
                               <button
                                 className="schedule-page-btn"
                                 disabled={
-                                  schedulePage ===
+                                  schedulePageSafe ===
                                   scheduleTotalPages
                                 }
                                 onClick={() =>
@@ -2126,7 +2355,7 @@ const UserDash = ({ onLogout }) => {
                           </span>
                         </div>
 
-                        {inventoryData.map(
+                        {inventoryPageItems.map(
                           (
                             item,
                             index
@@ -2240,6 +2469,108 @@ const UserDash = ({ onLogout }) => {
                             </div>
                           )
                         )}
+
+                        <div className="inventory-overview-pagination dashboard-schedule-pagination">
+                          <div className="schedule-page-info">
+                            Showing{" "}
+                            {inventoryStartIndex +
+                              1}{" "}
+                            to{" "}
+                            {Math.min(
+                              inventoryStartIndex +
+                                inventoryItemsPerPage,
+                              inventoryData.length
+                            )}{" "}
+                            of{" "}
+                            {
+                              inventoryData.length
+                            }
+                          </div>
+
+                          <div className="schedule-pagination-controls">
+                            <button
+                              className="schedule-page-btn"
+                              disabled={
+                                inventoryPageSafe ===
+                                1
+                              }
+                              onClick={() =>
+                                setInventoryPage(
+                                  (
+                                    page
+                                  ) =>
+                                    Math.max(
+                                      1,
+                                      page -
+                                        1
+                                    )
+                                )
+                              }
+                            >
+                              Prev
+                            </button>
+
+                            {Array.from(
+                              {
+                                length:
+                                  inventoryTotalPages,
+                              },
+                              (
+                                _,
+                                index
+                              ) =>
+                                index +
+                                1
+                            ).map(
+                              (
+                                page
+                              ) => (
+                                <button
+                                  key={
+                                    page
+                                  }
+                                  className={`schedule-page-btn schedule-page-num ${
+                                    inventoryPageSafe ===
+                                    page
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    setInventoryPage(
+                                      page
+                                    )
+                                  }
+                                >
+                                  {
+                                    page
+                                  }
+                                </button>
+                              )
+                            )}
+
+                            <button
+                              className="schedule-page-btn"
+                              disabled={
+                                inventoryPageSafe ===
+                                inventoryTotalPages
+                              }
+                              onClick={() =>
+                                setInventoryPage(
+                                  (
+                                    page
+                                  ) =>
+                                    Math.min(
+                                      inventoryTotalPages,
+                                      page +
+                                        1
+                                    )
+                                )
+                              }
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
 
                         <button
                           className="add-stock-inline-btn"
@@ -2487,3 +2818,15 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
+
+
+

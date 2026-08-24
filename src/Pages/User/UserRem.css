@@ -406,7 +406,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   opacity: 0.25;
 }
 
@@ -1028,7 +1028,14 @@
   .rem-card { padding: 40px; }
   .rem-cards-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
   .rem-card-item { padding: 22px 20px 18px; min-height: 190px; gap: 12px; }
-  .rem-time-badge { font-size: 17px; padding: 5px 14px 5px 10px; }
+  
+.rem-dose-time-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.rem-time-badge { font-size: 17px; padding: 5px 14px 5px 10px; }
   .rem-pill-icon-wrap { width: 48px; height: 48px; }
   .rem-pill-icon-wrap svg { width: 24px; height: 24px; }
   .rem-card-name { font-size: 22px; }
@@ -1060,7 +1067,14 @@
   .rem-banner-text p { font-size: 16px; }
   .rem-cards-grid { grid-template-columns: 1fr; gap: 18px; }
   .rem-card-item { padding: 20px 18px 16px; min-height: 180px; gap: 12px; }
-  .rem-time-badge { font-size: 16px; padding: 5px 12px 5px 10px; }
+  
+.rem-dose-time-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.rem-time-badge { font-size: 16px; padding: 5px 12px 5px 10px; }
   .rem-next-dose-label { font-size: 10px; padding: 3px 10px; }
   .rem-pill-icon-wrap { width: 46px; height: 46px; }
   .rem-pill-icon-wrap svg { width: 22px; height: 22px; }
@@ -1098,7 +1112,14 @@
   .rem-card-item { padding: 18px 16px 16px; gap: 12px; min-height: auto; }
   .rem-card-item::before { width: 100%; height: 3px; border-radius: 4px 4px 0 0; background: linear-gradient(90deg, #0F766E, #14B8A6, #5EEAD4); }
   .rem-card-top-row { padding-left: 0; }
-  .rem-time-badge { font-size: 15px; padding: 4px 12px 4px 8px; }
+  
+.rem-dose-time-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.rem-time-badge { font-size: 15px; padding: 4px 12px 4px 8px; }
   .rem-next-dose-label { font-size: 9px; padding: 3px 8px; }
   .rem-card-middle { padding-left: 0; gap: 12px; }
   .rem-pill-icon-wrap { width: 44px; height: 44px; border-radius: 12px; }
@@ -1213,7 +1234,14 @@
   .rem-banner-text p { font-size: 13px; }
   .rem-cards-grid { gap: 14px; }
   .rem-card-item { padding: 16px 14px 14px; gap: 10px; min-height: auto; }
-  .rem-time-badge { font-size: 14px; padding: 4px 10px 4px 8px; gap: 6px; }
+  
+.rem-dose-time-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.rem-time-badge { font-size: 14px; padding: 4px 10px 4px 8px; gap: 6px; }
   .rem-time-badge svg { width: 14px; height: 14px; }
   .rem-next-dose-label { font-size: 8px; padding: 2px 8px; letter-spacing: 0.5px; }
   .rem-pill-icon-wrap { width: 40px; height: 40px; border-radius: 10px; }
@@ -1240,3 +1268,5 @@
   .rem-history-empty-heading { font-size: 18px; }
   .rem-history-empty-desc { font-size: 14px; }
 }
+
+

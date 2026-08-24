@@ -2511,19 +2511,21 @@ body{
 }
 
 .calendar-date.taken{
-    background:transparent;
-    color:#2563eb;
+    background:#2563eb;
+    color:#ffffff;
     border:2px solid #2563eb;
     border-radius:50%;
     font-weight:700;
+    box-shadow:0 6px 14px rgba(37, 99, 235, 0.28);
 }
 
 .calendar-date.missed{
-    background:transparent;
-    color:#ef4444;
+    background:#ef4444;
+    color:#ffffff;
     border:2px solid #ef4444;
     border-radius:50%;
     font-weight:700;
+    box-shadow:0 6px 14px rgba(239, 68, 68, 0.28);
 }
 
 .calendar-date.snoozed{
@@ -5873,4 +5875,69 @@ body{
         left: 8px;
         width: auto;
     }
+}
+
+
+
+/* Inventory Overview pagination */
+.inventory-overview-card .inventory-overview-pagination {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #dcebe8;
+}
+
+.inventory-overview-card .inventory-overview-pagination .schedule-page-info {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inventory-overview-card .inventory-overview-pagination .schedule-page-btn {
+  min-width: 34px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border-color: #cdeeea;
+  color: #0f766e;
+  font-size: 12px;
+}
+
+.inventory-overview-card .inventory-overview-pagination .schedule-page-btn:hover:not(:disabled) {
+  background: #ecfdf5;
+  border-color: #8bded7;
+}
+
+.inventory-overview-card .inventory-overview-pagination .schedule-page-num.active {
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .inventory-overview-card .inventory-overview-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* Calendar taken/missed final status override */
+.calendar-grid .calendar-date.taken,
+.calendar-grid .calendar-date.today.taken {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 2px solid #2563eb !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  filter: none !important;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28) !important;
+}
+
+.calendar-grid .calendar-date.missed,
+.calendar-grid .calendar-date.today.missed {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: 2px solid #ef4444 !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  filter: none !important;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.28) !important;
 }

@@ -181,6 +181,31 @@ const AddStockModal = ({ onClose }) => {
     }));
   };
 
+
+  // =========================================================
+  // FORMAT DATE FOR BACKEND
+  //
+  // HTML date input -> YYYY-MM-DD
+  // Backend expects -> DD-MM-YYYY
+  // Example: 2026-09-24 -> 24-09-2026
+  // =========================================================
+
+  const formatDateForBackend = (date) => {
+    if (!date) {
+      return "";
+    }
+
+    const parts = String(date).split("-");
+
+    if (parts.length !== 3) {
+      return date;
+    }
+
+    const [year, month, day] = parts;
+
+    return `${day}-${month}-${year}`;
+  };
+
   // =========================================================
   // VALIDATION
   // =========================================================
@@ -256,6 +281,9 @@ const AddStockModal = ({ onClose }) => {
           formData.medicineId
         ),
 
+        medicineName:
+          formData.medicineName.trim(),
+
         currentStock: Number(
           formData.currentStock
         ),
@@ -265,7 +293,9 @@ const AddStockModal = ({ onClose }) => {
         ),
 
         expiryDate:
-          formData.expiryDate,
+          formatDateForBackend(
+            formData.expiryDate
+          ),
       };
 
       console.log(
