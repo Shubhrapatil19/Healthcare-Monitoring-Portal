@@ -292,11 +292,19 @@ const saveMedicines = (
   );
 
 const loadPendingReminders =
-  () =>
-    load(
+  () => {
+    const reminders = load(
       KEYS.PENDING,
       DEFAULT_PENDING
     );
+
+    return reminders.map(
+      (reminder) => ({
+        ...reminder,
+        date: todayISO(),
+      })
+    );
+  };
 
 const savePendingReminders =
   (value) =>

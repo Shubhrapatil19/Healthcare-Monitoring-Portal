@@ -295,7 +295,17 @@ const UserDash = ({ onLogout }) => {
         ["doses", "todayDoses"]
       );
 
-      setTodaySchedule(doses);
+      // Today's Schedule me sirf PENDING doses show hongi.
+      // Browser refresh ke baad pending dose backend se dobara aayegi,
+      // isliye woh tab tak visible rahegi jab tak status TAKEN/MISSED na ho.
+      const pendingDoses = doses.filter(
+        (dose) =>
+          String(
+            dose?.status || ""
+          ).toUpperCase() === "PENDING"
+      );
+
+      setTodaySchedule(pendingDoses);
 
       setSchedulePage(1);
     } catch (error) {
@@ -441,7 +451,16 @@ const UserDash = ({ onLogout }) => {
                   ? scheduleResponse.data.data
                   : [];
 
-        setTodaySchedule(schedules);
+        // Initial page load / browser refresh par bhi
+        // Today's Schedule me sirf PENDING doses show karo.
+        const pendingSchedules = schedules.filter(
+          (dose) =>
+            String(
+              dose?.status || ""
+            ).toUpperCase() === "PENDING"
+        );
+
+        setTodaySchedule(pendingSchedules);
 
         // ===============================================
         // INVENTORY
@@ -713,6 +732,13 @@ const UserDash = ({ onLogout }) => {
   // =========================================================
 
   const handleDoseActionComplete = async () => {
+    // Taken/Missed action complete hone ke baad:
+    // 1) Today's Schedule refetch hoga
+    // 2) Dashboard stat cards refetch honge
+    // 3) Calendar refetch hoga
+    //
+    // Since fetchTodaySchedule() sirf PENDING doses rakhta hai,
+    // TAKEN/MISSED dose automatically Today's Schedule se remove ho jayegi.
     await Promise.all([
       fetchTodaySchedule(),
 
