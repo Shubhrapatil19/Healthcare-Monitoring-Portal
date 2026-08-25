@@ -8,6 +8,8 @@ import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineScheduleEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.enums.MedicineFrequency;
 import com.healthapp.healthcare_monitoring_system.medicine.repository.MedicineRepository;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,13 +29,16 @@ public class MedicineService {
 
     private final MedicineRepository medicineRepository;
     private final RegisterRepository registerRepository;
+    private final NotificationService notificationService;
 
     public MedicineService(
             MedicineRepository medicineRepository,
-            RegisterRepository registerRepository
+            RegisterRepository registerRepository,
+            NotificationService notificationService
     ) {
         this.medicineRepository = medicineRepository;
         this.registerRepository = registerRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -78,6 +83,13 @@ public class MedicineService {
 
         MedicineEntity savedMedicine =
                 medicineRepository.save(medicine);
+
+        notificationService.notify(
+                user,
+                NotificationType.SUCCESS,
+                "Medicine Added",
+                savedMedicine.getMedicineName() + " has been added successfully."
+        );
 
         return convertToResponse(savedMedicine);
     }

@@ -2,6 +2,8 @@ package com.healthapp.healthcare_monitoring_system.profile.service;
 
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 import com.healthapp.healthcare_monitoring_system.profile.dto.ProfileResponseDto;
 import com.healthapp.healthcare_monitoring_system.profile.dto.UpdateProfileRequestDto;
 import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
@@ -18,14 +20,17 @@ public class ProfileService {
 
     private final RegisterRepository registerRepository;
     private final UserProfileRepository profileRepository;
+    private final NotificationService notificationService;
 
     // fullName + email + mobile (always present) + age + gender + diseaseCondition
     // + contact1Relation + contact1Phone + contact2Relation + contact2Phone
     private static final int TOTAL_FIELDS = 10;
 
-    public ProfileService(RegisterRepository registerRepository, UserProfileRepository profileRepository) {
+    public ProfileService(RegisterRepository registerRepository, UserProfileRepository profileRepository,
+                          NotificationService notificationService) {
         this.registerRepository = registerRepository;
         this.profileRepository = profileRepository;
+        this.notificationService = notificationService;
     }
 
     /** Returns the profile, auto-creating an empty extension row the first time it's requested. */
@@ -57,6 +62,13 @@ public class ProfileService {
         profile.setContact2Phone(blankToNull(request.getContact2Phone()));
 
         UserProfileEntity saved = profileRepository.save(profile);
+
+        notificationService.notify(
+                user,
+                NotificationType.SUCCESS,
+                "Profile Updated",
+                "Your profile has been updated successfully."
+        );
 
         return convertToResponse(user, saved);
     }

@@ -10,6 +10,8 @@ import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterReposi
 import com.healthapp.healthcare_monitoring_system.dose.entity.MedicineDoseLogEntity;
 import com.healthapp.healthcare_monitoring_system.inventory.entity.MedicineInventoryEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * Called by:
  *  - DoseService        -> creates MISSED_DOSE alerts (30 min after scheduled time, still pending)
  *  - MedicineInventoryService / DoseService (stock reduction) -> creates LOW_STOCK / OUT_OF_STOCK alerts
+ * Also feeds the same events into NotificationService so they show up in the bell-icon feed too.
  */
 @Service
 @Transactional
@@ -32,10 +35,13 @@ public class AlertService {
 
     private final AlertRepository alertRepository;
     private final RegisterRepository registerRepository;
+    private final NotificationService notificationService;
 
-    public AlertService(AlertRepository alertRepository, RegisterRepository registerRepository) {
+    public AlertService(AlertRepository alertRepository, RegisterRepository registerRepository,
+                        NotificationService notificationService) {
         this.alertRepository = alertRepository;
         this.registerRepository = registerRepository;
+        this.notificationService = notificationService;
     }
 
     /** Creates a MISSED_DOSE alert for a dose log that just crossed the 30-minute grace period. */
@@ -103,6 +109,16 @@ public class AlertService {
         alert.setAlertTime(LocalDateTime.now());
 
         alertRepository.save(alert);
+
+        // same event also feeds the bell-icon Notifications feed
+        notificationService.notify(
+                user,
+                type == AlertType.OUT_OF_STOCK ? NotificationType.CRITICAL : NotificationType.WARNING,
+                type == AlertType.OUT_OF_STOCK ? "Out of Stock" : "Low Stock Alert",
+                medicine.getMedicineName() + (type == AlertType.OUT_OF_STOCK
+                        ? " is out of stock."
+                        : " stock is running low.")
+        );
     }
 
     /** All alerts for logged-in user (optionally filtered by type), newest first. */

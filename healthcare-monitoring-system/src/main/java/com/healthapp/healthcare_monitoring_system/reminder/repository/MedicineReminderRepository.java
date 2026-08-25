@@ -18,4 +18,8 @@ public interface MedicineReminderRepository extends JpaRepository<MedicineRemind
     boolean existsByDoseLogId(Long doseLogId);
 
     Optional<MedicineReminderEntity> findByDoseLogId(Long doseLogId);
+
+    // system-wide (not user-scoped) — used by the "reminder due -> notify" scheduled job,
+    // which has no logged-in user/auth context to filter by
+    List<MedicineReminderEntity> findByStatusAndReminderTimeLessThanEqual(String status, java.time.LocalDateTime now);
 }

@@ -59,6 +59,12 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- HTML to PDF - converts our HTML+CSS report into a downloadable PDF -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-pdfbox</artifactId>
+			<version>1.0.10</version>
+		</dependency>
 
 		<!-- Email -->
 		<dependency>

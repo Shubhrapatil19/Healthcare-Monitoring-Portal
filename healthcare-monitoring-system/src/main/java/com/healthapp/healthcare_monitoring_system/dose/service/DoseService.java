@@ -14,6 +14,8 @@ import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineScheduleEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.enums.MedicineFrequency;
 import com.healthapp.healthcare_monitoring_system.medicine.repository.MedicineRepository;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 import com.healthapp.healthcare_monitoring_system.reminder.repository.MedicineReminderRepository;
 
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,6 +40,7 @@ public class DoseService {
     private final MedicineInventoryRepository inventoryRepository;
     private final MedicineReminderRepository reminderRepository;
     private final AlertService alertService;
+    private final NotificationService notificationService;
 
     // dose becomes MISSED this many minutes after its scheduled time if still PENDING
     private static final int MISSED_GRACE_MINUTES = 30;
@@ -48,7 +51,8 @@ public class DoseService {
             RegisterRepository registerRepository,
             MedicineInventoryRepository inventoryRepository,
             MedicineReminderRepository reminderRepository,
-            AlertService alertService
+            AlertService alertService,
+            NotificationService notificationService
     ) {
         this.doseLogRepository = doseLogRepository;
         this.medicineRepository = medicineRepository;
@@ -56,6 +60,7 @@ public class DoseService {
         this.inventoryRepository = inventoryRepository;
         this.reminderRepository = reminderRepository;
         this.alertService = alertService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -118,6 +123,13 @@ public class DoseService {
             });
 
             alertService.createMissedDoseAlert(dose);
+
+            notificationService.notify(
+                    dose.getUser(),
+                    NotificationType.CRITICAL,
+                    "Missed Medicine",
+                    "You missed your " + dose.getMedicine().getMedicineName() + " dose."
+            );
         }
     }
 
@@ -235,6 +247,13 @@ public class DoseService {
         if (status == DoseStatus.TAKEN) {
             doseLog.setTakenAt(LocalDateTime.now());
             reduceInventoryStock(doseLog.getMedicine().getId(), user.getId());
+
+            notificationService.notify(
+                    user,
+                    NotificationType.SUCCESS,
+                    "Medicine Taken",
+                    doseLog.getMedicine().getMedicineName() + " has been marked as taken."
+            );
         }
 
         MedicineDoseLogEntity saved = doseLogRepository.save(doseLog);

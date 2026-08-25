@@ -6,6 +6,8 @@ import com.healthapp.healthcare_monitoring_system.dose.entity.MedicineDoseLogEnt
 import com.healthapp.healthcare_monitoring_system.dose.enums.DoseStatus;
 import com.healthapp.healthcare_monitoring_system.dose.repository.MedicineDoseLogRepository;
 import com.healthapp.healthcare_monitoring_system.dose.service.DoseService;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 import com.healthapp.healthcare_monitoring_system.reminder.dto.ReminderResponseDto;
 import com.healthapp.healthcare_monitoring_system.reminder.entity.MedicineReminderEntity;
 import com.healthapp.healthcare_monitoring_system.reminder.repository.MedicineReminderRepository;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,17 +32,22 @@ public class ReminderService {
     private final MedicineDoseLogRepository doseLogRepository;
     private final RegisterRepository registerRepository;
     private final DoseService doseService;
+    private final NotificationService notificationService;
+
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
 
     public ReminderService(
             MedicineReminderRepository reminderRepository,
             MedicineDoseLogRepository doseLogRepository,
             RegisterRepository registerRepository,
-            DoseService doseService
+            DoseService doseService,
+            NotificationService notificationService
     ) {
         this.reminderRepository = reminderRepository;
         this.doseLogRepository = doseLogRepository;
         this.registerRepository = registerRepository;
         this.doseService = doseService;
+        this.notificationService = notificationService;
     }
 
     /** How many minutes before the dose's scheduled time the reminder should fire. */
@@ -76,6 +84,44 @@ public class ReminderService {
             reminder.setStatus("PENDING");
 
             reminderRepository.save(reminder);
+        }
+    }
+
+    /**
+     * Runs every 1 minute (system-wide — no logged-in user, so it scans across all users).
+     * Raises an INFO "Medicine Reminder" notification the moment a reminder becomes due
+     * (reminderTime <= now), i.e. exactly 10 minutes before the dose's scheduled time.
+     * Deduped for 40 minutes (via NotificationService.notifyOnce) so the same due reminder
+     * doesn't spam multiple notification rows across repeated job runs.
+     */
+    @Scheduled(fixedRate = 60 * 1000)
+    public void raiseDueReminderNotifications() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        List<MedicineReminderEntity> dueReminders =
+                reminderRepository.findByStatusAndReminderTimeLessThanEqual("PENDING", now);
+
+        for (MedicineReminderEntity reminder : dueReminders) {
+
+            // still snoozed -> don't notify yet
+            if (reminder.getSnoozeUntil() != null && reminder.getSnoozeUntil().isAfter(now)) {
+                continue;
+            }
+
+            MedicineDoseLogEntity dose = reminder.getDoseLog();
+
+            String message = "It's time to take " + dose.getMedicine().getMedicineName()
+                    + " " + dose.getMedicine().getDosage() + " at "
+                    + dose.getScheduledTime().format(TIME_FORMAT) + ".";
+
+            notificationService.notifyOnce(
+                    reminder.getUser(),
+                    NotificationType.INFO,
+                    "Medicine Reminder",
+                    message,
+                    40 // minutes — comfortably covers the reminder's active window
+            );
         }
     }
 
@@ -149,6 +195,14 @@ public class ReminderService {
         reminder.setStatus("PENDING");
 
         MedicineReminderEntity saved = reminderRepository.save(reminder);
+
+        notificationService.notify(
+                user,
+                NotificationType.INFO,
+                "Snoozed Reminder",
+                saved.getDoseLog().getMedicine().getMedicineName() + " reminder snoozed until "
+                        + saved.getSnoozeUntil().format(TIME_FORMAT) + "."
+        );
 
         return convertToResponse(saved);
     }

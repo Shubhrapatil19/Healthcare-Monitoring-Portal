@@ -11,12 +11,17 @@ import com.healthapp.healthcare_monitoring_system.inventory.enums.StockStatus;
 import com.healthapp.healthcare_monitoring_system.inventory.repository.MedicineInventoryRepository;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.repository.MedicineRepository;
+import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
+import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,17 +34,24 @@ public class MedicineInventoryService {
     private final MedicineRepository medicineRepository;
     private final RegisterRepository registerRepository;
     private final AlertService alertService;
+    private final NotificationService notificationService;
+
+    // medicine is flagged "expiring soon" this many days before its expiry_date
+    private static final int EXPIRY_WARNING_DAYS = 7;
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
     public MedicineInventoryService(
             MedicineInventoryRepository inventoryRepository,
             MedicineRepository medicineRepository,
             RegisterRepository registerRepository,
-            AlertService alertService
+            AlertService alertService,
+            NotificationService notificationService
     ) {
         this.inventoryRepository = inventoryRepository;
         this.medicineRepository = medicineRepository;
         this.registerRepository = registerRepository;
         this.alertService = alertService;
+        this.notificationService = notificationService;
     }
 
     public InventoryResponseDto addInventory(AddInventoryRequestDto request) {
@@ -71,6 +83,13 @@ public class MedicineInventoryService {
         MedicineInventoryEntity saved = inventoryRepository.save(inventory);
 
         alertService.checkAndRaiseStockAlert(saved);
+
+        notificationService.notify(
+                user,
+                NotificationType.SUCCESS,
+                "Stock Added",
+                medicine.getMedicineName() + " stock has been added successfully."
+        );
 
         return convertToResponse(saved);
     }
@@ -104,6 +123,35 @@ public class MedicineInventoryService {
         alertService.checkAndRaiseStockAlert(saved);
 
         return convertToResponse(saved);
+    }
+
+    /**
+     * Runs every day at 8:00 AM.
+     * Raises a WARNING "Medicine Expiring Soon" notification for every inventory item
+     * whose expiry_date falls within the next 7 days. Deduped for 24 hours so it fires
+     * once per day per medicine, not on every job run.
+     */
+    @Scheduled(cron = "0 0 8 * * *")
+    public void notifyExpiringSoonInventory() {
+
+        LocalDate today = LocalDate.now();
+        LocalDate cutoff = today.plusDays(EXPIRY_WARNING_DAYS);
+
+        List<MedicineInventoryEntity> expiringSoon = inventoryRepository.findByExpiryDateBetween(today, cutoff);
+
+        for (MedicineInventoryEntity inventory : expiringSoon) {
+
+            String message = inventory.getMedicine().getMedicineName() + " expires on "
+                    + inventory.getExpiryDate().format(DATE_FORMAT) + ". Please reorder soon.";
+
+            notificationService.notifyOnce(
+                    inventory.getUser(),
+                    NotificationType.WARNING,
+                    "Medicine Expiring Soon",
+                    message,
+                    24 * 60 // 24 hours
+            );
+        }
     }
 
     public void deleteInventory(Long inventoryId) {
