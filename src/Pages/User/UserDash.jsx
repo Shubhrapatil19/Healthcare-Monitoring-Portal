@@ -2199,6 +2199,11 @@ const UserDash = ({ onLogout }) => {
                 onAddMedicine={
                   handleAddMedicine
                 }
+                onViewInventory={() =>
+                  setActiveItem(
+                    "Medicine Inventory"
+                  )
+                }
               />
             ) : activeItem ===
               "Reminders" ? (
@@ -3187,6 +3192,8 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
 
 
 

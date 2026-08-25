@@ -115,7 +115,7 @@ const normalizeAlert = (alert = {}) => {
 // COMPONENT
 // ========================================================
 
-const UserAlert = ({ onAddMedicine }) => {
+const UserAlert = ({ onAddMedicine, onViewInventory }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -966,7 +966,10 @@ const UserAlert = ({ onAddMedicine }) => {
 
                     </button>
 
-                    <button className="al-btn al-btn-secondary">
+                    <button
+                      className="al-btn al-btn-secondary"
+                      onClick={onViewInventory}
+                    >
 
                       <Box size={16} />
 
@@ -1100,6 +1103,8 @@ const UserAlert = ({ onAddMedicine }) => {
 };
 
 export default UserAlert;
+
+
 
 
 
