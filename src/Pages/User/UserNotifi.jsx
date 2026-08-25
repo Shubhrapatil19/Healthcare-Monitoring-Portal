@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./UserNotifi.css";
+import toast from "react-hot-toast";
+import api from "../../api/axiosInstance";
 
 import {
   Bell,
@@ -21,104 +23,39 @@ import {
 } from "lucide-react";
 
 // ================================================================
-// DEMO MODE
-// No Backend
-// No Axios
-// No Ngrok
-// Notifications are stored in localStorage
+// API HELPERS
 // ================================================================
 
-const STORAGE_KEY = "demo_notifications";
-
-// ================================================================
-// DEFAULT DEMO NOTIFICATIONS
-// ================================================================
-
-const createDefaultNotifications = () => [
-  {
-    id: "n1",
-    type: "info",
-    title: "Medicine Reminder",
-    message: "It's time to take Metformin 500mg.",
-    status: "Unread",
-    createdAt: new Date().toISOString(),
-  },
-
-  {
-    id: "n2",
-    type: "warning",
-    title: "Low Stock Alert",
-    message: "Paracetamol stock is running low.",
-    status: "Unread",
-    createdAt: new Date(
-      Date.now() - 60 * 60 * 1000
-    ).toISOString(),
-  },
-
-  {
-    id: "n3",
-    type: "success",
-    title: "Medicine Taken",
-    message: "Metformin has been marked as taken.",
-    status: "Read",
-    createdAt: new Date(
-      Date.now() - 2 * 60 * 60 * 1000
-    ).toISOString(),
-  },
-
-  {
-    id: "n4",
-    type: "critical",
-    title: "Missed Medicine",
-    message: "You missed your Paracetamol dose.",
-    status: "Unread",
-    createdAt: new Date(
-      Date.now() - 3 * 60 * 60 * 1000
-    ).toISOString(),
-  },
-];
-
-// ================================================================
-// LOCAL STORAGE HELPERS
-// ================================================================
-
-const loadNotifications = () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (saved) {
-      const parsed = JSON.parse(saved);
-
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-    return [];
-  } catch (error) {
-    console.error(
-      "Unable to load notifications:",
-      error
-    );
-
-    return [];
-  }
+const normalizeArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.notifications)) return data.notifications;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.content)) return data.content;
+  return [];
 };
 
-const saveNotifications = (notifications) => {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(notifications)
-    );
-  } catch (error) {
-    console.error(
-      "Unable to save notifications:",
-      error
-    );
-  }
+const getNotificationId = (notification) =>
+  notification?.notificationId ?? notification?.id ?? null;
+
+const normalizeType = (type) => {
+  const nextType = String(type || "INFO").trim().toLowerCase();
+
+  if (nextType === "success") return "success";
+  if (nextType === "warning") return "warning";
+  if (nextType === "critical" || nextType === "error") return "critical";
+
+  return "info";
 };
+
+const normalizeNotification = (notification = {}) => ({
+  ...notification,
+  id: getNotificationId(notification),
+  type: normalizeType(notification.type),
+  title: notification.title || "Notification",
+  message: notification.message || "",
+  status: String(notification.status || "UNREAD").trim().toUpperCase(),
+  createdAt: notification.createdAt || notification.time || notification.date,
+});
 
 // ================================================================
 // DATE FORMATTER
@@ -177,88 +114,184 @@ const UserNotifi = () => {
 
   const [filter, setFilter] = useState("all");
 
-  const [notifications, setNotifications] = useState(
-    () => loadNotifications()
-  );
+  const [notifications, setNotifications] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [apiUnreadCount, setApiUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const itemsPerPage = 6;
+
+  const fetchNotifications = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
+
+    try {
+      const response = await api.get("/api/notifications", {
+        params: {
+          status: filter === "all" ? undefined : filter.toUpperCase(),
+          search: searchQuery.trim() || undefined,
+        },
+      });
+      const data = response?.data || {};
+      const nextNotifications = normalizeArray(data).map(normalizeNotification);
+
+      setNotifications(nextNotifications);
+      setTotalCount(Number(data.totalCount) || nextNotifications.length);
+      setApiUnreadCount(
+        Number(data.unreadCount) ||
+          nextNotifications.filter(
+            (notification) => normalizeStatus(notification.status) === "unread"
+          ).length
+      );
+      setErrorMessage("");
+    } catch (error) {
+      console.error("Notification fetch error:", error?.response?.data || error.message);
+
+      if (!silent) {
+        setNotifications([]);
+        setTotalCount(0);
+        setApiUnreadCount(0);
+        setErrorMessage(
+          error?.response?.data?.message || "Failed to load notifications."
+        );
+      }
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get("/api/notifications/unread-count");
+      const data = response?.data || {};
+      const count =
+        data.unreadCount ?? data.count ?? data.total ?? data.additionalProp1 ?? 0;
+
+      setApiUnreadCount(Number(count) || 0);
+    } catch (error) {
+      console.error("Notification unread count error:", error?.response?.data || error.message);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void fetchNotifications();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [filter, searchQuery]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      void fetchNotifications(true);
+      void fetchUnreadCount();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [filter, searchQuery]);
 
   // ================================================================
   // MARK SINGLE NOTIFICATION AS READ
   // ================================================================
 
-  const handleMarkAsRead = (notification) => {
-    if (!notification?.id) return;
+  const handleMarkAsRead = async (notification) => {
+    const notificationId = getNotificationId(notification);
 
-    if (
-      normalizeStatus(notification.status) === "read"
-    ) {
+    if (notificationId == null) return;
+
+    if (normalizeStatus(notification.status) === "read") {
       return;
     }
 
-    const updatedNotifications = notifications.map(
-      (item) =>
-        item.id === notification.id
-          ? {
-              ...item,
-              status: "Read",
-            }
-          : item
-    );
+    try {
+      const response = await api.patch(`/api/notifications/${notificationId}/read`);
+      const readNotification = normalizeNotification({
+        ...notification,
+        ...(response?.data || {}),
+        status: response?.data?.status || "READ",
+      });
 
-    setNotifications(updatedNotifications);
-
-    saveNotifications(updatedNotifications);
+      setNotifications((previousNotifications) =>
+        previousNotifications.map((item) =>
+          String(getNotificationId(item)) === String(notificationId)
+            ? readNotification
+            : item
+        )
+      );
+      setApiUnreadCount((count) => Math.max(0, count - 1));
+    } catch (error) {
+      console.error("Mark notification read error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to mark notification as read."
+      );
+    }
   };
 
   // ================================================================
   // MARK ALL AS READ
   // ================================================================
 
-  const handleMarkAllRead = () => {
-    const hasUnread = notifications.some(
-      (notification) =>
-        normalizeStatus(notification.status) ===
-        "unread"
-    );
+  const handleMarkAllRead = async () => {
+    if (unreadCount === 0) return;
 
-    if (!hasUnread) return;
-
-    const updatedNotifications = notifications.map(
-      (notification) => ({
-        ...notification,
-        status: "Read",
-      })
-    );
-
-    setNotifications(updatedNotifications);
-
-    saveNotifications(updatedNotifications);
+    try {
+      await api.patch("/api/notifications/read-all");
+      setNotifications((previousNotifications) =>
+        previousNotifications.map((notification) => ({
+          ...notification,
+          status: "READ",
+        }))
+      );
+      setApiUnreadCount(0);
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      console.error("Mark all notifications read error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to mark all notifications as read."
+      );
+    }
   };
 
   // ================================================================
   // DELETE / DISMISS NOTIFICATION
   // ================================================================
 
-  const handleDismiss = (id) => {
-    const updatedNotifications = notifications.filter(
-      (notification) => notification.id !== id
-    );
+  const handleDismiss = async (id) => {
+    if (id == null) return;
 
-    setNotifications(updatedNotifications);
+    try {
+      await api.delete(`/api/notifications/${id}`);
 
-    saveNotifications(updatedNotifications);
+      setNotifications((previousNotifications) => {
+        const updatedNotifications = previousNotifications.filter(
+          (notification) => String(getNotificationId(notification)) !== String(id)
+        );
 
-    // If deletion leaves current page empty
-    const remainingPages = Math.max(
-      1,
-      Math.ceil(
-        updatedNotifications.length / itemsPerPage
-      )
-    );
+        const remainingPages = Math.max(
+          1,
+          Math.ceil(updatedNotifications.length / itemsPerPage)
+        );
 
-    if (currentPage > remainingPages) {
-      setCurrentPage(remainingPages);
+        if (currentPage > remainingPages) {
+          setCurrentPage(remainingPages);
+        }
+
+        setTotalCount((count) => Math.max(0, count - 1));
+
+        return updatedNotifications;
+      });
+
+      void fetchUnreadCount();
+      toast.success("Notification deleted");
+    } catch (error) {
+      console.error("Delete notification error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to delete notification."
+      );
     }
   };
 
@@ -266,14 +299,24 @@ const UserNotifi = () => {
   // CLEAR ALL NOTIFICATIONS
   // ================================================================
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (notifications.length === 0) return;
 
-    setNotifications([]);
-    saveNotifications([]);
-    setSearchQuery("");
-    setFilter("all");
-    setCurrentPage(1);
+    try {
+      await api.delete("/api/notifications");
+      setNotifications([]);
+      setTotalCount(0);
+      setApiUnreadCount(0);
+      setSearchQuery("");
+      setFilter("all");
+      setCurrentPage(1);
+      toast.success("All notifications cleared");
+    } catch (error) {
+      console.error("Clear notifications error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to clear notifications."
+      );
+    }
   };
   // ================================================================
   // NOTIFICATION CLICK
@@ -287,10 +330,12 @@ const UserNotifi = () => {
   // UNREAD COUNT
   // ================================================================
 
-  const unreadCount = notifications.filter(
+  const localUnreadCount = notifications.filter(
     (notification) =>
       normalizeStatus(notification.status) === "unread"
   ).length;
+
+  const unreadCount = apiUnreadCount || localUnreadCount;
 
   // ================================================================
   // FILTER + SEARCH
@@ -495,7 +540,7 @@ const UserNotifi = () => {
               <Inbox size={16} />
 
               <strong>
-                {notifications.length}
+                {totalCount || notifications.length}
               </strong>
 
               Total
@@ -628,7 +673,7 @@ const UserNotifi = () => {
 
             </p>
 
-            {(searchQuery || filter !== "all") && (
+            {!loading && !errorMessage && (searchQuery || filter !== "all") && (
 
               <button
                 className="nt-clear-filter-btn"
@@ -1006,3 +1051,11 @@ const UserNotifi = () => {
 };
 
 export default UserNotifi;
+
+
+
+
+
+
+
+

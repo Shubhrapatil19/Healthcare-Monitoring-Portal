@@ -138,6 +138,54 @@ const UserDash = ({ onLogout }) => {
 
   const [summaryLoading, setSummaryLoading] = useState(true);
 
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  const notificationCountRef = useRef(0);
+  const notificationSoundReadyRef = useRef(false);
+
+  const playNotificationSound = () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const AudioContext =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContext) return;
+
+      const audioContext = new AudioContext();
+      const firstTone = audioContext.createOscillator();
+      const secondTone = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+
+      firstTone.type = "sine";
+      firstTone.frequency.setValueAtTime(880, now);
+      firstTone.frequency.setValueAtTime(1046, now + 0.16);
+
+      secondTone.type = "triangle";
+      secondTone.frequency.setValueAtTime(1320, now + 0.18);
+
+      firstTone.connect(gain);
+      secondTone.connect(gain);
+      gain.connect(audioContext.destination);
+
+      firstTone.start(now);
+      firstTone.stop(now + 0.28);
+      secondTone.start(now + 0.18);
+      secondTone.stop(now + 0.55);
+
+      secondTone.onended = () => {
+        audioContext.close().catch(() => {});
+      };
+    } catch (error) {
+      console.error("Notification Sound Error:", error.message);
+    }
+  };
+
   // =========================================================
   // TODAY SCHEDULE
   // =========================================================
@@ -146,7 +194,31 @@ const UserDash = ({ onLogout }) => {
 
   const [scheduleLoading, setScheduleLoading] = useState(true);
 
-  const [schedulePage, setSchedulePage] = useState(1);
+  const [schedulePage, setSchedulePage] = useState(() => {
+    const savedPage = Number(
+      localStorage.getItem("todaySchedulePage")
+    );
+
+    return savedPage > 0 ? savedPage : 1;
+  });
+
+  const changeSchedulePage = (nextPageOrUpdater) => {
+    setSchedulePage((currentPage) => {
+      const nextPage =
+        typeof nextPageOrUpdater === "function"
+          ? nextPageOrUpdater(currentPage)
+          : nextPageOrUpdater;
+
+      const safePage = Math.max(1, Number(nextPage) || 1);
+
+      localStorage.setItem(
+        "todaySchedulePage",
+        String(safePage)
+      );
+
+      return safePage;
+    });
+  };
 
   const scheduleItemsPerPage = 4;
 
@@ -195,8 +267,7 @@ const UserDash = ({ onLogout }) => {
         return stored.trim();
       }
 
-      const registeredUser =
-        localStorage.getItem("registeredUser");
+      const registeredUser = localStorage.getItem("registeredUser");
 
       if (registeredUser) {
         const parsed = JSON.parse(registeredUser);
@@ -211,6 +282,23 @@ const UserDash = ({ onLogout }) => {
 
     return "User";
   }, []);
+
+  const userInitials = useMemo(() => {
+    const nameParts = currentUserName
+      .split(" ")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (nameParts.length === 0 || currentUserName === "User") {
+      return "U";
+    }
+
+    if (nameParts.length === 1) {
+      return nameParts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+  }, [currentUserName]);
 
   // =========================================================
   // ARRAY RESPONSE HELPER
@@ -253,10 +341,10 @@ const UserDash = ({ onLogout }) => {
       const response = await api.get("/api/dashboard");
 
       const data = response?.data || {};
+      const todaysMedicinesCount = Number(data.todaysMedicines) || 0;
 
       setDashboardSummary({
-        todaysMedicines:
-          Number(data.todaysMedicines) || 0,
+        todaysMedicines: todaysMedicinesCount,
 
         taken:
           Number(data.taken) || 0,
@@ -267,6 +355,10 @@ const UserDash = ({ onLogout }) => {
         lowStockAlerts:
           Number(data.lowStockAlerts) || 0,
       });
+
+      if (todaysMedicinesCount === 0) {
+        clearTodayScheduleCache();
+      }
     } catch (error) {
       console.error(
         "Dashboard Summary Error:",
@@ -283,6 +375,59 @@ const UserDash = ({ onLogout }) => {
       setSummaryLoading(false);
     }
   };
+
+  const fetchNotificationCount = async () => {
+    try {
+      const response = await api.get("/api/notifications/unread-count");
+      const data = response?.data || {};
+
+      let count = Number(
+        data.unreadCount ??
+          data.count ??
+          data.total ??
+          data.additionalProp1 ??
+          0
+      );
+
+      if (!Number.isFinite(count) || count === 0) {
+        const listResponse = await api.get("/api/notifications", {
+          params: { status: "UNREAD" },
+        });
+
+        const unreadNotifications = extractArray(listResponse.data, [
+          "notifications",
+          "data",
+          "items",
+        ]);
+
+        count = Number(
+          listResponse.data?.unreadCount ??
+            listResponse.data?.totalCount ??
+            unreadNotifications.length ??
+            0
+        );
+      }
+
+      const safeCount = Number.isFinite(count) ? count : 0;
+      const previousCount = notificationCountRef.current;
+
+      setNotificationCount(safeCount);
+
+      if (!notificationSoundReadyRef.current) {
+        notificationSoundReadyRef.current = true;
+      } else if (safeCount > previousCount) {
+        playNotificationSound();
+      }
+
+      notificationCountRef.current = safeCount;
+    } catch (error) {
+      console.error(
+        "Notification Count Error:",
+        error?.response?.data || error.message
+      );
+    }
+  };
+
 
   // =========================================================
   // TODAY'S DOSES
@@ -332,6 +477,18 @@ const UserDash = ({ onLogout }) => {
     }
   };
 
+  const clearTodayScheduleCache = () => {
+    try {
+      localStorage.removeItem(TODAY_SCHEDULE_CACHE_KEY);
+      localStorage.removeItem("todaySchedulePage");
+    } catch {
+      // ignore storage errors
+    }
+
+    setTodaySchedule([]);
+    setSchedulePage(1);
+  };
+
   const fetchTodaySchedule = async () => {
     try {
       const response = await api.get("/api/doses/today");
@@ -357,13 +514,16 @@ const UserDash = ({ onLogout }) => {
       );
 
       // Agar API ne doses return kiye to cache update karo.
+      // Empty response par old/cached list preserve karo, taaki
+      // auto-refresh pagination ko first page par jump na karaye.
       if (pendingDoses.length > 0) {
         writeTodayScheduleCache(pendingDoses);
+        setTodaySchedule(pendingDoses);
+      } else {
+        setTodaySchedule((current) =>
+          current.length > 0 ? current : readTodayScheduleCache()
+        );
       }
-
-      setTodaySchedule(pendingDoses);
-
-      setSchedulePage(1);
     } catch (error) {
       console.error(
         "Today Schedule Error:",
@@ -476,10 +636,11 @@ const UserDash = ({ onLogout }) => {
 
         const summary =
           dashboardResponse?.data || {};
+        const initialTodaysMedicinesCount =
+          Number(summary.todaysMedicines) || 0;
 
         setDashboardSummary({
-          todaysMedicines:
-            Number(summary.todaysMedicines) || 0,
+          todaysMedicines: initialTodaysMedicinesCount,
 
           taken:
             Number(summary.taken) || 0,
@@ -522,10 +683,11 @@ const UserDash = ({ onLogout }) => {
             )
         );
 
-        // Agar API ne doses return kiye to cache update karo.
-        // Agar API empty return kare (browser refresh par aisa ho
-        // sakta hai) to cached schedule use karo taaki cards gayab na hon.
-        if (pendingSchedules.length > 0) {
+        // Agar dashboard count 0 hai to cache clear karo.
+        // Warna API empty response par cached schedule fallback use karo.
+        if (initialTodaysMedicinesCount === 0) {
+          clearTodayScheduleCache();
+        } else if (pendingSchedules.length > 0) {
           writeTodayScheduleCache(pendingSchedules);
           setTodaySchedule(pendingSchedules);
         } else {
@@ -576,6 +738,9 @@ const UserDash = ({ onLogout }) => {
                   : [];
 
         setCalendarData(calendar);
+
+
+        await fetchNotificationCount();
       } catch (error) {
         console.error(
           "Dashboard Initial Load Error:",
@@ -620,6 +785,7 @@ const UserDash = ({ onLogout }) => {
           fetchDashboardSummary(),
           fetchInventory(),
           fetchCalendarData(),
+          fetchNotificationCount(),
         ]);
       } catch {
         // individual fetch functions handle errors
@@ -934,73 +1100,20 @@ const UserDash = ({ onLogout }) => {
   };
 
   // =========================================================
-  // GROUP DOSES BY MEDICINE
-  //
-  // Pehle saare doses ko medicine ke hisaab se group karo,
-  // phir grouped rows par pagination lagao. Isse page count
-  // aur "Showing X to Y of Z" hamesha sahi rahega.
-  // =========================================================
-
-  const allScheduleMedicineRows =
-    useMemo(() => {
-      const grouped = new Map();
-
-      todaySchedule.forEach(
-        (medicine) => {
-          const name =
-            medicine.medicineName ||
-            "Medicine";
-
-          const key =
-            name
-              .trim()
-              .toLowerCase();
-
-          if (!grouped.has(key)) {
-            grouped.set(key, {
-              name,
-
-              medicines: [],
-
-              notes: "",
-            });
-          }
-
-          const row =
-            grouped.get(key);
-
-          row.medicines.push(
-            medicine
-          );
-
-          const notes =
-            String(
-              medicine.notes ||
-                medicine.note ||
-                medicine.instructions ||
-                ""
-            ).trim();
-
-          if (!row.notes && notes) {
-            row.notes = notes;
-          }
-        }
-      );
-
-      return Array.from(
-        grouped.values()
-      );
-    }, [todaySchedule]);
-
-  // =========================================================
   // TODAY SCHEDULE PAGINATION
+  //
+  // Pagination dose count par lagti hai. Current page ke doses
+  // ko timeline layout ke liye medicine-wise group kiya jata hai.
   // =========================================================
+
+  const scheduleTotalItems =
+    todaySchedule.length;
 
   const scheduleTotalPages =
     Math.max(
       1,
       Math.ceil(
-        allScheduleMedicineRows.length /
+        scheduleTotalItems /
           scheduleItemsPerPage
       )
     );
@@ -1015,12 +1128,55 @@ const UserDash = ({ onLogout }) => {
     (schedulePageSafe - 1) *
     scheduleItemsPerPage;
 
-  const schedulePageItems =
-    allScheduleMedicineRows.slice(
+  const scheduleDosePageItems =
+    todaySchedule.slice(
       scheduleStartIndex,
       scheduleStartIndex +
         scheduleItemsPerPage
     );
+
+  const schedulePageItems =
+    useMemo(() => {
+      const grouped = new Map();
+
+      scheduleDosePageItems.forEach(
+        (medicine) => {
+          const name =
+            medicine.medicineName ||
+            "Medicine";
+
+          const key =
+            name
+              .trim()
+              .toLowerCase();
+
+          if (!grouped.has(key)) {
+            grouped.set(key, {
+              name,
+              medicines: [],
+              notes: "",
+            });
+          }
+
+          const row = grouped.get(key);
+
+          row.medicines.push(medicine);
+
+          const notes = String(
+            medicine.notes ||
+              medicine.note ||
+              medicine.instructions ||
+              ""
+          ).trim();
+
+          if (!row.notes && notes) {
+            row.notes = notes;
+          }
+        }
+      );
+
+      return Array.from(grouped.values());
+    }, [scheduleDosePageItems]);
 
 
   // =========================================================
@@ -1562,12 +1718,16 @@ const UserDash = ({ onLogout }) => {
             >
               <Bell className="top-icon" />
 
-              <span className="notification-badge" />
+              {notificationCount > 0 && (
+                <span className="notification-badge">
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </button>
 
             <div className="profile-box">
               <div className="avatar">
-                <User size={24} />
+                <span className="avatar-initials">{userInitials}</span>
               </div>
 
               <span>
@@ -2174,11 +2334,11 @@ const UserDash = ({ onLogout }) => {
                               {Math.min(
                                 scheduleStartIndex +
                                   scheduleItemsPerPage,
-                                allScheduleMedicineRows.length
+                                scheduleTotalItems
                               )}{" "}
                               of{" "}
                               {
-                                allScheduleMedicineRows.length
+                                scheduleTotalItems
                               }
                             </div>
 
@@ -2190,7 +2350,7 @@ const UserDash = ({ onLogout }) => {
                                   1
                                 }
                                 onClick={() =>
-                                  setSchedulePage(
+                                  changeSchedulePage(
                                     (
                                       page
                                     ) =>
@@ -2231,7 +2391,7 @@ const UserDash = ({ onLogout }) => {
                                         : ""
                                     }`}
                                     onClick={() =>
-                                      setSchedulePage(
+                                      changeSchedulePage(
                                         page
                                       )
                                     }
@@ -2250,7 +2410,7 @@ const UserDash = ({ onLogout }) => {
                                   scheduleTotalPages
                                 }
                                 onClick={() =>
-                                  setSchedulePage(
+                                  changeSchedulePage(
                                     (
                                       page
                                     ) =>
@@ -2818,6 +2978,21 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

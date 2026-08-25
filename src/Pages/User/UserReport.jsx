@@ -1,26 +1,23 @@
 import { useEffect, useState } from "react";
 import "./UserReport.css";
 
-import {
-  getReminderHistory,
-  getMedicines,
-} from "../../api/MockApi";
+import api from "../../api/axiosInstance";
+
+const normalizePercentage = (value) => {
+  const percentage = Number(value) || 0;
+  const normalized = percentage > 0 && percentage <= 1 ? percentage * 100 : percentage;
+
+  return Math.round(normalized);
+};
 
 const UserReport = ({ onViewReport }) => {
-  // =========================================================
-  // DEMO / MOCK DATA
-  // No backend
-  // No axios
-  // No ngrok
-  // Data comes from MockApi.jsx
-  // =========================================================
-
-  const [history, setHistory] = useState([]);
-  const [medicines, setMedicines] = useState([]);
+  const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // =========================================================
   // LOAD REPORT DATA
+  // GET /api/reports/compliance
   // =========================================================
 
   useEffect(() => {
@@ -28,37 +25,23 @@ const UserReport = ({ onViewReport }) => {
 
     const loadReportData = async () => {
       try {
-        const [historyResponse, medicinesResponse] =
-          await Promise.all([
-            getReminderHistory(),
-            getMedicines(),
-          ]);
+        const response = await api.get("/api/reports/compliance");
 
         if (!active) return;
 
-        const historyData =
-          Array.isArray(historyResponse?.data)
-            ? historyResponse.data
-            : [];
-
-        const medicineData =
-          Array.isArray(
-            medicinesResponse?.data?.medicines
-          )
-            ? medicinesResponse.data.medicines
-            : [];
-
-        setHistory(historyData);
-        setMedicines(medicineData);
+        setReportData(response?.data || {});
+        setErrorMessage("");
       } catch (error) {
         console.error(
           "Report data load error:",
-          error
+          error?.response?.data || error.message
         );
 
         if (active) {
-          setHistory([]);
-          setMedicines([]);
+          setReportData(null);
+          setErrorMessage(
+            error?.response?.data?.message || "Failed to load report."
+          );
         }
       } finally {
         if (active) {
@@ -67,7 +50,7 @@ const UserReport = ({ onViewReport }) => {
       }
     };
 
-    loadReportData();
+    void loadReportData();
 
     return () => {
       active = false;
@@ -75,74 +58,15 @@ const UserReport = ({ onViewReport }) => {
   }, []);
 
   // =========================================================
-  // COMPLIANCE CALCULATION
-  // =========================================================
-
-  const taken = history.filter(
-    (item) =>
-      item.status?.toLowerCase() ===
-      "taken"
-  ).length;
-
-  const missed = history.filter(
-    (item) =>
-      item.status?.toLowerCase() ===
-      "missed"
-  ).length;
-
-  const total = taken + missed;
-
-  const compliance =
-    total > 0
-      ? Math.round(
-          (taken / total) * 100
-        )
-      : 0;
-
-  // =========================================================
-  // INVENTORY CALCULATION
-  // =========================================================
-
-  const lowStock = medicines.filter(
-    (medicine) => {
-      const currentStock =
-        Number(
-          medicine.currentStock
-        ) || 0;
-
-      const minimumStock =
-        Number(
-          medicine.minimumStock
-        ) || 0;
-
-      return (
-        currentStock > 0 &&
-        currentStock <= minimumStock
-      );
-    }
-  ).length;
-
-  const outOfStock = medicines.filter(
-    (medicine) => {
-      const currentStock =
-        Number(
-          medicine.currentStock
-        ) || 0;
-
-      return currentStock <= 0;
-    }
-  ).length;
-
-  // =========================================================
   // REPORT STATS
   // =========================================================
 
   const reportStats = {
-    compliance: `${compliance}%`,
-    taken,
-    missed,
-    lowStock,
-    outOfStock,
+    compliance: `${normalizePercentage(reportData?.compliancePercentage)}%`,
+    taken: Number(reportData?.takenCount) || 0,
+    missed: Number(reportData?.missedCount) || 0,
+    lowStock: Number(reportData?.inventoryLowStockCount ?? reportData?.lowStockCount) || 0,
+    outOfStock: Number(reportData?.inventoryOutOfStockCount) || 0,
   };
 
   // =========================================================
@@ -156,7 +80,8 @@ const UserReport = ({ onViewReport }) => {
           Reports
         </h1>
 
-        <div className="reports-content">
+
+      <div className="reports-content">
           <div className="report-card">
             <p>Loading report...</p>
           </div>
@@ -177,6 +102,10 @@ const UserReport = ({ onViewReport }) => {
       <h1 className="reports-title">
         Reports
       </h1>
+
+      {errorMessage && (
+        <div className="report-state report-error">{errorMessage}</div>
+      )}
 
       <div className="reports-content">
 
@@ -423,3 +352,5 @@ const UserReport = ({ onViewReport }) => {
 };
 
 export default UserReport;
+
+

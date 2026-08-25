@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./UserViewRep.css";
-import { getMedicines, getReminderHistory } from "../../api/MockApi";
+import api from "../../api/axiosInstance";
+import toast from "react-hot-toast";
 
 const formatDate = (date) => {
   const year = date.getFullYear();
@@ -20,91 +21,151 @@ const getDefaultDateRange = () => {
   };
 };
 
+
+const normalizeArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.reminders)) return data.reminders;
+  if (Array.isArray(data?.history)) return data.history;
+  return [];
+};
 const UserViewRep = ({ onBack }) => {
   const reportRef = useRef(null);
   const dateRange = useMemo(() => getDefaultDateRange(), []);
 
-  // Same demo reminder/medicine data used by the Reminders and Reports
-  // screens — fetched through the mock API (no real backend).
-  const [history, setHistory] = useState([]);
-  const [medicines, setMedicines] = useState([]);
+  const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [historyReminders, setHistoryReminders] = useState([]);
 
   useEffect(() => {
     let active = true;
 
     const loadReportData = async () => {
       try {
-        const [historyRes, medicinesRes] = await Promise.all([
-          getReminderHistory(),
-          getMedicines(),
+        const [reportResult, historyResult] = await Promise.allSettled([
+          api.get("/api/reports/compliance"),
+          api.get("/api/reminders/history"),
         ]);
+
         if (!active) return;
-        setHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
-        setMedicines(medicinesRes.data?.medicines || []);
+
+        if (reportResult.status === "fulfilled") {
+          setReportData(reportResult.value?.data || {});
+          setErrorMessage("");
+        } else {
+          setReportData(null);
+          setErrorMessage(
+            reportResult.reason?.response?.data?.message || "Failed to load report."
+          );
+        }
+
+        if (historyResult.status === "fulfilled") {
+          setHistoryReminders(normalizeArray(historyResult.value?.data));
+        } else {
+          setHistoryReminders([]);
+        }
       } catch (err) {
         console.log("UserViewRep load error:", err.response?.data || err.message);
         if (active) {
-          setHistory([]);
-          setMedicines([]);
+          setReportData(null);
+          setHistoryReminders([]);
+          setErrorMessage(err.response?.data?.message || "Failed to load report.");
         }
       } finally {
         if (active) setLoading(false);
       }
     };
 
-    loadReportData();
+    void loadReportData();
 
     return () => {
       active = false;
     };
   }, []);
 
+  const normalizePercentage = (value) => {
+    const percentage = Number(value) || 0;
+    const normalized = percentage > 0 && percentage <= 1 ? percentage * 100 : percentage;
+
+    return Math.round(normalized);
+  };
+
   const medicineData = useMemo(() => {
-    const byMed = {};
-    history.forEach((h) => {
-      const key = h.medicineName || "Unknown";
-      const status = String(h.status || "").toLowerCase();
+    const complianceRows = Array.isArray(reportData?.medicineCompliance)
+      ? reportData.medicineCompliance
+      : [];
 
-      if (!byMed[key]) byMed[key] = { name: key, taken: 0, missed: 0 };
+    if (complianceRows.length > 0) {
+      return complianceRows.map((item) => ({
+        name: item.medicineName || "Medicine",
+        totalScheduled: Number(item.scheduled) || 0,
+        taken: Number(item.taken) || 0,
+        missed: Number(item.missed) || 0,
+        compliance: normalizePercentage(item.compliancePercentage),
+      }));
+    }
 
-      if (status === "taken") byMed[key].taken += 1;
-      else if (status === "missed") byMed[key].missed += 1;
+    const groupedHistory = {};
+
+    historyReminders.forEach((item) => {
+      const status = String(item.status || "").toLowerCase();
+
+      if (status !== "taken" && status !== "missed") {
+        return;
+      }
+
+      const medicineName = item.medicineName || "Medicine";
+
+      if (!groupedHistory[medicineName]) {
+        groupedHistory[medicineName] = {
+          name: medicineName,
+          taken: 0,
+          missed: 0,
+        };
+      }
+
+      groupedHistory[medicineName][status] += 1;
     });
-    return Object.values(byMed).map((m) => {
-      const totalScheduled = m.taken + m.missed;
-      const compliance = totalScheduled > 0 ? Math.round((m.taken / totalScheduled) * 100) : 0;
-      return { ...m, totalScheduled, compliance };
-    });
-  }, [history]);
 
-  const inventoryData = useMemo(() => {
-    return medicines.map((m) => {
-      const currentStock =
-        Number(m.currentStock) || 0;
-
-      const minimumStock =
-        Number(m.minimumStock) || 0;
+    return Object.values(groupedHistory).map((item) => {
+      const totalScheduled = item.taken + item.missed;
 
       return {
-        name:
-          m.name || m.medicineName || "Medicine",
-        currentStock,
-        minimumStock,
-        status:
-          currentStock >= minimumStock
-            ? "In Stock"
-            : "Low Stock",
+        ...item,
+        totalScheduled,
+        compliance:
+          totalScheduled > 0
+            ? Math.round((item.taken / totalScheduled) * 100)
+            : 0,
       };
     });
-  }, [medicines]);
+  }, [historyReminders, reportData]);
 
-  const hasReportData = medicineData.length > 0 || inventoryData.length > 0;
-  const totalTaken = history.filter((h) => String(h.status || "").toLowerCase() === "taken").length;
-  const totalMissed = history.filter((h) => String(h.status || "").toLowerCase() === "missed").length;
-  const overallCompliance =
-    totalTaken + totalMissed > 0 ? Math.round((totalTaken / (totalTaken + totalMissed)) * 100) : 0;
-  const lowStockCount = inventoryData.filter((i) => i.status === "Low Stock").length;
+  const inventoryData = useMemo(() => {
+    const inventoryRows = Array.isArray(reportData?.inventoryStatus)
+      ? reportData.inventoryStatus
+      : [];
+
+    return inventoryRows.map((item) => ({
+      name: item.medicineName || "Medicine",
+      currentStock: Number(item.currentStock) || 0,
+      minimumStock: Number(item.minimumStock) || 0,
+      status: String(item.status || "IN_STOCK")
+        .replaceAll("_", " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase()),
+    }));
+  }, [reportData]);
+
+  const hasReportData = Boolean(reportData) && (medicineData.length > 0 || inventoryData.length > 0);
+  const canDownloadReport = Boolean(reportData);
+  const totalTaken = Number(reportData?.takenCount) || 0;
+  const totalMissed = Number(reportData?.missedCount) || 0;
+  const overallCompliance = normalizePercentage(reportData?.compliancePercentage);
+  const lowStockCount = Number(reportData?.inventoryLowStockCount ?? reportData?.lowStockCount) || 0;
 
   const dateFormatter = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
@@ -124,23 +185,61 @@ const UserViewRep = ({ onBack }) => {
     minute: "2-digit",
   })}`;
 
-  // Without a backend there's no server-generated PDF, so this exports a
-  // CSV of the same data instead — still a real, usable download.
-  const handleDownloadCSV = () => {
-    const rows = [
-      ["Medicine", "Scheduled", "Taken", "Missed", "Compliance %"],
-      ...medicineData.map((m) => [m.name, m.totalScheduled, m.taken, m.missed, m.compliance]),
-    ];
-    const csvContent = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = `Compliance_Report_${dateRange.startDate}_to_${dateRange.endDate}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(downloadUrl);
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+
+    try {
+      const response = await api.get("/api/reports/compliance/download", {
+        responseType: "blob",
+        headers: {
+          Accept: "application/pdf, */*",
+        },
+      });
+
+      const contentType = response.headers?.["content-type"] || "application/pdf";
+      const disposition = response.headers?.["content-disposition"] || "";
+      const fileNameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+      const fileName = fileNameMatch?.[1]
+        ? decodeURIComponent(fileNameMatch[1])
+        : `compliance-report.pdf`;
+      const blob = response.data instanceof Blob
+        ? response.data
+        : new Blob([response.data], { type: contentType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success("Report downloaded successfully");
+    } catch (error) {
+      let errorMessage = "Failed to download report.";
+      const errorData = error?.response?.data;
+
+      if (errorData instanceof Blob) {
+        const errorText = await errorData.text();
+        try {
+          errorMessage = JSON.parse(errorText)?.message || errorText || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+      } else if (typeof errorData === "string") {
+        try {
+          errorMessage = JSON.parse(errorData)?.message || errorData || errorMessage;
+        } catch {
+          errorMessage = errorData || errorMessage;
+        }
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+
+      console.error("Report download error:", errorData || error.message);
+      toast.error(errorMessage);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -154,13 +253,13 @@ const UserViewRep = ({ onBack }) => {
           Back
         </button>
         <h2 className="rep-top-title">Medical Compliance Report</h2>
-        <button className="rep-download-btn" onClick={handleDownloadCSV} disabled={!hasReportData}>
+        <button className="rep-download-btn" onClick={handleDownloadReport} disabled={!canDownloadReport || downloading}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          Download Report
+          {downloading ? "Downloading..." : "Download Report"}
         </button>
       </div>
 
@@ -180,9 +279,9 @@ const UserViewRep = ({ onBack }) => {
                 <line x1="9" y1="17" x2="13" y2="17"/>
               </svg>
             </div>
-            <h3 className="rep-empty-title">No Medicines Added Yet</h3>
+            <h3 className="rep-empty-title">{errorMessage ? "Unable to Load Report" : "No Medicines Added Yet"}</h3>
             <p className="rep-empty-text">
-              Start by adding medicines to your schedule.
+              {errorMessage || "Start by adding medicines to your schedule."}
               <br />
               Your compliance report will appear here once you add medicines.
             </p>
@@ -440,12 +539,12 @@ const UserViewRep = ({ onBack }) => {
                   </div>
                   <div className="rep-info-row">
                     <span className="rep-info-key">Generated By</span>
-                    <span className="rep-info-val">System</span>
+                    <span className="rep-info-val">{reportData?.generatedBy || "System"}</span>
                   </div>
                   <div className="rep-info-row">
                     <span className="rep-info-key">Status</span>
                     <span className="rep-info-val">
-                      <span className="rep-status-complete">Completed</span>
+                      <span className="rep-status-complete">{reportData?.status || "Completed"}</span>
                     </span>
                   </div>
                 </div>
@@ -459,3 +558,12 @@ const UserViewRep = ({ onBack }) => {
 };
 
 export default UserViewRep;
+
+
+
+
+
+
+
+
+

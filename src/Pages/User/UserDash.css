@@ -147,13 +147,22 @@ body{
 
 .notification-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
     background: #ef4444;
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .top-icon {
@@ -5940,4 +5949,146 @@ body{
   opacity: 1 !important;
   filter: none !important;
   box-shadow: 0 6px 14px rgba(239, 68, 68, 0.28) !important;
+}
+/* Header avatar initials */
+.profile-box .avatar {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    box-shadow:
+        0 8px 18px rgba(15, 118, 110, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.profile-box .avatar::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+}
+
+.profile-box .avatar .avatar-initials {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    text-transform: uppercase;
+}
+
+.profile-box:hover .avatar {
+    background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+    transform: scale(1.06);
+    box-shadow:
+        0 10px 22px rgba(15, 118, 110, 0.32),
+        0 0 0 4px rgba(20, 184, 166, 0.16);
+}
+
+
+
+/* Mobile header avatar initials */
+@media (max-width: 768px) {
+    .topbar .profile-box .avatar {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%) !important;
+        border: 2px solid rgba(255, 255, 255, 0.92) !important;
+        box-shadow:
+            0 6px 14px rgba(15, 118, 110, 0.24),
+            inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+    }
+
+    .topbar .profile-box .avatar::before {
+        content: none !important;
+    }
+
+    .topbar .profile-box .avatar .avatar-initials {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        color: #ffffff !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        line-height: 1 !important;
+        letter-spacing: 0 !important;
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        visibility: visible !important;
+        text-transform: uppercase !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .topbar .profile-box .avatar {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+    }
+
+    .topbar .profile-box .avatar .avatar-initials {
+        font-size: 11px !important;
+    }
+}
+
+
+/* Notification count badge */
+.notification-btn .notification-badge {
+    top: 3px !important;
+    right: 3px !important;
+    width: auto !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25) !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}
+
+@media (max-width: 768px) {
+    .notification-btn .notification-badge {
+        top: 1px !important;
+        right: 1px !important;
+        min-width: 17px !important;
+        height: 17px !important;
+        padding: 0 4px !important;
+        font-size: 9px !important;
+    }
+}
+
+/* Bell icon count overlay */
+.notification-btn {
+    overflow: visible !important;
+}
+
+.notification-btn .notification-badge {
+    top: -7px !important;
+    right: -7px !important;
+    z-index: 10 !important;
+    transform: none !important;
+}
+
+@media (max-width: 768px) {
+    .notification-btn .notification-badge {
+        top: -6px !important;
+        right: -6px !important;
+    }
 }

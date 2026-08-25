@@ -128,6 +128,9 @@ const UserProfiles = () => {
   const [saveSuccess, setSaveSuccess] = useState("");
   const [errors, setErrors] = useState({});
   const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    email: "",
+    mobile: "",
     age: "",
     gender: "",
     disease: "",
@@ -228,6 +231,9 @@ const UserProfiles = () => {
 
   const resetEditForm = () => {
     setEditFormData({
+      fullName: displayName !== "User" ? displayName : "",
+      email: displayEmail !== "Not specified" ? displayEmail : "",
+      mobile: displayMobile !== "Not specified" ? displayMobile : "",
       age: profileData?.age ?? "",
       gender: profileData?.gender ?? "",
       disease: profileData?.diseaseCondition ?? "",
@@ -263,7 +269,24 @@ const UserProfiles = () => {
   const validateForm = () => {
     const newErrors = {};
     const phoneRegex = /^[6-9]\d{9}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const age = Number(editFormData.age);
+
+    if (!editFormData.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+
+    if (!editFormData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(editFormData.email.trim())) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+    if (!editFormData.mobile) {
+      newErrors.mobile = "Mobile number is required";
+    } else if (!phoneRegex.test(editFormData.mobile)) {
+      newErrors.mobile = "Enter a valid 10-digit mobile number";
+    }
 
     if (!editFormData.age) {
       newErrors.age = "Age is required";
@@ -327,11 +350,8 @@ const UserProfiles = () => {
     setSaveSuccess("");
 
     const payload = {
-      fullName: displayName !== "User" ? displayName : profileData?.fullName || "",
-      mobile:
-        displayMobile !== "Not specified"
-          ? displayMobile
-          : profileData?.mobile || registeredUser?.mobile || "",
+      fullName: editFormData.fullName.trim(),
+      mobile: editFormData.mobile,
       age: Number(editFormData.age),
       gender: normalizeGender(editFormData.gender),
       diseaseCondition: editFormData.disease,
@@ -350,15 +370,23 @@ const UserProfiles = () => {
         ...payload,
         ...responseData,
         fullName:
-          responseData.fullName || profileData?.fullName || registeredUser?.fullName || "",
+          responseData.fullName || editFormData.fullName.trim() || profileData?.fullName || registeredUser?.fullName || "",
         email:
-          responseData.email || profileData?.email || registeredUser?.email || "",
+          responseData.email || editFormData.email.trim() || profileData?.email || registeredUser?.email || "",
         mobile:
           responseData.mobile || payload.mobile || profileData?.mobile || registeredUser?.mobile || "",
       });
 
       setProfileData(nextProfile);
       localStorage.setItem("profileData", JSON.stringify(nextProfile));
+
+      const nextRegisteredUser = {
+        fullName: nextProfile.fullName || "",
+        email: nextProfile.email || "",
+        mobile: nextProfile.mobile || "",
+      };
+      setRegisteredUser(nextRegisteredUser);
+      localStorage.setItem("registeredUser", JSON.stringify(nextRegisteredUser));
       localStorage.setItem("profileCompleted", nextProfile.completed ? "true" : "false");
       setIsEditing(false);
       setSaveSuccess("Profile updated successfully!");
@@ -429,16 +457,21 @@ const UserProfiles = () => {
               type={editType}
               value={getEditableValue(editField)}
               onChange={(event) => {
-                const nextValue = editField.includes("contact")
-                  ? event.target.value.replace(/\D/g, "")
-                  : event.target.value;
+                const nextValue =
+                  editField.includes("contact") || editField === "mobile"
+                    ? event.target.value.replace(/\D/g, "")
+                    : event.target.value;
                 handleInputChange(editField, nextValue);
               }}
               className={`up-input-field ${
                 errors[editField] ? "up-input-error" : ""
               }`}
               placeholder={`Enter ${label.toLowerCase()}`}
-              maxLength={editField.includes("contact") ? 10 : undefined}
+              maxLength={
+                editField.includes("contact") || editField === "mobile"
+                  ? 10
+                  : undefined
+              }
               min={editField === "age" ? 1 : undefined}
               max={editField === "age" ? 120 : undefined}
             />
@@ -560,9 +593,26 @@ const UserProfiles = () => {
             </div>
 
             <div className="up-info-grid up-info-grid-personal">
-              {renderStaticInfo("Full Name", displayName, <User size={20} />)}
-              {renderStaticInfo("Email Address", displayEmail, <Mail size={20} />)}
-              {renderStaticInfo("Mobile Number", displayMobile, <Phone size={20} />)}
+              {renderEditableField(
+                "Full Name",
+                displayName,
+                <User size={20} />,
+                "fullName"
+              )}
+              {renderEditableField(
+                "Email Address",
+                displayEmail,
+                <Mail size={20} />,
+                "email",
+                "email"
+              )}
+              {renderEditableField(
+                "Mobile Number",
+                displayMobile,
+                <Phone size={20} />,
+                "mobile",
+                "tel"
+              )}
               {renderEditableField(
                 "Age",
                 displayAge,
@@ -664,4 +714,6 @@ const UserProfiles = () => {
 };
 
 export default UserProfiles;
+
+
 
