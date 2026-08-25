@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import "./UserAlert.css";
+import api from "../../api/axiosInstance";
 
 import {
   AlertTriangle,
@@ -19,96 +20,95 @@ import {
 } from "lucide-react";
 
 // ========================================================
-// DEMO ALERT DATA
-// No API
-// No axios
-// No ngrok
+// API HELPERS
 // ========================================================
 
-const STORAGE_KEY = "demo_alerts";
-
-const createDefaultAlerts = () => [
-  {
-    id: "a1",
-    type: "low-stock",
-    label: "Low Stock",
-    medicineName: "Metformin",
-    message: "Stock is running low. Please refill medicine.",
-    currentStock: 5,
-    minimumStock: 10,
-    date: "15/08/2026",
-    time: "09:30 AM",
-    status: "unread",
-  },
-  {
-    id: "a2",
-    type: "out-of-stock",
-    label: "Out of Stock",
-    medicineName: "Paracetamol",
-    message: "Medicine is out of stock. Order immediately.",
-    currentStock: 0,
-    minimumStock: 10,
-    date: "15/08/2026",
-    time: "10:15 AM",
-    status: "unread",
-  },
-  {
-    id: "a3",
-    type: "missed-dose",
-    label: "Missed Dose",
-    medicineName: "Amlodipine",
-    message: "Patient missed their scheduled dose. Please check.",
-    dosage: "5mg",
-    timing: "08:00 AM",
-    date: "15/08/2026",
-    time: "11:00 AM",
-    status: "read",
-  },
-  {
-    id: "e1",
-    type: "emergency",
-    label: "Emergency Alert",
-    medicineName: "Amlodipine",
-    message:
-      "Dose was missed. Emergency contacts have been notified.",
-    dosage: "5mg",
-    timing: "01:00 PM",
-    date: "18/08/2026",
-    time: "01:30 PM",
-    sentTo: "Emergency Contact 1 & 2",
-    status: "sent",
-  },
-];
-
-const loadAlerts = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-
-    if (stored) {
-      const parsed = JSON.parse(stored);
-
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-    return [];
-  } catch (error) {
-    console.error("Unable to load demo alerts:", error);
-    return [];
-  }
+const ALERT_TYPE_TO_UI = {
+  LOW_STOCK: "low-stock",
+  OUT_OF_STOCK: "out-of-stock",
+  MISSED_DOSE: "missed-dose",
+  EMERGENCY: "emergency",
 };
 
-const saveAlerts = (alerts) => {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(alerts)
-    );
-  } catch (error) {
-    console.error("Unable to save demo alerts:", error);
+const UI_TYPE_TO_BACKEND = {
+  "low-stock": "LOW_STOCK",
+  "out-of-stock": "OUT_OF_STOCK",
+  "missed-dose": "MISSED_DOSE",
+  emergency: "EMERGENCY",
+};
+
+const ALERT_TYPE_LABELS = {
+  "low-stock": "Low Stock",
+  "out-of-stock": "Out of Stock",
+  "missed-dose": "Missed Dose",
+  emergency: "Emergency Alert",
+};
+
+const normalizeArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.content)) return data.content;
+  if (Array.isArray(data?.alerts)) return data.alerts;
+  return [];
+};
+
+const getAlertId = (alert) => alert?.alertId ?? alert?.id ?? null;
+
+const normalizeType = (type) => {
+  const rawType = String(type || "LOW_STOCK").trim().toUpperCase();
+  return ALERT_TYPE_TO_UI[rawType] || rawType.toLowerCase().replaceAll("_", "-");
+};
+
+const formatAlertDateTime = (value) => {
+  if (!value) {
+    return {
+      date: "N/A",
+      time: "N/A",
+    };
   }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return {
+      date: String(value),
+      time: "",
+    };
+  }
+
+  return {
+    date: parsedDate.toLocaleDateString("en-GB"),
+    time: parsedDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }),
+  };
+};
+
+const normalizeStatus = (status) => {
+  const nextStatus = String(status || "UNREAD").trim().toLowerCase();
+  return nextStatus === "read" ? "read" : "unread";
+};
+
+const normalizeAlert = (alert = {}) => {
+  const type = normalizeType(alert.alertType || alert.type);
+  const alertDateTime = formatAlertDateTime(alert.alertTime || alert.createdAt || alert.dateTime);
+
+  return {
+    ...alert,
+    id: getAlertId(alert),
+    type,
+    label: alert.label || ALERT_TYPE_LABELS[type] || "Alert",
+    medicineName: alert.medicineName || "Medicine",
+    message: alert.message || "Alert generated for this medicine.",
+    currentStock: alert.currentStock,
+    minimumStock: alert.minimumStock,
+    date: alert.date || alertDateTime.date,
+    time: alert.time || alertDateTime.time,
+    status: normalizeStatus(alert.status),
+    sentTo: alert.sentTo || "Family Members",
+  };
 };
 
 // ========================================================
@@ -120,9 +120,74 @@ const UserAlert = ({ onAddMedicine }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
-  const [alerts, setAlerts] = useState(() => loadAlerts());
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const itemsPerPage = 4;
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAlerts = async (silent = false) => {
+      if (!silent) {
+        setLoading(true);
+      }
+
+      try {
+        const response = await api.get("/api/alerts", {
+          params:
+            activeTab === "all"
+              ? undefined
+              : {
+                  type: UI_TYPE_TO_BACKEND[activeTab],
+                },
+        });
+        const nextAlerts = normalizeArray(response.data).map(normalizeAlert);
+
+        if (!active) return;
+
+        setAlerts(nextAlerts);
+        setSelectedAlert((currentAlert) => {
+          if (!currentAlert) return null;
+
+          const refreshedAlert = nextAlerts.find(
+            (alert) => String(getAlertId(alert)) === String(getAlertId(currentAlert))
+          );
+
+          return refreshedAlert || currentAlert;
+        });
+        setErrorMessage("");
+      } catch (error) {
+        if (!active) return;
+
+        console.error("Alerts fetch error:", error?.response?.data || error.message);
+
+        if (!silent) {
+          setAlerts([]);
+          setSelectedAlert(null);
+          setErrorMessage(
+            error?.response?.data?.message || "Failed to load alerts."
+          );
+        }
+      } finally {
+        if (active && !silent) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadAlerts();
+
+    const intervalId = setInterval(() => {
+      void loadAlerts(true);
+    }, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
+  }, [activeTab]);
 
   // ========================================================
   // TABS
@@ -250,36 +315,62 @@ const UserAlert = ({ onAddMedicine }) => {
   // VIEW ALERT
   // ========================================================
 
-  const handleViewAlert = (alert) => {
+  const handleViewAlert = async (alert) => {
+    const alertId = getAlertId(alert);
+
     setSelectedAlert(alert);
+
+    if (alertId == null) {
+      return;
+    }
+
+    try {
+      const response = await api.get(`/api/alerts/${alertId}`);
+      setSelectedAlert(normalizeAlert(response.data));
+    } catch (error) {
+      console.error("Alert detail fetch error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to load alert details."
+      );
+    }
   };
 
   // ========================================================
   // MARK AS READ
   // ========================================================
 
-  const handleMarkAsRead = () => {
+  const handleMarkAsRead = async () => {
     if (!selectedAlert) return;
 
-    const updatedAlerts = alerts.map((alert) =>
-      alert.id === selectedAlert.id
-        ? {
-            ...alert,
-            status: "read",
-          }
-        : alert
-    );
+    const alertId = getAlertId(selectedAlert);
 
-    setAlerts(updatedAlerts);
+    if (alertId == null) {
+      toast.error("Could not find a valid alert ID.");
+      return;
+    }
 
-    setSelectedAlert({
-      ...selectedAlert,
-      status: "read",
-    });
+    try {
+      const response = await api.patch(`/api/alerts/${alertId}/read`);
+      const readAlert = normalizeAlert({
+        ...selectedAlert,
+        ...(response?.data || {}),
+        status: response?.data?.status || "READ",
+      });
 
-    saveAlerts(updatedAlerts);
+      setAlerts((previousAlerts) =>
+        previousAlerts.map((alert) =>
+          String(getAlertId(alert)) === String(alertId) ? readAlert : alert
+        )
+      );
 
-    toast.success("Alert marked as read");
+      setSelectedAlert(readAlert);
+      toast.success("Alert marked as read");
+    } catch (error) {
+      console.error("Alert read error:", error?.response?.data || error.message);
+      toast.error(
+        error?.response?.data?.message || "Failed to mark alert as read."
+      );
+    }
   };
 
   // ========================================================
@@ -356,32 +447,40 @@ const UserAlert = ({ onAddMedicine }) => {
             </div>
 
             <h2 className="al-empty-heading">
-              No Alerts Found
+              {loading
+                ? "Loading Alerts..."
+                : errorMessage
+                  ? "Unable to Load Alerts"
+                  : "No Alerts Found"}
             </h2>
 
             <p className="al-empty-desc">
 
-              {activeTab === "all"
-                ? "You have no alerts at the moment. Stay worry-free!"
-                : `No ${
-                    tabs.find(
-                      (tab) => tab.id === activeTab
-                    )?.label || ""
-                  } alerts available.`}
-
+              {loading
+                ? "Fetching your latest alerts."
+                : errorMessage ||
+                  (activeTab === "all"
+                    ? "You have no alerts at the moment. Stay worry-free!"
+                    : `No ${
+                        tabs.find(
+                          (tab) => tab.id === activeTab
+                        )?.label || ""
+                      } alerts available.`)}
             </p>
 
-            <button
-              className="al-add-btn"
-              onClick={() =>
-                onAddMedicine &&
-                onAddMedicine()
-              }
-            >
-              <Plus size={18} />
+            {!loading && !errorMessage && (
+              <button
+                className="al-add-btn"
+                onClick={() =>
+                  onAddMedicine &&
+                  onAddMedicine()
+                }
+              >
+                <Plus size={18} />
 
-              Add Medicine
-            </button>
+                Add Medicine
+              </button>
+            )}
 
           </div>
 
@@ -1001,4 +1100,11 @@ const UserAlert = ({ onAddMedicine }) => {
 };
 
 export default UserAlert;
+
+
+
+
+
+
+
 

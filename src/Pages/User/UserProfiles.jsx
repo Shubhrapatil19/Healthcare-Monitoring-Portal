@@ -18,11 +18,7 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  completeProfile,
-  getProfile,
-  updateProfile,
-} from "../../api/MockApi";
+import api from "../../api/axiosInstance";
 
 import "./UserProfiles.css";
 
@@ -79,10 +75,49 @@ const getProfileValue = (profileData, registeredUser, keys) => {
   return "";
 };
 
-const UserProfiles = () => {
-  const [profileData, setProfileData] = useState(() =>
-    readLocalJSON("profileData", null)
+const normalizeGender = (value) => {
+  if (!value) return "";
+  return String(value).trim().toUpperCase();
+};
+
+const isProfileComplete = (profile) =>
+  Boolean(
+    profile?.fullName &&
+      profile?.email &&
+      profile?.mobile &&
+      profile?.age &&
+      profile?.gender &&
+      profile?.diseaseCondition &&
+      profile?.contact1Relation &&
+      profile?.contact1Phone &&
+      profile?.contact2Relation &&
+      profile?.contact2Phone
   );
+
+const normalizeProfile = (data = {}) => {
+  const normalized = {
+    ...data,
+    gender: normalizeGender(data.gender),
+    diseaseCondition:
+      data.diseaseCondition || data.disease || data.diseases?.[0] || "",
+    contact1Relation:
+      data.contact1Relation || data.familyContacts?.[0]?.relation || "",
+    contact1Phone:
+      data.contact1Phone || data.familyContacts?.[0]?.phoneNumber || "",
+    contact2Relation:
+      data.contact2Relation || data.familyContacts?.[1]?.relation || "",
+    contact2Phone:
+      data.contact2Phone || data.familyContacts?.[1]?.phoneNumber || "",
+  };
+
+  normalized.completed =
+    Number(normalized.completionPercentage) >= 100 || isProfileComplete(normalized);
+
+  return normalized;
+};
+
+const UserProfiles = () => {
+  const [profileData, setProfileData] = useState(null);
   const [registeredUser, setRegisteredUser] = useState(() =>
     readLocalJSON("registeredUser", {})
   );
@@ -114,7 +149,7 @@ const UserProfiles = () => {
     ]) || "Not specified";
   const displayAge = profileData?.age || "Not specified";
   const displayGender = formatLabel(profileData?.gender);
-  const displayDisease = formatLabel(profileData?.diseases?.[0]);
+  const displayDisease = formatLabel(profileData?.diseaseCondition);
 
   const completionItems = useMemo(
     () => [
@@ -123,29 +158,33 @@ const UserProfiles = () => {
       Boolean(displayMobile && displayMobile !== "Not specified"),
       Boolean(profileData?.age),
       Boolean(profileData?.gender),
-      Boolean(profileData?.diseases?.[0]),
-      Boolean(profileData?.familyContacts?.[0]?.phoneNumber),
-      Boolean(profileData?.familyContacts?.[1]?.phoneNumber),
+      Boolean(profileData?.diseaseCondition),
+      Boolean(profileData?.contact1Phone),
+      Boolean(profileData?.contact2Phone),
     ],
     [displayEmail, displayMobile, displayName, profileData]
   );
 
-  const completionPercent = Math.round(
+  const calculatedCompletionPercent = Math.round(
     (completionItems.filter(Boolean).length / completionItems.length) * 100
   );
+  const completionPercent = Number.isFinite(Number(profileData?.completionPercentage))
+    ? Number(profileData?.completionPercentage)
+    : calculatedCompletionPercent;
 
   useEffect(() => {
     let active = true;
 
     const loadProfile = async () => {
       try {
-        const response = await getProfile();
+        const response = await api.get("/api/profile");
 
         if (!active) return;
 
-        const data = response?.data || {};
+        const data = normalizeProfile(response?.data || {});
         setProfileData(data);
         localStorage.setItem("profileData", JSON.stringify(data));
+        localStorage.setItem("profileCompleted", data.completed ? "true" : "false");
 
         setRegisteredUser((previousUser) => {
           const basicUserData = {
@@ -191,11 +230,11 @@ const UserProfiles = () => {
     setEditFormData({
       age: profileData?.age ?? "",
       gender: profileData?.gender ?? "",
-      disease: profileData?.diseases?.[0] ?? "",
-      relation1: profileData?.familyContacts?.[0]?.relation ?? "",
-      contact1: profileData?.familyContacts?.[0]?.phoneNumber ?? "",
-      relation2: profileData?.familyContacts?.[1]?.relation ?? "",
-      contact2: profileData?.familyContacts?.[1]?.phoneNumber ?? "",
+      disease: profileData?.diseaseCondition ?? "",
+      relation1: profileData?.contact1Relation ?? "",
+      contact1: profileData?.contact1Phone ?? "",
+      relation2: profileData?.contact2Relation ?? "",
+      contact2: profileData?.contact2Phone ?? "",
     });
   };
 
@@ -288,28 +327,25 @@ const UserProfiles = () => {
     setSaveSuccess("");
 
     const payload = {
+      fullName: displayName !== "User" ? displayName : profileData?.fullName || "",
+      mobile:
+        displayMobile !== "Not specified"
+          ? displayMobile
+          : profileData?.mobile || registeredUser?.mobile || "",
       age: Number(editFormData.age),
-      gender: editFormData.gender,
-      diseases: [editFormData.disease],
-      familyContacts: [
-        {
-          phoneNumber: editFormData.contact1,
-          relation: editFormData.relation1,
-        },
-        {
-          phoneNumber: editFormData.contact2,
-          relation: editFormData.relation2,
-        },
-      ],
+      gender: normalizeGender(editFormData.gender),
+      diseaseCondition: editFormData.disease,
+      contact1Relation: editFormData.relation1,
+      contact1Phone: editFormData.contact1,
+      contact2Relation: editFormData.relation2,
+      contact2Phone: editFormData.contact2,
     };
 
     try {
-      const response = profileData?.completed
-        ? await updateProfile(payload)
-        : await completeProfile(payload);
-      const responseData = response?.data || {};
+      const response = await api.put("/api/profile", payload);
+      const responseData = normalizeProfile(response?.data || {});
 
-      const nextProfile = {
+      const nextProfile = normalizeProfile({
         ...profileData,
         ...payload,
         ...responseData,
@@ -318,13 +354,12 @@ const UserProfiles = () => {
         email:
           responseData.email || profileData?.email || registeredUser?.email || "",
         mobile:
-          responseData.mobile || profileData?.mobile || registeredUser?.mobile || "",
-        completed: true,
-      };
+          responseData.mobile || payload.mobile || profileData?.mobile || registeredUser?.mobile || "",
+      });
 
       setProfileData(nextProfile);
       localStorage.setItem("profileData", JSON.stringify(nextProfile));
-      localStorage.setItem("profileCompleted", "true");
+      localStorage.setItem("profileCompleted", nextProfile.completed ? "true" : "false");
       setIsEditing(false);
       setSaveSuccess("Profile updated successfully!");
 
@@ -492,7 +527,7 @@ const UserProfiles = () => {
           <div className="up-profile-status">
             <div className="up-profile-badge">
               <Shield size={14} />
-              <span>{profileData?.completed ? "Completed" : "Incomplete"}</span>
+              <span>{completionPercent >= 100 ? "Completed" : "Incomplete"}</span>
             </div>
             <div className="up-progress-track">
               <span style={{ width: `${completionPercent}%` }} />
@@ -541,7 +576,7 @@ const UserProfiles = () => {
                 <Users size={20} />,
                 "gender",
                 "select",
-                ["Male", "Female", "Other"]
+                ["MALE", "FEMALE", "OTHER"]
               )}
             </div>
           </section>
@@ -582,7 +617,7 @@ const UserProfiles = () => {
                 <div className="up-contact-card-body">
                   {renderEditableField(
                     "Relation",
-                    formatLabel(profileData?.familyContacts?.[0]?.relation),
+                    formatLabel(profileData?.contact1Relation),
                     <Users size={18} />,
                     "relation1",
                     "select",
@@ -590,7 +625,7 @@ const UserProfiles = () => {
                   )}
                   {renderEditableField(
                     "Phone Number",
-                    profileData?.familyContacts?.[0]?.phoneNumber,
+                    profileData?.contact1Phone,
                     <Phone size={18} />,
                     "contact1",
                     "tel"
@@ -605,7 +640,7 @@ const UserProfiles = () => {
                 <div className="up-contact-card-body">
                   {renderEditableField(
                     "Relation",
-                    formatLabel(profileData?.familyContacts?.[1]?.relation),
+                    formatLabel(profileData?.contact2Relation),
                     <Users size={18} />,
                     "relation2",
                     "select",
@@ -613,7 +648,7 @@ const UserProfiles = () => {
                   )}
                   {renderEditableField(
                     "Phone Number",
-                    profileData?.familyContacts?.[1]?.phoneNumber,
+                    profileData?.contact2Phone,
                     <Phone size={18} />,
                     "contact2",
                     "tel"
@@ -629,3 +664,4 @@ const UserProfiles = () => {
 };
 
 export default UserProfiles;
+

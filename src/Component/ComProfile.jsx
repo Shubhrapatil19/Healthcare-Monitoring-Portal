@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { completeProfile } from "../api/MockApi";
+import api from "../api/axiosInstance";
 
 import {
   User,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import "./ComProfile.css";
 
-// Mocked backend only accepts these exact disease values
+// Backend accepts these exact disease values
 const DISEASE_OPTIONS = [
   { label: "Diabetes", value: "DIABETES" },
   { label: "Hypertension", value: "HYPERTENSION" },
@@ -26,7 +26,7 @@ const DISEASE_OPTIONS = [
   { label: "Other", value: "OTHER" },
 ];
 
-// Mocked backend only accepts these exact relation values (max 2 family contacts)
+// Backend accepts these exact relation values (max 2 emergency contacts)
 const RELATION_OPTIONS = [
   { label: "Father", value: "FATHER" },
   { label: "Mother", value: "MOTHER" },
@@ -38,6 +38,50 @@ const RELATION_OPTIONS = [
   { label: "Friend", value: "FRIEND" },
   { label: "Other", value: "OTHER" },
 ];
+
+const readLocalJSON = (key, fallback) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeGender = (value) => {
+  if (!value) return "";
+  return String(value).trim().toUpperCase();
+};
+
+const isProfileComplete = (profile) =>
+  Boolean(
+    profile?.fullName &&
+      profile?.mobile &&
+      profile?.age &&
+      profile?.gender &&
+      profile?.diseaseCondition &&
+      profile?.contact1Relation &&
+      profile?.contact1Phone &&
+      profile?.contact2Relation &&
+      profile?.contact2Phone
+  );
+
+const normalizeProfile = (data = {}) => {
+  const normalized = {
+    ...data,
+    gender: normalizeGender(data.gender),
+    diseaseCondition: data.diseaseCondition || data.disease || data.diseases?.[0] || "",
+    contact1Relation: data.contact1Relation || data.familyContacts?.[0]?.relation || "",
+    contact1Phone: data.contact1Phone || data.familyContacts?.[0]?.phoneNumber || "",
+    contact2Relation: data.contact2Relation || data.familyContacts?.[1]?.relation || "",
+    contact2Phone: data.contact2Phone || data.familyContacts?.[1]?.phoneNumber || "",
+  };
+
+  normalized.completed =
+    Number(normalized.completionPercentage) >= 100 || isProfileComplete(normalized);
+
+  return normalized;
+};
 
 const ComProfile = ({ onComplete }) => {
 
@@ -157,40 +201,38 @@ const ComProfile = ({ onComplete }) => {
     setLoading(true);
 
     try {
-      // ================= MOCK: PROFILE COMPLETE (no backend) =================
-      const response = await completeProfile({
+      const registeredUser = readLocalJSON("registeredUser", {});
+      const payload = {
+        fullName: registeredUser.fullName || "",
+        mobile:
+          registeredUser.mobile ||
+          registeredUser.phoneNumber ||
+          registeredUser.contactNumber ||
+          "",
         age: Number(formData.age),
-        diseases: [formData.disease], // kept as an array for parity with the old shape
-        familyContacts: [
-          { phoneNumber: formData.contact1, relation: formData.relation1 },
-          { phoneNumber: formData.contact2, relation: formData.relation2 },
-        ],
-      });
-      // ==============================================================================
-
-      // Save locally only after a successful save
-      localStorage.setItem("profileCompleted", "true");
-      // Store flat frontend structure so UserProfiles page
-      // can read fields like disease, relation1, contact1, etc.
-      const profileToStore = {
-        age: formData.age,
-        gender: formData.gender,
-        disease: formData.disease,
-        relation1: formData.relation1,
-        contact1: formData.contact1,
-        relation2: formData.relation2,
-        contact2: formData.contact2,
-        completed: true,
-        id: response.data?.id || Date.now(),
+        gender: normalizeGender(formData.gender),
+        diseaseCondition: formData.disease,
+        contact1Relation: formData.relation1,
+        contact1Phone: formData.contact1,
+        contact2Relation: formData.relation2,
+        contact2Phone: formData.contact2,
       };
+
+      const response = await api.put("/api/profile", payload);
+      const profileToStore = normalizeProfile({
+        ...payload,
+        ...(response?.data || {}),
+      });
+
+      localStorage.setItem("profileCompleted", profileToStore.completed ? "true" : "false");
       localStorage.setItem("profileData", JSON.stringify(profileToStore));
 
-      toast.success(response.data?.message || "Profile completed successfully!", {
+      toast.success(response?.data?.message || "Profile completed successfully!", {
         duration: 3000,
       });
 
       if (onComplete) {
-        onComplete();
+        onComplete(profileToStore);
       }
     } catch (error) {
       console.log("Profile Complete error:", error.response?.data || error.message);
@@ -490,3 +532,4 @@ const ComProfile = ({ onComplete }) => {
 };
 
 export default ComProfile;
+

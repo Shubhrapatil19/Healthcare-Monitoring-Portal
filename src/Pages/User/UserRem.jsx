@@ -39,6 +39,7 @@ const UserRem = ({
   const [pendingReminders, setPendingReminders] = useState([]);
   const [historyReminders, setHistoryReminders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => Date.now());
 
   // =========================================================
   // NORMALIZE API RESPONSE
@@ -233,10 +234,10 @@ const UserRem = ({
 
     void loadReminders();
 
-    const intervalId = setInterval(
-      loadReminders,
-      5000
-    );
+    const intervalId = setInterval(() => {
+      setNow(Date.now());
+      void loadReminders();
+    }, 5000);
 
     return () => {
       active = false;
@@ -352,6 +353,9 @@ const UserRem = ({
     )} ${ampm}`;
   };
 
+  const REMINDER_LEAD_TIME_MS = 10 * 60 * 1000;
+  const MISSED_GRACE_TIME_MS = 30 * 60 * 1000;
+
   const parseReminderDateTime = (reminder) => {
     const time = String(
       getReminderTime(reminder)
@@ -364,7 +368,7 @@ const UserRem = ({
     const dateValue =
       reminder?.scheduledDate ||
       reminder?.date ||
-      new Date();
+      new Date(now);
 
     let year;
     let month;
@@ -397,7 +401,7 @@ const UserRem = ({
       const fallbackDate = new Date(dateValue);
 
       if (Number.isNaN(fallbackDate.getTime())) {
-        const todayDate = new Date();
+        const todayDate = new Date(now);
         year = todayDate.getFullYear();
         month = todayDate.getMonth();
         day = todayDate.getDate();
@@ -446,15 +450,56 @@ const UserRem = ({
       return true;
     }
 
-    const showFrom = new Date(
-      scheduledAt.getTime() - 10 * 60 * 1000
-    );
+    const scheduledTime = scheduledAt.getTime();
+    const showFromTime = scheduledTime - REMINDER_LEAD_TIME_MS;
+    const showUntilTime = scheduledTime + MISSED_GRACE_TIME_MS;
 
-    return new Date() >= showFrom;
+    return now >= showFromTime && now < showUntilTime;
   };
 
-  const displayPending =
-    pendingReminders.filter(shouldShowReminder);
+  const isPendingReminder = (reminder) =>
+    String(reminder?.status || "PENDING").toUpperCase() === "PENDING";
+
+  const isTodayReminder = (reminder) => {
+    const scheduledAt = parseReminderDateTime(reminder);
+    const todayDate = new Date(now);
+
+    if (!scheduledAt) {
+      return true;
+    }
+
+    return (
+      scheduledAt.getFullYear() === todayDate.getFullYear() &&
+      scheduledAt.getMonth() === todayDate.getMonth() &&
+      scheduledAt.getDate() === todayDate.getDate()
+    );
+  };
+
+  const getReminderKey = (reminder) => {
+    const reminderId = getReminderId(reminder);
+
+    if (reminderId != null) {
+      return `id-${reminderId}`;
+    }
+
+    return `${reminder?.medicineName || "medicine"}-${
+      reminder?.scheduledDate || reminder?.date || "date"
+    }-${getReminderTime(reminder) || "time"}`;
+  };
+
+  const pendingReminderMap = new Map();
+
+  [...pendingReminders, ...historyReminders]
+    .filter((reminder) =>
+      isPendingReminder(reminder) &&
+      isTodayReminder(reminder) &&
+      shouldShowReminder(reminder)
+    )
+    .forEach((reminder) => {
+      pendingReminderMap.set(getReminderKey(reminder), reminder);
+    });
+
+  const displayPending = Array.from(pendingReminderMap.values());
 
   // =========================================================
   // TAKEN TOAST
@@ -1651,6 +1696,11 @@ const UserRem = ({
 };
 
 export default UserRem;
+
+
+
+
+
 
 
 
