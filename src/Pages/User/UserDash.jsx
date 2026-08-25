@@ -220,7 +220,7 @@ const UserDash = ({ onLogout }) => {
     });
   };
 
-  const scheduleItemsPerPage = 4;
+  const scheduleItemsPerPage = 1;
 
   // =========================================================
   // INVENTORY
@@ -477,10 +477,87 @@ const UserDash = ({ onLogout }) => {
     }
   };
 
+  const COMPLETED_TODAY_DOSE_KEYS = "completedTodayDoseKeys";
+
+  const normalizeScheduleValue = (value) =>
+    String(value ?? "").trim().toLowerCase();
+
+  const normalizeScheduleTime = (value) =>
+    normalizeScheduleValue(value).replace(/^(0)(\d:)/, "$2");
+
+  const getTodayDoseKeys = (dose) => {
+    if (!dose) return [];
+
+    const idKeys = [
+      dose.doseLogId,
+      dose.reminderId,
+      dose.doseId,
+      dose.id,
+    ]
+      .filter((value) => value !== undefined && value !== null && value !== "")
+      .map((value) => `id:${value}`);
+
+    const name = normalizeScheduleValue(dose.medicineName);
+    const date = normalizeScheduleValue(
+      dose.scheduledDate || dose.date || dose.reminderDate
+    );
+    const time = normalizeScheduleTime(
+      dose.scheduledTime || dose.time || dose.reminderTime
+    );
+    const detailsKeys =
+      name && time
+        ? [
+            `details:${name}|${time}`,
+            date ? `details:${name}|${date}|${time}` : "",
+          ]
+        : [];
+
+    return [...idKeys, ...detailsKeys].filter(Boolean);
+  };
+
+  const readCompletedTodayDoseKeys = () => {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(COMPLETED_TODAY_DOSE_KEYS) || "[]"
+      );
+
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const addCompletedTodayDoseKey = (dose) => {
+    const doseKeys = getTodayDoseKeys(dose);
+
+    if (doseKeys.length === 0) return;
+
+    const keys = readCompletedTodayDoseKeys();
+    doseKeys.forEach((key) => keys.add(key));
+
+    localStorage.setItem(
+      COMPLETED_TODAY_DOSE_KEYS,
+      JSON.stringify(Array.from(keys))
+    );
+  };
+
+  const filterCompletedTodayDoses = (doses, completedDoses = []) => {
+    const completedKeys = readCompletedTodayDoseKeys();
+
+    completedDoses.forEach((dose) => {
+      getTodayDoseKeys(dose).forEach((key) => completedKeys.add(key));
+    });
+
+    return doses.filter((dose) =>
+      getTodayDoseKeys(dose).every((key) => !completedKeys.has(key))
+    );
+  };
+
   const clearTodayScheduleCache = () => {
     try {
       localStorage.removeItem(TODAY_SCHEDULE_CACHE_KEY);
       localStorage.removeItem("todaySchedulePage");
+      localStorage.removeItem(COMPLETED_TODAY_DOSE_KEYS);
     } catch {
       // ignore storage errors
     }
@@ -489,39 +566,91 @@ const UserDash = ({ onLogout }) => {
     setSchedulePage(1);
   };
 
+  const removeDoseFromTodaySchedule = (reminder) => {
+    if (!reminder) return;
+
+    addCompletedTodayDoseKey(reminder);
+
+    const reminderKeys = getTodayDoseKeys(reminder);
+
+    setTodaySchedule((current) => {
+      const next = current.filter((dose) => {
+        const doseKeys = getTodayDoseKeys(dose);
+        const keyMatched = doseKeys.some((key) => reminderKeys.includes(key));
+
+        return !keyMatched;
+      });
+
+      writeTodayScheduleCache(next);
+
+      if (next.length === 0) {
+        localStorage.removeItem("todaySchedulePage");
+        setSchedulePage(1);
+      }
+
+      return next;
+    });
+  };
+
   const fetchTodaySchedule = async () => {
     try {
-      const response = await api.get("/api/doses/today");
+      const [todayResponse, historyResponse] = await Promise.all([
+        api.get("/api/doses/today"),
+        api.get("/api/reminders/history").catch(() => ({ data: [] })),
+      ]);
 
       const doses = extractArray(
-        response.data,
+        todayResponse.data,
         ["doses", "todayDoses"]
       );
 
-      // Today's Schedule me sirf un doses ko dikhao jo abhi
-      // TAKEN/MISSED nahi hui hain. Backend koi bhi status de sakta
-      // hai (PENDING/UPCOMING/SCHEDULED/ACTIVE), isliye sirf
-      // TAKEN/MISSED ko filter out karna sabse safe hai.
-      // Browser refresh ke baad bhi dose tab tak dikhegi
-      // jab tak use TAKEN/MISSED mark nahi kiya jaata.
+      const historyDoses = extractArray(
+        historyResponse.data,
+        ["reminders", "history", "data"]
+      );
+
       const IS_COMPLETED_STATUS = new Set(["TAKEN", "MISSED"]);
 
-      const pendingDoses = doses.filter(
+      const completedHistoryDoses = historyDoses.filter((dose) =>
+        IS_COMPLETED_STATUS.has(String(dose?.status || "").toUpperCase())
+      );
+
+      const mergeScheduleDoses = (primary, fallback) => {
+        const merged = [];
+        const seen = new Set();
+
+        [...primary, ...fallback].forEach((dose) => {
+          const key = getTodayDoseKeys(dose)[0] || JSON.stringify(dose);
+
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(dose);
+          }
+        });
+
+        return merged;
+      };
+
+      const rawPendingDoses = doses.filter(
         (dose) =>
           !IS_COMPLETED_STATUS.has(
             String(dose?.status || "").toUpperCase()
           )
       );
 
-      // Agar API ne doses return kiye to cache update karo.
-      // Empty response par old/cached list preserve karo, taaki
-      // auto-refresh pagination ko first page par jump na karaye.
+      const pendingDoses = filterCompletedTodayDoses(
+        mergeScheduleDoses(rawPendingDoses, readTodayScheduleCache()),
+        completedHistoryDoses
+      );
+
       if (pendingDoses.length > 0) {
         writeTodayScheduleCache(pendingDoses);
         setTodaySchedule(pendingDoses);
       } else {
         setTodaySchedule((current) =>
-          current.length > 0 ? current : readTodayScheduleCache()
+          current.length > 0
+            ? filterCompletedTodayDoses(current)
+            : filterCompletedTodayDoses(readTodayScheduleCache())
         );
       }
     } catch (error) {
@@ -530,8 +659,7 @@ const UserDash = ({ onLogout }) => {
         error?.response?.data || error.message
       );
 
-      // API fail hone par cached schedule dikhao.
-      const cached = readTodayScheduleCache();
+      const cached = filterCompletedTodayDoses(readTodayScheduleCache());
 
       setTodaySchedule(cached);
     } finally {
@@ -616,12 +744,15 @@ const UserDash = ({ onLogout }) => {
         const [
           dashboardResponse,
           scheduleResponse,
+          historyResponse,
           inventoryResponse,
           calendarResponse,
         ] = await Promise.all([
           api.get("/api/dashboard"),
 
           api.get("/api/doses/today"),
+
+          api.get("/api/reminders/history").catch(() => ({ data: [] })),
 
           api.get("/api/inventory"),
 
@@ -676,11 +807,41 @@ const UserDash = ({ onLogout }) => {
         // TAKEN/MISSED nahi hui hain. Backend koi bhi status de sakta
         // hai (PENDING/UPCOMING/SCHEDULED/ACTIVE), isliye sirf
         // TAKEN/MISSED ko filter out karna sabse safe hai.
-        const pendingSchedules = schedules.filter(
+        const completedHistorySchedules = extractArray(
+          historyResponse.data,
+          ["reminders", "history", "data"]
+        ).filter((dose) =>
+          ["TAKEN", "MISSED"].includes(
+            String(dose?.status || "").toUpperCase()
+          )
+        );
+
+        const mergeInitialScheduleDoses = (primary, fallback) => {
+          const merged = [];
+          const seen = new Set();
+
+          [...primary, ...fallback].forEach((dose) => {
+            const key = getTodayDoseKeys(dose)[0] || JSON.stringify(dose);
+
+            if (!seen.has(key)) {
+              seen.add(key);
+              merged.push(dose);
+            }
+          });
+
+          return merged;
+        };
+
+        const rawPendingSchedules = schedules.filter(
           (dose) =>
             !["TAKEN", "MISSED"].includes(
               String(dose?.status || "").toUpperCase()
             )
+        );
+
+        const pendingSchedules = filterCompletedTodayDoses(
+          mergeInitialScheduleDoses(rawPendingSchedules, readTodayScheduleCache()),
+          completedHistorySchedules
         );
 
         // Agar dashboard count 0 hai to cache clear karo.
@@ -691,7 +852,10 @@ const UserDash = ({ onLogout }) => {
           writeTodayScheduleCache(pendingSchedules);
           setTodaySchedule(pendingSchedules);
         } else {
-          const cached = readTodayScheduleCache();
+          const cached = filterCompletedTodayDoses(
+            readTodayScheduleCache(),
+            completedHistorySchedules
+          );
           setTodaySchedule(cached);
         }
 
@@ -1074,6 +1238,10 @@ const UserDash = ({ onLogout }) => {
         reminder,
         status
       );
+
+      if (["taken", "missed"].includes(String(status).toLowerCase())) {
+        removeDoseFromTodaySchedule(reminder);
+      }
     }
 
     // Taken/Missed action complete hone ke baad:
@@ -1096,6 +1264,10 @@ const UserDash = ({ onLogout }) => {
         reminder,
         status
       );
+
+      if (["taken", "missed"].includes(String(status).toLowerCase())) {
+        removeDoseFromTodaySchedule(reminder);
+      }
     }
   };
 
@@ -1381,32 +1553,28 @@ const UserDash = ({ onLogout }) => {
 
           if (!dateStr) return;
 
-          const date =
-            new Date(dateStr);
+          let key = "";
+          const dateParts = String(dateStr).match(
+            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+          );
 
-          if (
-            Number.isNaN(
-              date.getTime()
-            )
-          ) {
-            return;
+          if (dateParts) {
+            key =
+              `${dateParts[3]}-` +
+              `${String(dateParts[2]).padStart(2, "0")}-` +
+              `${String(dateParts[1]).padStart(2, "0")}`;
+          } else {
+            const date = new Date(dateStr);
+
+            if (Number.isNaN(date.getTime())) {
+              return;
+            }
+
+            key =
+              `${date.getFullYear()}-` +
+              `${String(date.getMonth() + 1).padStart(2, "0")}-` +
+              `${String(date.getDate()).padStart(2, "0")}`;
           }
-
-          const key =
-            `${date.getFullYear()}-` +
-            `${String(
-              date.getMonth() +
-                1
-            ).padStart(
-              2,
-              "0"
-            )}-` +
-            `${String(
-              date.getDate()
-            ).padStart(
-              2,
-              "0"
-            )}`;
 
           if (!map[key]) {
             map[key] = [];
@@ -1548,6 +1716,37 @@ const UserDash = ({ onLogout }) => {
         ? " today"
         : ""
     }`;
+  };
+
+  const getCalendarDateDotClass = (day) => {
+    const dateValue = Number(day);
+
+    if (!dateValue) {
+      return "";
+    }
+
+    const key =
+      `${calendarYear}-` +
+      `${String(calendarMonth + 1).padStart(2, "0")}-` +
+      `${String(dateValue).padStart(2, "0")}`;
+
+    const statuses = calendarStatusMap[key] || [];
+
+    if (
+      statuses.includes("missed") &&
+      visibleStatuses.missed
+    ) {
+      return "missed";
+    }
+
+    if (
+      statuses.includes("taken") &&
+      visibleStatuses.taken
+    ) {
+      return "taken";
+    }
+
+    return "";
   };
 
   // =========================================================
@@ -2886,7 +3085,17 @@ const UserDash = ({ onLogout }) => {
                                 day
                               )}`}
                             >
-                              {day}
+                              <span className="calendar-date-number">
+                                {day}
+                              </span>
+
+                              {getCalendarDateDotClass(day) && (
+                                <span
+                                  className={`calendar-status-dot ${getCalendarDateDotClass(
+                                    day
+                                  )}`}
+                                />
+                              )}
                             </div>
                           )
                         )}
@@ -2978,6 +3187,18 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

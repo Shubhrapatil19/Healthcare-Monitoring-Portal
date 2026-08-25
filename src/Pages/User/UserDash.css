@@ -6092,3 +6092,48 @@ body{
         right: -6px !important;
     }
 }
+
+/* Calendar taken/missed dots */
+.calendar-grid .calendar-date {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible !important;
+}
+
+.calendar-grid .calendar-date-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+}
+
+.calendar-grid .calendar-status-dot {
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 2px #ffffff;
+}
+
+.calendar-grid .calendar-status-dot.taken {
+    background: #2563eb;
+}
+
+.calendar-grid .calendar-status-dot.missed {
+    background: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .calendar-grid .calendar-status-dot {
+        bottom: -5px;
+        width: 4px;
+        height: 4px;
+    }
+}
