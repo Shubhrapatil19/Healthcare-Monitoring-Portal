@@ -16,4 +16,6 @@ public interface MedicineReminderRepository extends JpaRepository<MedicineRemind
     List<MedicineReminderEntity> findByUserIdOrderByReminderTimeDesc(Long userId);
 
     boolean existsByDoseLogId(Long doseLogId);
+
+    Optional<MedicineReminderEntity> findByDoseLogId(Long doseLogId);
 }

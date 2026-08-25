@@ -1,5 +1,6 @@
 package com.healthapp.healthcare_monitoring_system.dose.service;
 
+import com.healthapp.healthcare_monitoring_system.alert.service.AlertService;
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.dose.dto.CalendarResponseDto;
@@ -7,11 +8,13 @@ import com.healthapp.healthcare_monitoring_system.dose.dto.DoseResponseDto;
 import com.healthapp.healthcare_monitoring_system.dose.entity.MedicineDoseLogEntity;
 import com.healthapp.healthcare_monitoring_system.dose.enums.DoseStatus;
 import com.healthapp.healthcare_monitoring_system.dose.repository.MedicineDoseLogRepository;
+import com.healthapp.healthcare_monitoring_system.inventory.entity.MedicineInventoryEntity;
 import com.healthapp.healthcare_monitoring_system.inventory.repository.MedicineInventoryRepository;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineScheduleEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.enums.MedicineFrequency;
 import com.healthapp.healthcare_monitoring_system.medicine.repository.MedicineRepository;
+import com.healthapp.healthcare_monitoring_system.reminder.repository.MedicineReminderRepository;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -33,17 +36,26 @@ public class DoseService {
     private final MedicineRepository medicineRepository;
     private final RegisterRepository registerRepository;
     private final MedicineInventoryRepository inventoryRepository;
+    private final MedicineReminderRepository reminderRepository;
+    private final AlertService alertService;
+
+    // dose becomes MISSED this many minutes after its scheduled time if still PENDING
+    private static final int MISSED_GRACE_MINUTES = 30;
 
     public DoseService(
             MedicineDoseLogRepository doseLogRepository,
             MedicineRepository medicineRepository,
             RegisterRepository registerRepository,
-            MedicineInventoryRepository inventoryRepository
+            MedicineInventoryRepository inventoryRepository,
+            MedicineReminderRepository reminderRepository,
+            AlertService alertService
     ) {
         this.doseLogRepository = doseLogRepository;
         this.medicineRepository = medicineRepository;
         this.registerRepository = registerRepository;
         this.inventoryRepository = inventoryRepository;
+        this.reminderRepository = reminderRepository;
+        this.alertService = alertService;
     }
 
     /**
@@ -70,6 +82,43 @@ public class DoseService {
         }
 
         doseLogRepository.saveAll(overdue);
+    }
+
+    /**
+     * Runs every 1 minute.
+     * Any TODAY dose that is still PENDING 30 minutes after its scheduled_time
+     * is auto-marked MISSED, the linked reminder is closed, and a MISSED_DOSE alert is raised.
+     */
+    @Scheduled(fixedRate = 60 * 1000)
+    public void markOverdueTodayDosesAsMissed() {
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+
+        List<MedicineDoseLogEntity> pendingToday =
+                doseLogRepository.findByScheduledDateAndStatus(today, DoseStatus.PENDING);
+
+        for (MedicineDoseLogEntity dose : pendingToday) {
+
+            LocalDateTime scheduledAt = LocalDateTime.of(dose.getScheduledDate(), dose.getScheduledTime());
+            LocalDateTime missedThreshold = scheduledAt.plusMinutes(MISSED_GRACE_MINUTES);
+
+            if (now.isBefore(missedThreshold)) {
+                continue; // still inside the 30-minute grace window
+            }
+
+            dose.setStatus(DoseStatus.MISSED);
+            doseLogRepository.save(dose);
+
+            // close the matching reminder so it stops showing under "Today's Reminders"
+            reminderRepository.findByDoseLogId(dose.getId()).ifPresent(reminder -> {
+                reminder.setStatus("MISSED");
+                reminder.setSnoozeUntil(null);
+                reminderRepository.save(reminder);
+            });
+
+            alertService.createMissedDoseAlert(dose);
+        }
     }
 
     /**
@@ -203,7 +252,10 @@ public class DoseService {
 
                     inventory.setCurrentStock(updatedStock);
 
-                    inventoryRepository.save(inventory);
+                    MedicineInventoryEntity saved = inventoryRepository.save(inventory);
+
+                    // stock may have just crossed into LOW_STOCK / OUT_OF_STOCK -> raise an alert
+                    alertService.checkAndRaiseStockAlert(saved);
                 });
     }
 

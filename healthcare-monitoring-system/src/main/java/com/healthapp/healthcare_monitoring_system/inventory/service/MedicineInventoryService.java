@@ -1,5 +1,6 @@
 package com.healthapp.healthcare_monitoring_system.inventory.service;
 
+import com.healthapp.healthcare_monitoring_system.alert.service.AlertService;
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.inventory.dto.AddInventoryRequestDto;
@@ -27,15 +28,18 @@ public class MedicineInventoryService {
     private final MedicineInventoryRepository inventoryRepository;
     private final MedicineRepository medicineRepository;
     private final RegisterRepository registerRepository;
+    private final AlertService alertService;
 
     public MedicineInventoryService(
             MedicineInventoryRepository inventoryRepository,
             MedicineRepository medicineRepository,
-            RegisterRepository registerRepository
+            RegisterRepository registerRepository,
+            AlertService alertService
     ) {
         this.inventoryRepository = inventoryRepository;
         this.medicineRepository = medicineRepository;
         this.registerRepository = registerRepository;
+        this.alertService = alertService;
     }
 
     public InventoryResponseDto addInventory(AddInventoryRequestDto request) {
@@ -66,6 +70,8 @@ public class MedicineInventoryService {
 
         MedicineInventoryEntity saved = inventoryRepository.save(inventory);
 
+        alertService.checkAndRaiseStockAlert(saved);
+
         return convertToResponse(saved);
     }
 
@@ -94,6 +100,8 @@ public class MedicineInventoryService {
         inventory.setExpiryDate(request.getExpiryDate());
 
         MedicineInventoryEntity saved = inventoryRepository.save(inventory);
+
+        alertService.checkAndRaiseStockAlert(saved);
 
         return convertToResponse(saved);
     }

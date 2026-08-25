@@ -42,11 +42,17 @@ public class ReminderService {
         this.doseService = doseService;
     }
 
+    /** How many minutes before the dose's scheduled time the reminder should fire. */
+    private static final int REMINDER_LEAD_MINUTES = 10;
+
     /**
-     * Runs every 5 minutes.
+     * Runs every 1 minute (needs to be frequent since reminders are precision-sensitive).
      * Creates a reminder row for every today's PENDING dose log that doesn't have one yet.
+     * reminderTime is set to (scheduled dose time - 10 minutes) — the row is created ahead of
+     * time, but getTodayReminders() only surfaces it once "now" reaches that reminderTime, so
+     * the user sees the popup/notification exactly 10 minutes before the dose is due.
      */
-    @Scheduled(fixedRate = 5 * 60 * 1000)
+    @Scheduled(fixedRate = 60 * 1000)
     public void generateMissingReminders() {
 
         LocalDate today = LocalDate.now();
@@ -65,6 +71,7 @@ public class ReminderService {
             reminder.setUser(dose.getUser());
             reminder.setReminderTime(
                     LocalDateTime.of(dose.getScheduledDate(), dose.getScheduledTime())
+                            .minusMinutes(REMINDER_LEAD_MINUTES)
             );
             reminder.setStatus("PENDING");
 
@@ -87,6 +94,9 @@ public class ReminderService {
         return reminderRepository.findByUserIdAndDoseLog_ScheduledDate(user.getId(), LocalDate.now())
                 .stream()
                 .filter(r -> !"TAKEN".equals(r.getStatus()))
+                .filter(r -> !"MISSED".equals(r.getStatus()))
+                // only surface the reminder once its (dose time - 10 min) mark has actually arrived
+                .filter(r -> !r.getReminderTime().isAfter(now))
                 .filter(r -> r.getSnoozeUntil() == null || !r.getSnoozeUntil().isAfter(now))
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -141,6 +151,19 @@ public class ReminderService {
         MedicineReminderEntity saved = reminderRepository.save(reminder);
 
         return convertToResponse(saved);
+    }
+
+    /**
+     * Called by DoseService when a dose crosses the 30-minute missed-dose window.
+     * Closes the matching reminder (if any) so it stops showing under "Today's Reminders".
+     */
+    public void markReminderMissedForDoseLog(Long doseLogId) {
+
+        reminderRepository.findByDoseLogId(doseLogId).ifPresent(reminder -> {
+            reminder.setStatus("MISSED");
+            reminder.setSnoozeUntil(null);
+            reminderRepository.save(reminder);
+        });
     }
 
     /** Delete ONE reminder history entry (not bulk, as required). */
