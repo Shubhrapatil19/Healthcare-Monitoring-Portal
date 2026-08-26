@@ -445,27 +445,7 @@ const UserDash = ({ onLogout }) => {
         );
       }
 
-      let alertCount = 0;
-
-      try {
-        const alertResponse = await api.get("/api/alerts");
-        const unreadAlerts = extractArray(alertResponse.data, [
-          "alerts",
-          "data",
-          "items",
-        ]).filter(
-          (alert) => String(alert?.status || "UNREAD").toUpperCase() === "UNREAD"
-        );
-
-        alertCount = Number(alertResponse.data?.unreadCount ?? unreadAlerts.length ?? 0);
-      } catch (alertError) {
-        console.error(
-          "Alert Count Fallback Error:",
-          alertError?.response?.data || alertError.message
-        );
-      }
-
-      const safeCount = (Number.isFinite(count) ? count : 0) + alertCount;
+      const safeCount = Number.isFinite(count) ? count : 0;
       const previousCount = notificationCountRef.current;
 
       setNotificationCount(safeCount);

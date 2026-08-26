@@ -38,7 +38,6 @@ const normalizeArray = (data) => {
 const getNotificationId = (notification) =>
   notification?.notificationId ?? notification?.id ?? null;
 
-const getAlertId = (alert) => alert?.alertId ?? alert?.id ?? null;
 
 const normalizeType = (type) => {
   const nextType = String(type || "INFO").trim().toLowerCase();
@@ -68,52 +67,6 @@ const normalizeNotification = (notification = {}) => ({
   createdAt: notification.createdAt || notification.time || notification.date,
 });
 
-const normalizeAlertNotification = (alert = {}) => {
-  const alertId = getAlertId(alert);
-  const alertType = String(alert.alertType || alert.type || "INFO")
-    .trim()
-    .toUpperCase();
-  const medicineName = alert.medicineName || "Medicine";
-  const title =
-    alertType === "MISSED_DOSE"
-      ? `${medicineName} missed dose`
-      : alert.label || alertType.replaceAll("_", " ");
-
-  return {
-    ...alert,
-    id: `alert-${alertId ?? `${medicineName}-${alert.alertTime || alert.createdAt || "time"}`}`,
-    source: "alert",
-    sourceId: alertId,
-    type: normalizeType(alertType),
-    title,
-    message: alert.message || "Patient missed their scheduled dose. Please check.",
-    status: String(alert.status || "UNREAD").trim().toUpperCase(),
-    createdAt: alert.alertTime || alert.createdAt || alert.time || alert.date,
-  };
-};
-
-const mergeNotifications = (notificationItems, alertItems) => {
-  const merged = [];
-  const seen = new Set();
-
-  [...notificationItems, ...alertItems]
-    .filter((item) => item.id != null)
-    .forEach((item) => {
-      const key = `${item.source}-${item.sourceId ?? item.id}`;
-
-      if (!seen.has(key)) {
-        seen.add(key);
-        merged.push(item);
-      }
-    });
-
-  return merged.sort((a, b) => {
-    const first = new Date(a.createdAt || 0).getTime();
-    const second = new Date(b.createdAt || 0).getTime();
-
-    return (Number.isFinite(second) ? second : 0) - (Number.isFinite(first) ? first : 0);
-  });
-};
 
 // ================================================================
 // DATE FORMATTER
@@ -202,49 +155,20 @@ const UserNotifi = () => {
     }
 
     try {
-      const notificationParams = {
-        status: filter === "all" ? undefined : filter.toUpperCase(),
-        search: searchQuery.trim() || undefined,
-      };
+      const response = await api.get("/api/notifications", {
+        params: {
+          status: filter === "all" ? undefined : filter.toUpperCase(),
+          search: searchQuery.trim() || undefined,
+        },
+      });
+      const data = response?.data || {};
+      const nextNotifications = normalizeArray(data).map(normalizeNotification);
 
-      const alertParams =
-        filter === "all"
-          ? undefined
-          : {
-              status: filter.toUpperCase(),
-            };
-
-      const [notificationResult, alertResult] = await Promise.allSettled([
-        api.get("/api/notifications", { params: notificationParams }),
-        api.get("/api/alerts", { params: alertParams }),
-      ]);
-
-      if (notificationResult.status === "rejected" && alertResult.status === "rejected") {
-        throw notificationResult.reason;
-      }
-
-      const notificationData =
-        notificationResult.status === "fulfilled"
-          ? notificationResult.value?.data || {}
-          : {};
-      const alertData =
-        alertResult.status === "fulfilled"
-          ? alertResult.value?.data || {}
-          : {};
-
-      const nextNotifications = normalizeArray(notificationData).map(normalizeNotification);
-      const alertNotifications = normalizeArray(alertData).map(normalizeAlertNotification);
-      const mergedNotifications = mergeNotifications(nextNotifications, alertNotifications);
-
-      setNotifications(mergedNotifications);
-      setTotalCount(
-        Number(notificationData.totalCount) + Number(alertData.totalCount) ||
-          mergedNotifications.length
-      );
+      setNotifications(nextNotifications);
+      setTotalCount(Number(data.totalCount) || nextNotifications.length);
       setApiUnreadCount(
-        Number(notificationData.unreadCount || 0) +
-          Number(alertData.unreadCount || 0) ||
-          mergedNotifications.filter(
+        Number(data.unreadCount) ||
+          nextNotifications.filter(
             (notification) => normalizeStatus(notification.status) === "unread"
           ).length
       );
@@ -269,31 +193,12 @@ const UserNotifi = () => {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const [notificationResult, alertResult] = await Promise.allSettled([
-        api.get("/api/notifications/unread-count"),
-        api.get("/api/alerts"),
-      ]);
+      const response = await api.get("/api/notifications/unread-count");
+      const data = response?.data || {};
+      const count =
+        data.unreadCount ?? data.count ?? data.total ?? data.additionalProp1 ?? 0;
 
-      const notificationData =
-        notificationResult.status === "fulfilled"
-          ? notificationResult.value?.data || {}
-          : {};
-      const alertData =
-        alertResult.status === "fulfilled"
-          ? alertResult.value?.data || {}
-          : {};
-      const unreadAlerts = normalizeArray(alertData).filter(
-        (alert) => normalizeStatus(alert.status) === "unread"
-      ).length;
-      const notificationCount =
-        notificationData.unreadCount ??
-        notificationData.count ??
-        notificationData.total ??
-        notificationData.additionalProp1 ??
-        0;
-      const alertCount = alertData.unreadCount ?? unreadAlerts;
-
-      setApiUnreadCount(Number(notificationCount || 0) + Number(alertCount || 0));
+      setApiUnreadCount(Number(count) || 0);
     } catch (error) {
       console.error("Notification unread count error:", error?.response?.data || error.message);
     }
@@ -322,38 +227,24 @@ const UserNotifi = () => {
 
   const handleMarkAsRead = async (notification) => {
     const notificationId = getNotificationId(notification);
-    const sourceId = notification?.sourceId ?? notificationId;
 
-    if (sourceId == null) return;
+    if (notificationId == null) return;
 
     if (normalizeStatus(notification.status) === "read") {
       return;
     }
 
     try {
-      const response =
-        notification.source === "alert"
-          ? await api.patch(`/api/alerts/${sourceId}/read`)
-          : await api.patch(`/api/notifications/${sourceId}/read`);
-      const readNotification =
-        notification.source === "alert"
-          ? normalizeAlertNotification({
-              ...notification,
-              ...(response?.data || {}),
-              id: sourceId,
-              alertId: sourceId,
-              status: response?.data?.status || "READ",
-            })
-          : normalizeNotification({
-              ...notification,
-              ...(response?.data || {}),
-              status: response?.data?.status || "READ",
-            });
+      const response = await api.patch(`/api/notifications/${notificationId}/read`);
+      const readNotification = normalizeNotification({
+        ...notification,
+        ...(response?.data || {}),
+        status: response?.data?.status || "READ",
+      });
 
       setNotifications((previousNotifications) =>
         previousNotifications.map((item) =>
-          item.source === notification.source &&
-          String(item.sourceId ?? getNotificationId(item)) === String(sourceId)
+          String(getNotificationId(item)) === String(notificationId)
             ? readNotification
             : item
         )
@@ -375,19 +266,7 @@ const UserNotifi = () => {
     if (unreadCount === 0) return;
 
     try {
-      const unreadAlertIds = notifications
-        .filter(
-          (notification) =>
-            notification.source === "alert" &&
-            normalizeStatus(notification.status) === "unread" &&
-            notification.sourceId != null
-        )
-        .map((notification) => notification.sourceId);
-
-      await Promise.all([
-        api.patch("/api/notifications/read-all"),
-        ...unreadAlertIds.map((alertId) => api.patch(`/api/alerts/${alertId}/read`)),
-      ]);
+      await api.patch("/api/notifications/read-all");
 
       setNotifications((previousNotifications) =>
         previousNotifications.map((notification) => ({
@@ -411,24 +290,15 @@ const UserNotifi = () => {
 
   const handleDismiss = async (notification) => {
     const notificationId = getNotificationId(notification);
-    const sourceId = notification?.sourceId ?? notificationId;
 
-    if (sourceId == null) return;
+    if (notificationId == null) return;
 
     try {
-      if (notification.source === "alert") {
-        await api.patch(`/api/alerts/${sourceId}/read`);
-      } else {
-        await api.delete(`/api/notifications/${sourceId}`);
-      }
+      await api.delete(`/api/notifications/${notificationId}`);
 
       setNotifications((previousNotifications) => {
         const updatedNotifications = previousNotifications.filter(
-          (item) =>
-            !(
-              item.source === notification.source &&
-              String(item.sourceId ?? getNotificationId(item)) === String(sourceId)
-            )
+          (item) => String(getNotificationId(item)) !== String(notificationId)
         );
 
         const remainingPages = Math.max(
@@ -446,7 +316,7 @@ const UserNotifi = () => {
       });
 
       void fetchUnreadCount();
-      toast.success(notification.source === "alert" ? "Alert dismissed" : "Notification deleted");
+      toast.success("Notification deleted");
     } catch (error) {
       console.error("Delete notification error:", error?.response?.data || error.message);
       toast.error(
