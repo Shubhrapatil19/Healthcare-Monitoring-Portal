@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Deploy Frontend
@@ -29,8 +30,10 @@ jobs:
 
             sudo -u frontend1 bash -lc '
               set -e
+
               cd /opt/project/frontend1/Healthcare-Monitoring-Portal
 
+              git fetch origin Frontend
               git checkout Frontend
               git pull --ff-only origin Frontend
 
@@ -47,11 +50,14 @@ jobs:
 
               test -f dist/index.html
 
-              printf "%s\n" \
-                "{\"rewrites\":[{\"source\":\"**\",\"destination\":\"/index.html\"}]}" \
-                > dist/serve.json
+              echo "Deployed frontend commit:"
+              git log -1 --oneline
             '
 
             sudo systemctl restart frontend
             sleep 3
-            sudo systemctl is-active frontend
+
+            sudo systemctl is-active --quiet frontend
+            curl -fsS http://127.0.0.1:8081/ >/dev/null
+
+            echo "FRONTEND DEPLOYMENT SUCCESS"
