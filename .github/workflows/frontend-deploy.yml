@@ -50,7 +50,7 @@ jobs:
 
               test -f dist/index.html
 
-              echo "Deployed frontend commit:"
+              echo "Deployed commit:"
               git log -1 --oneline
             '
 
