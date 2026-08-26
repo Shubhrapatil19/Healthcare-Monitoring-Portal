@@ -1656,6 +1656,23 @@ const UserInvent = ({
                     rowError.id ===
                     row.id;
 
+                  const displayStatus = getStatus(
+                    isEditing
+                      ? {
+                          ...row,
+
+                          currentStock:
+                            editDraft.currentStock,
+
+                          minimumStock:
+                            editDraft.minimumStock,
+
+                          stockStatus:
+                            "",
+                        }
+                      : row
+                  );
+
                   return (
                     <tr
                       key={
@@ -1685,6 +1702,14 @@ const UserInvent = ({
                               row.medicineName
                             }
                           </span>
+                        </div>
+
+                        <div className="mobile-card-status-top">
+                          <StatusBadge
+                            status={
+                              displayStatus
+                            }
+                          />
                         </div>
                       </td>
 
@@ -1820,25 +1845,9 @@ const UserInvent = ({
 
                       <td data-label="Status">
                         <StatusBadge
-                          status={getStatus(
-                            isEditing
-                              ? {
-                                  ...row,
-
-                                  currentStock:
-                                    editDraft.currentStock,
-
-                                  minimumStock:
-                                    editDraft.minimumStock,
-
-                                  // Editing time par
-                                  // local values se fallback
-                                  // calculate hona chahiye.
-                                  stockStatus:
-                                    "",
-                                }
-                              : row
-                          )}
+                          status={
+                            displayStatus
+                          }
                         />
                       </td>
 
@@ -2107,6 +2116,25 @@ const UserInvent = ({
                 </button>
               </div>
             </div>
+          )}
+
+          {filteredRows.length >
+            0 && (
+            <button
+              type="button"
+              className="mobile-inventory-add-stock"
+              onClick={
+                onAddStock
+              }
+            >
+              <Plus
+                size={18}
+              />
+
+              <span>
+                Add Stock
+              </span>
+            </button>
           )}
         </div>
       )}

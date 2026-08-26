@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./UserNotifi.css";
 import toast from "react-hot-toast";
 import api from "../../api/axiosInstance";
@@ -69,7 +69,21 @@ const formatCreatedAt = (createdAt) => {
     };
   }
 
-  const dt = new Date(createdAt);
+  let dateValue = String(createdAt).trim();
+
+  // Backend UTC timestamp timezone ke bina bhej raha hai,
+  // example: 2026-08-26T09:21:18.327899
+  // Agar timestamp me Z ya +05:30 jaisa timezone nahi hai,
+  // to use UTC treat karne ke liye Z append kar dete hain.
+  const hasTimezone =
+    /Z$/i.test(dateValue) ||
+    /[+-]\d{2}:\d{2}$/.test(dateValue);
+
+  if (!hasTimezone) {
+    dateValue += "Z";
+  }
+
+  const dt = new Date(dateValue);
 
   if (Number.isNaN(dt.getTime())) {
     return {
@@ -82,12 +96,14 @@ const formatCreatedAt = (createdAt) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 
   const time = dt.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: "Asia/Kolkata",
   });
 
   return {
@@ -122,7 +138,7 @@ const UserNotifi = () => {
 
   const itemsPerPage = 6;
 
-  const fetchNotifications = async (silent = false) => {
+  const fetchNotifications = useCallback(async (silent = false) => {
     if (!silent) {
       setLoading(true);
     }
@@ -162,9 +178,9 @@ const UserNotifi = () => {
         setLoading(false);
       }
     }
-  };
+  }, [filter, searchQuery]);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await api.get("/api/notifications/unread-count");
       const data = response?.data || {};
@@ -175,7 +191,7 @@ const UserNotifi = () => {
     } catch (error) {
       console.error("Notification unread count error:", error?.response?.data || error.message);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -183,7 +199,7 @@ const UserNotifi = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [filter, searchQuery]);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -192,7 +208,7 @@ const UserNotifi = () => {
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [filter, searchQuery]);
+  }, [fetchNotifications, fetchUnreadCount]);
 
   // ================================================================
   // MARK SINGLE NOTIFICATION AS READ
@@ -1051,6 +1067,10 @@ const UserNotifi = () => {
 };
 
 export default UserNotifi;
+
+
+
+
 
 
 

@@ -54,6 +54,22 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+const getUserInitials = (name) => {
+  const nameParts = String(name || "")
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (nameParts.length === 0 || name === "User") {
+    return "U";
+  }
+
+  if (nameParts.length === 1) {
+    return nameParts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+};
 const UserDash = ({ onLogout }) => {
   // =========================================================
   // RESPONSIVE
@@ -138,10 +154,58 @@ const UserDash = ({ onLogout }) => {
 
   const [summaryLoading, setSummaryLoading] = useState(true);
 
+  const getFirstNumber = (source, keys) => {
+    for (const key of keys) {
+      const value = Number(source?.[key]);
+
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+
+    return 0;
+  };
+
+  const normalizeDashboardSummary = (payload = {}) => {
+    const data = payload?.data || payload?.dashboard || payload?.summary || payload;
+
+    return {
+      todaysMedicines: getFirstNumber(data, [
+        "todaysMedicines",
+        "todayMedicines",
+        "todayMedicineCount",
+        "todaysMedicineCount",
+        "scheduled",
+        "scheduledCount",
+      ]),
+
+      taken: getFirstNumber(data, [
+        "taken",
+        "takenCount",
+        "takenDoses",
+        "takenDoseCount",
+      ]),
+
+      missed: getFirstNumber(data, [
+        "missed",
+        "missedCount",
+        "missedDoses",
+        "missedDoseCount",
+      ]),
+
+      lowStockAlerts: getFirstNumber(data, [
+        "lowStockAlerts",
+        "lowStockAlertCount",
+        "lowStockCount",
+      ]),
+    };
+  };
+
   const [notificationCount, setNotificationCount] = useState(0);
 
   const notificationCountRef = useRef(0);
   const notificationSoundReadyRef = useRef(false);
+  const lastNotificationSoundRef = useRef({ count: 0, playedAt: 0 });
 
   const playNotificationSound = () => {
     if (typeof window === "undefined") return;
@@ -283,22 +347,7 @@ const UserDash = ({ onLogout }) => {
     return "User";
   }, []);
 
-  const userInitials = useMemo(() => {
-    const nameParts = currentUserName
-      .split(" ")
-      .map((part) => part.trim())
-      .filter(Boolean);
-
-    if (nameParts.length === 0 || currentUserName === "User") {
-      return "U";
-    }
-
-    if (nameParts.length === 1) {
-      return nameParts[0].slice(0, 2).toUpperCase();
-    }
-
-    return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
-  }, [currentUserName]);
+  const userInitials = getUserInitials(currentUserName);
 
   // =========================================================
   // ARRAY RESPONSE HELPER
@@ -340,23 +389,11 @@ const UserDash = ({ onLogout }) => {
     try {
       const response = await api.get("/api/dashboard");
 
-      const data = response?.data || {};
-      const todaysMedicinesCount = Number(data.todaysMedicines) || 0;
+      const nextSummary = normalizeDashboardSummary(response?.data || {});
 
-      setDashboardSummary({
-        todaysMedicines: todaysMedicinesCount,
+      setDashboardSummary(nextSummary);
 
-        taken:
-          Number(data.taken) || 0,
-
-        missed:
-          Number(data.missed) || 0,
-
-        lowStockAlerts:
-          Number(data.lowStockAlerts) || 0,
-      });
-
-      if (todaysMedicinesCount === 0) {
+      if (nextSummary.todaysMedicines === 0) {
         clearTodayScheduleCache();
       }
     } catch (error) {
@@ -408,7 +445,27 @@ const UserDash = ({ onLogout }) => {
         );
       }
 
-      const safeCount = Number.isFinite(count) ? count : 0;
+      let alertCount = 0;
+
+      try {
+        const alertResponse = await api.get("/api/alerts");
+        const unreadAlerts = extractArray(alertResponse.data, [
+          "alerts",
+          "data",
+          "items",
+        ]).filter(
+          (alert) => String(alert?.status || "UNREAD").toUpperCase() === "UNREAD"
+        );
+
+        alertCount = Number(alertResponse.data?.unreadCount ?? unreadAlerts.length ?? 0);
+      } catch (alertError) {
+        console.error(
+          "Alert Count Fallback Error:",
+          alertError?.response?.data || alertError.message
+        );
+      }
+
+      const safeCount = (Number.isFinite(count) ? count : 0) + alertCount;
       const previousCount = notificationCountRef.current;
 
       setNotificationCount(safeCount);
@@ -416,7 +473,18 @@ const UserDash = ({ onLogout }) => {
       if (!notificationSoundReadyRef.current) {
         notificationSoundReadyRef.current = true;
       } else if (safeCount > previousCount) {
-        playNotificationSound();
+        const now = Date.now();
+        const lastSound = lastNotificationSoundRef.current;
+        const isDuplicateSound =
+          lastSound.count === safeCount && now - lastSound.playedAt < 1500;
+
+        if (!isDuplicateSound) {
+          playNotificationSound();
+          lastNotificationSoundRef.current = {
+            count: safeCount,
+            playedAt: now,
+          };
+        }
       }
 
       notificationCountRef.current = safeCount;
@@ -484,6 +552,58 @@ const UserDash = ({ onLogout }) => {
 
   const normalizeScheduleTime = (value) =>
     normalizeScheduleValue(value).replace(/^(0)(\d:)/, "$2");
+
+  const MISSED_DOSE_HIDE_DELAY_MS = 30 * 60 * 1000;
+
+  const parseScheduleDateTime = (dose) => {
+    const dateValue =
+      dose?.scheduledDate || dose?.date || dose?.reminderDate;
+    const timeValue =
+      dose?.scheduledTime || dose?.time || dose?.reminderTime;
+
+    if (!dateValue || !timeValue) return null;
+
+    const dateParts = String(dateValue).match(
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+    );
+
+    const timeMatch = String(timeValue)
+      .trim()
+      .match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+
+    if (!dateParts || !timeMatch) return null;
+
+    let hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2] || 0);
+    const period = timeMatch[3].toUpperCase();
+
+    if (period === "PM" && hours < 12) {
+      hours += 12;
+    }
+
+    if (period === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    return new Date(
+      Number(dateParts[3]),
+      Number(dateParts[2]) - 1,
+      Number(dateParts[1]),
+      hours,
+      minutes
+    );
+  };
+
+  const isDosePastMissedWindow = (dose) => {
+    const scheduledAt = parseScheduleDateTime(dose);
+
+    if (!scheduledAt) return false;
+
+    return Date.now() >= scheduledAt.getTime() + MISSED_DOSE_HIDE_DELAY_MS;
+  };
+
+  const filterMissedWindowDoses = (doses) =>
+    doses.filter((dose) => !isDosePastMissedWindow(dose));
 
   const getTodayDoseKeys = (dose) => {
     if (!dose) return [];
@@ -639,7 +759,9 @@ const UserDash = ({ onLogout }) => {
       );
 
       const pendingDoses = filterCompletedTodayDoses(
-        mergeScheduleDoses(rawPendingDoses, readTodayScheduleCache()),
+        filterMissedWindowDoses(
+          mergeScheduleDoses(rawPendingDoses, readTodayScheduleCache())
+        ),
         completedHistoryDoses
       );
 
@@ -649,8 +771,8 @@ const UserDash = ({ onLogout }) => {
       } else {
         setTodaySchedule((current) =>
           current.length > 0
-            ? filterCompletedTodayDoses(current)
-            : filterCompletedTodayDoses(readTodayScheduleCache())
+            ? filterCompletedTodayDoses(filterMissedWindowDoses(current))
+            : filterCompletedTodayDoses(filterMissedWindowDoses(readTodayScheduleCache()))
         );
       }
     } catch (error) {
@@ -659,7 +781,9 @@ const UserDash = ({ onLogout }) => {
         error?.response?.data || error.message
       );
 
-      const cached = filterCompletedTodayDoses(readTodayScheduleCache());
+      const cached = filterCompletedTodayDoses(
+        filterMissedWindowDoses(readTodayScheduleCache())
+      );
 
       setTodaySchedule(cached);
     } finally {
@@ -765,23 +889,9 @@ const UserDash = ({ onLogout }) => {
         // DASHBOARD CARDS
         // ===============================================
 
-        const summary =
-          dashboardResponse?.data || {};
-        const initialTodaysMedicinesCount =
-          Number(summary.todaysMedicines) || 0;
+        const initialSummary = normalizeDashboardSummary(dashboardResponse?.data || {});
 
-        setDashboardSummary({
-          todaysMedicines: initialTodaysMedicinesCount,
-
-          taken:
-            Number(summary.taken) || 0,
-
-          missed:
-            Number(summary.missed) || 0,
-
-          lowStockAlerts:
-            Number(summary.lowStockAlerts) || 0,
-        });
+        setDashboardSummary(initialSummary);
 
         // ===============================================
         // TODAY SCHEDULE
@@ -840,20 +950,22 @@ const UserDash = ({ onLogout }) => {
         );
 
         const pendingSchedules = filterCompletedTodayDoses(
-          mergeInitialScheduleDoses(rawPendingSchedules, readTodayScheduleCache()),
+          filterMissedWindowDoses(
+            mergeInitialScheduleDoses(rawPendingSchedules, readTodayScheduleCache())
+          ),
           completedHistorySchedules
         );
 
         // Agar dashboard count 0 hai to cache clear karo.
         // Warna API empty response par cached schedule fallback use karo.
-        if (initialTodaysMedicinesCount === 0) {
+        if (initialSummary.todaysMedicines === 0) {
           clearTodayScheduleCache();
         } else if (pendingSchedules.length > 0) {
           writeTodayScheduleCache(pendingSchedules);
           setTodaySchedule(pendingSchedules);
         } else {
           const cached = filterCompletedTodayDoses(
-            readTodayScheduleCache(),
+            filterMissedWindowDoses(readTodayScheduleCache()),
             completedHistorySchedules
           );
           setTodaySchedule(cached);
@@ -925,6 +1037,8 @@ const UserDash = ({ onLogout }) => {
     return () => {
       cancelled = true;
     };
+    // Dashboard initial load intentionally runs once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // =========================================================
@@ -935,6 +1049,23 @@ const UserDash = ({ onLogout }) => {
   // ke dikh jaayein.
   // =========================================================
 
+  const refreshHandlersRef = useRef({
+    fetchTodaySchedule,
+    fetchDashboardSummary,
+    fetchInventory,
+    fetchCalendarData,
+    fetchNotificationCount,
+  });
+
+  useEffect(() => {
+    refreshHandlersRef.current = {
+      fetchTodaySchedule,
+      fetchDashboardSummary,
+      fetchInventory,
+      fetchCalendarData,
+      fetchNotificationCount,
+    };
+  });
   const AUTO_REFRESH_INTERVAL_MS = 5000;
 
   useEffect(() => {
@@ -943,13 +1074,15 @@ const UserDash = ({ onLogout }) => {
     const refreshAll = async () => {
       if (cancelled) return;
 
+      const handlers = refreshHandlersRef.current;
+
       try {
         await Promise.all([
-          fetchTodaySchedule(),
-          fetchDashboardSummary(),
-          fetchInventory(),
-          fetchCalendarData(),
-          fetchNotificationCount(),
+          handlers.fetchTodaySchedule(),
+          handlers.fetchDashboardSummary(),
+          handlers.fetchInventory(),
+          handlers.fetchCalendarData(),
+          handlers.fetchNotificationCount(),
         ]);
       } catch {
         // individual fetch functions handle errors
@@ -965,8 +1098,7 @@ const UserDash = ({ onLogout }) => {
       cancelled = true;
       clearInterval(intervalId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [AUTO_REFRESH_INTERVAL_MS]);
 
   // =========================================================
   // RESPONSIVE
@@ -1274,12 +1406,46 @@ const UserDash = ({ onLogout }) => {
   // =========================================================
   // TODAY SCHEDULE PAGINATION
   //
-  // Pagination dose count par lagti hai. Current page ke doses
-  // ko timeline layout ke liye medicine-wise group kiya jata hai.
+  // Same medicine ke saare timings ek hi timeline row me rahenge.
+  // Pagination medicine rows par lagti hai, individual doses par nahi.
   // =========================================================
 
+  const allScheduleMedicineRows =
+    useMemo(() => {
+      const grouped = new Map();
+
+      todaySchedule.forEach((medicine) => {
+        const name = medicine.medicineName || "Medicine";
+        const key = name.trim().toLowerCase();
+
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            name,
+            medicines: [],
+            notes: "",
+          });
+        }
+
+        const row = grouped.get(key);
+        row.medicines.push(medicine);
+
+        const notes = String(
+          medicine.notes ||
+            medicine.note ||
+            medicine.instructions ||
+            ""
+        ).trim();
+
+        if (!row.notes && notes) {
+          row.notes = notes;
+        }
+      });
+
+      return Array.from(grouped.values());
+    }, [todaySchedule]);
+
   const scheduleTotalItems =
-    todaySchedule.length;
+    allScheduleMedicineRows.length;
 
   const scheduleTotalPages =
     Math.max(
@@ -1300,55 +1466,12 @@ const UserDash = ({ onLogout }) => {
     (schedulePageSafe - 1) *
     scheduleItemsPerPage;
 
-  const scheduleDosePageItems =
-    todaySchedule.slice(
+  const schedulePageItems =
+    allScheduleMedicineRows.slice(
       scheduleStartIndex,
       scheduleStartIndex +
         scheduleItemsPerPage
     );
-
-  const schedulePageItems =
-    useMemo(() => {
-      const grouped = new Map();
-
-      scheduleDosePageItems.forEach(
-        (medicine) => {
-          const name =
-            medicine.medicineName ||
-            "Medicine";
-
-          const key =
-            name
-              .trim()
-              .toLowerCase();
-
-          if (!grouped.has(key)) {
-            grouped.set(key, {
-              name,
-              medicines: [],
-              notes: "",
-            });
-          }
-
-          const row = grouped.get(key);
-
-          row.medicines.push(medicine);
-
-          const notes = String(
-            medicine.notes ||
-              medicine.note ||
-              medicine.instructions ||
-              ""
-          ).trim();
-
-          if (!row.notes && notes) {
-            row.notes = notes;
-          }
-        }
-      );
-
-      return Array.from(grouped.values());
-    }, [scheduleDosePageItems]);
 
 
   // =========================================================
@@ -1553,28 +1676,33 @@ const UserDash = ({ onLogout }) => {
 
           if (!dateStr) return;
 
-          let key = "";
-          const dateParts = String(dateStr).match(
-            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
-          );
+          const key = (() => {
+            const dateParts = String(dateStr).match(
+              /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+            );
 
-          if (dateParts) {
-            key =
-              `${dateParts[3]}-` +
-              `${String(dateParts[2]).padStart(2, "0")}-` +
-              `${String(dateParts[1]).padStart(2, "0")}`;
-          } else {
+            if (dateParts) {
+              return (
+                `${dateParts[3]}-` +
+                `${String(dateParts[2]).padStart(2, "0")}-` +
+                `${String(dateParts[1]).padStart(2, "0")}`
+              );
+            }
+
             const date = new Date(dateStr);
 
             if (Number.isNaN(date.getTime())) {
-              return;
+              return "";
             }
 
-            key =
+            return (
               `${date.getFullYear()}-` +
               `${String(date.getMonth() + 1).padStart(2, "0")}-` +
-              `${String(date.getDate()).padStart(2, "0")}`;
-          }
+              `${String(date.getDate()).padStart(2, "0")}`
+            );
+          })();
+
+          if (!key) return;
 
           if (!map[key]) {
             map[key] = [];
@@ -3192,6 +3320,15 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
 
 
 
