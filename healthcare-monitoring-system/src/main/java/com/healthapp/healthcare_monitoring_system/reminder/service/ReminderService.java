@@ -104,6 +104,11 @@ public class ReminderService {
 
         for (MedicineReminderEntity reminder : dueReminders) {
 
+            // Notification already sent for this reminder
+            if (reminder.isNotificationSent()) {
+                continue;
+            }
+
             // still snoozed -> don't notify yet
             if (reminder.getSnoozeUntil() != null && reminder.getSnoozeUntil().isAfter(now)) {
                 continue;
@@ -122,6 +127,8 @@ public class ReminderService {
                     message,
                     40 // minutes — comfortably covers the reminder's active window
             );
+            reminder.setNotificationSent(true);
+            reminderRepository.save(reminder);
         }
     }
 

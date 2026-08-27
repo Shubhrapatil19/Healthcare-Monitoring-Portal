@@ -19,7 +19,7 @@ public class RegisterRequestDto {
     @NotBlank(message = "Mobile number is required")
     @Pattern(
             regexp = "^[6-9][0-9]{9}$",
-            message = "Please provide a valid 10 digit mobile number"
+            message = "Please provide a valid Indian 10 digit mobile number"
     )
     private String mobile;
 

@@ -9,7 +9,10 @@ public class UpdateProfileRequestDto {
     private String fullName;
 
     @NotBlank(message = "Mobile number is required")
-    @Pattern(regexp = "^[0-9]{10}$", message = "Mobile number must be exactly 10 digits")
+    @Pattern(
+            regexp = "^[6-9][0-9]{9}$",
+            message = "Please provide a valid Indian 10 digit mobile number"
+    )
     private String mobile;
 
     @Min(value = 1, message = "Age must be greater than 0")
@@ -25,13 +28,19 @@ public class UpdateProfileRequestDto {
     @Size(max = 50)
     private String contact1Relation;
 
-    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Contact 1 phone must be exactly 10 digits")
+    @Pattern(
+            regexp = "^$|^[6-9][0-9]{9}$",
+            message = "Contact 1 phone must be a valid Indian 10 digit mobile number"
+    )
     private String contact1Phone;
 
     @Size(max = 50)
     private String contact2Relation;
 
-    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Contact 2 phone must be exactly 10 digits")
+    @Pattern(
+            regexp = "^$|^[6-9][0-9]{9}$",
+            message = "Contact 2 phone must be a valid Indian 10 digit mobile number"
+    )
     private String contact2Phone;
 
     public String getFullName() { return fullName; }

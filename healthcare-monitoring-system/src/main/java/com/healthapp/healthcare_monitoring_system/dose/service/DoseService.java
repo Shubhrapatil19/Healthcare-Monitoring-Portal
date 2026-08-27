@@ -68,7 +68,7 @@ public class DoseService {
      * 1) Marks yesterday's leftover PENDING doses as MISSED.
      * 2) Generates today's dose-log rows for every active medicine.
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Kolkata")
     public void runDailyDoseJob() {
         markPastPendingAsMissed();
         generateDosesForDate(LocalDate.now());

@@ -9,6 +9,7 @@ import com.healthapp.healthcare_monitoring_system.profile.dto.UpdateProfileReque
 import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
 import com.healthapp.healthcare_monitoring_system.profile.repository.UserProfileRepository;
 
+import com.healthapp.healthcare_monitoring_system.sms.util.IndianMobileNumberUtil;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -49,7 +50,7 @@ public class ProfileService {
 
         // base register fields
         user.setFullName(request.getFullName().trim());
-        user.setMobile(request.getMobile().trim());
+        user.setMobile(IndianMobileNumberUtil.normalize(request.getMobile()));
         registerRepository.save(user);
 
         // extended profile fields
@@ -57,9 +58,17 @@ public class ProfileService {
         profile.setGender(request.getGender());
         profile.setDiseaseCondition(blankToNull(request.getDiseaseCondition()));
         profile.setContact1Relation(blankToNull(request.getContact1Relation()));
-        profile.setContact1Phone(blankToNull(request.getContact1Phone()));
+        profile.setContact1Phone(
+                request.getContact1Phone() == null || request.getContact1Phone().trim().isEmpty()
+                        ? null
+                        : IndianMobileNumberUtil.normalize(request.getContact1Phone())
+        );
         profile.setContact2Relation(blankToNull(request.getContact2Relation()));
-        profile.setContact2Phone(blankToNull(request.getContact2Phone()));
+        profile.setContact2Phone(
+                request.getContact2Phone() == null || request.getContact2Phone().trim().isEmpty()
+                        ? null
+                        : IndianMobileNumberUtil.normalize(request.getContact2Phone())
+        );
 
         UserProfileEntity saved = profileRepository.save(profile);
 

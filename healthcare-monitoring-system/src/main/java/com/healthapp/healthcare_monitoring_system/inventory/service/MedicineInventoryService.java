@@ -131,7 +131,7 @@ public class MedicineInventoryService {
      * whose expiry_date falls within the next 7 days. Deduped for 24 hours so it fires
      * once per day per medicine, not on every job run.
      */
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Kolkata")
     public void notifyExpiringSoonInventory() {
 
         LocalDate today = LocalDate.now();

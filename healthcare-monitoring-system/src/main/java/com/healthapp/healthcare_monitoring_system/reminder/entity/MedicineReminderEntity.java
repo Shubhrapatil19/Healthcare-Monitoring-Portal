@@ -38,6 +38,8 @@ public class MedicineReminderEntity {
 
     @Column(name = "snooze_count", nullable = false)
     private int snoozeCount = 0;
+    @Column(name = "notification_sent", nullable = false)
+    private boolean notificationSent = false;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

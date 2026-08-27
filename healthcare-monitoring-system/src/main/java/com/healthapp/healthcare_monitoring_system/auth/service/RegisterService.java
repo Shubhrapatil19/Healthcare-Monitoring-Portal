@@ -6,6 +6,7 @@ import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.auth.exception.BadRequestException;
 
+import com.healthapp.healthcare_monitoring_system.sms.util.IndianMobileNumberUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +68,9 @@ public class RegisterService {
             user = existingUser;
 
             user.setFullName(request.getFullName());
-            user.setMobile(request.getMobile());
+            user.setMobile(
+                    IndianMobileNumberUtil.normalize(request.getMobile())
+            );
             user.setPasswordHash(
                     passwordEncoder.encode(
                             request.getPassword()
@@ -79,7 +82,9 @@ public class RegisterService {
             user = RegisterEntity.builder()
                     .fullName(request.getFullName())
                     .email(request.getEmail().toLowerCase())
-                    .mobile(request.getMobile())
+                    .mobile(
+                            IndianMobileNumberUtil.normalize(request.getMobile())
+                    )
                     .passwordHash(
                             passwordEncoder.encode(
                                     request.getPassword()
