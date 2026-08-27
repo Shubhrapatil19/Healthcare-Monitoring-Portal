@@ -137,21 +137,26 @@ const formatCreatedAt = (createdAt) => {
     };
   }
 
-  let dateValue = String(createdAt).trim();
-
-  // Backend UTC timestamp timezone ke bina bhej raha hai,
-  // example: 2026-08-26T09:21:18.327899
-  // Agar timestamp me Z ya +05:30 jaisa timezone nahi hai,
-  // to use UTC treat karne ke liye Z append kar dete hain.
+  const dateValue = String(createdAt).trim();
   const hasTimezone =
     /Z$/i.test(dateValue) ||
     /[+-]\d{2}:\d{2}$/.test(dateValue);
 
-  if (!hasTimezone) {
-    dateValue += "Z";
-  }
+  const localDateMatch = dateValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/
+  );
 
-  const dt = new Date(dateValue);
+  const dt =
+    !hasTimezone && localDateMatch
+      ? new Date(
+          Number(localDateMatch[1]),
+          Number(localDateMatch[2]) - 1,
+          Number(localDateMatch[3]),
+          Number(localDateMatch[4]),
+          Number(localDateMatch[5]),
+          Number(localDateMatch[6] || 0)
+        )
+      : new Date(dateValue);
 
   if (Number.isNaN(dt.getTime())) {
     return {
@@ -164,14 +169,12 @@ const formatCreatedAt = (createdAt) => {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: "Asia/Kolkata",
   });
 
   const time = dt.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
-    timeZone: "Asia/Kolkata",
   });
 
   return {
