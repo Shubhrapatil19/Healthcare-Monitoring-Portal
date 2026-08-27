@@ -28,10 +28,39 @@ import {
 
 const normalizeArray = (data) => {
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.notifications)) return data.notifications;
-  if (Array.isArray(data?.alerts)) return data.alerts;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.content)) return data.content;
+
+  if (Array.isArray(data?.notifications)) {
+    return data.notifications;
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items;
+  }
+
+  if (Array.isArray(data?.content)) {
+    return data.content;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  if (Array.isArray(data?.alerts)) {
+    return data.alerts;
+  }
+
+  if (Array.isArray(data?.data?.notifications)) {
+    return data.data.notifications;
+  }
+
+  if (Array.isArray(data?.data?.items)) {
+    return data.data.items;
+  }
+
+  if (Array.isArray(data?.data?.content)) {
+    return data.data.content;
+  }
+
   return [];
 };
 
@@ -55,17 +84,45 @@ const normalizeType = (type) => {
   return "info";
 };
 
-const normalizeNotification = (notification = {}) => ({
-  ...notification,
-  id: getNotificationId(notification),
-  source: "notification",
-  sourceId: getNotificationId(notification),
-  type: normalizeType(notification.type),
-  title: notification.title || "Notification",
-  message: notification.message || "",
-  status: String(notification.status || "UNREAD").trim().toUpperCase(),
-  createdAt: notification.createdAt || notification.time || notification.date,
-});
+const normalizeNotification = (notification = {}) => {
+  const title = String(notification.title || "")
+    .trim()
+    .toLowerCase();
+
+  const message = String(notification.message || "")
+    .trim()
+    .toLowerCase();
+
+  let resolvedType = normalizeType(notification.type);
+
+  // Backend can send medicine reminders with type = INFO.
+  // Detect reminder notifications from title/message too.
+  if (
+    title.includes("medicine reminder") ||
+    title === "reminder" ||
+    message.includes("it's time to take") ||
+    message.includes("it’s time to take")
+  ) {
+    resolvedType = "reminder";
+  }
+
+  return {
+    ...notification,
+    id: getNotificationId(notification),
+    source: "notification",
+    sourceId: getNotificationId(notification),
+    type: resolvedType,
+    title: notification.title || "Notification",
+    message: notification.message || "",
+    status: String(notification.status || "UNREAD")
+      .trim()
+      .toUpperCase(),
+    createdAt:
+      notification.createdAt ||
+      notification.time ||
+      notification.date,
+  };
+};
 
 
 // ================================================================

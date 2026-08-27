@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -205,51 +206,121 @@ const UserDash = ({ onLogout }) => {
 
   const notificationCountRef = useRef(0);
   const notificationSoundReadyRef = useRef(false);
+  const notificationSoundUnlockedRef = useRef(false);
+  const notificationSoundPendingRef = useRef(false);
+  const notificationAudioContextRef = useRef(null);
   const lastNotificationSoundRef = useRef({ count: 0, playedAt: 0 });
 
-  const playNotificationSound = () => {
-    if (typeof window === "undefined") return;
+  const getNotificationAudioContext = useCallback(() => {
+    if (typeof window === "undefined") return null;
 
+    const AudioContext =
+      window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContext) return null;
+
+    if (!notificationAudioContextRef.current) {
+      notificationAudioContextRef.current = new AudioContext();
+    }
+
+    return notificationAudioContextRef.current;
+  }, []);
+
+  const emitNotificationTone = useCallback((audioContext) => {
+    const firstTone = audioContext.createOscillator();
+    const secondTone = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+
+    firstTone.type = "sine";
+    firstTone.frequency.setValueAtTime(880, now);
+    firstTone.frequency.setValueAtTime(1046, now + 0.16);
+
+    secondTone.type = "triangle";
+    secondTone.frequency.setValueAtTime(1320, now + 0.2);
+
+    firstTone.connect(gain);
+    secondTone.connect(gain);
+    gain.connect(audioContext.destination);
+
+    firstTone.start(now);
+    firstTone.stop(now + 0.32);
+    secondTone.start(now + 0.2);
+    secondTone.stop(now + 0.6);
+  }, []);
+
+  const playNotificationSound = useCallback(async () => {
     try {
-      const AudioContext =
-        window.AudioContext || window.webkitAudioContext;
+      const audioContext = getNotificationAudioContext();
 
-      if (!AudioContext) return;
+      if (!audioContext) return;
 
-      const audioContext = new AudioContext();
-      const firstTone = audioContext.createOscillator();
-      const secondTone = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      const now = audioContext.currentTime;
+      if (audioContext.state === "suspended") {
+        notificationSoundPendingRef.current = true;
+        await audioContext.resume();
+      }
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+      if (audioContext.state !== "running") {
+        notificationSoundPendingRef.current = true;
+        return;
+      }
 
-      firstTone.type = "sine";
-      firstTone.frequency.setValueAtTime(880, now);
-      firstTone.frequency.setValueAtTime(1046, now + 0.16);
-
-      secondTone.type = "triangle";
-      secondTone.frequency.setValueAtTime(1320, now + 0.18);
-
-      firstTone.connect(gain);
-      secondTone.connect(gain);
-      gain.connect(audioContext.destination);
-
-      firstTone.start(now);
-      firstTone.stop(now + 0.28);
-      secondTone.start(now + 0.18);
-      secondTone.stop(now + 0.55);
-
-      secondTone.onended = () => {
-        audioContext.close().catch(() => {});
-      };
+      notificationSoundUnlockedRef.current = true;
+      notificationSoundPendingRef.current = false;
+      emitNotificationTone(audioContext);
     } catch (error) {
+      notificationSoundPendingRef.current = true;
       console.error("Notification Sound Error:", error.message);
     }
-  };
+  }, [emitNotificationTone, getNotificationAudioContext]);
 
+  const unlockNotificationSound = useCallback(async () => {
+    try {
+      const audioContext = getNotificationAudioContext();
+
+      if (!audioContext) return;
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      notificationSoundUnlockedRef.current = audioContext.state === "running";
+
+      if (
+        notificationSoundUnlockedRef.current &&
+        notificationSoundPendingRef.current
+      ) {
+        void playNotificationSound();
+      }
+    } catch (error) {
+      console.error("Notification Sound Unlock Error:", error.message);
+    }
+  }, [getNotificationAudioContext, playNotificationSound]);
+
+  useEffect(() => {
+    const unlock = () => {
+      void unlockNotificationSound();
+    };
+
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [unlockNotificationSound]);
+
+  useEffect(() => {
+    return () => {
+      notificationAudioContextRef.current?.close?.().catch(() => {});
+      notificationAudioContextRef.current = null;
+    };
+  }, []);
   // =========================================================
   // TODAY SCHEDULE
   // =========================================================
@@ -459,7 +530,7 @@ const UserDash = ({ onLogout }) => {
           lastSound.count === safeCount && now - lastSound.playedAt < 1500;
 
         if (!isDuplicateSound) {
-          playNotificationSound();
+          void playNotificationSound();
           lastNotificationSoundRef.current = {
             count: safeCount,
             playedAt: now,
@@ -1370,17 +1441,6 @@ const UserDash = ({ onLogout }) => {
 
       fetchCalendarData(),
     ]);
-
-    if (status && reminder) {
-      setCalendarDateStatus(
-        reminder,
-        status
-      );
-
-      if (["taken", "missed"].includes(String(status).toLowerCase())) {
-        removeDoseFromTodaySchedule(reminder);
-      }
-    }
   };
 
   // =========================================================

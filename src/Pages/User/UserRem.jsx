@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./UserRem.css";
 
 import toast from "react-hot-toast";
@@ -45,7 +45,7 @@ const UserRem = ({
   // NORMALIZE API RESPONSE
   // =========================================================
 
-  const normalizeArray = (data) => {
+  const normalizeArray = useCallback((data) => {
     if (Array.isArray(data)) {
       return data;
     }
@@ -63,7 +63,7 @@ const UserRem = ({
     }
 
     return [];
-  };
+  }, []);
 
   // =========================================================
   // GET REMINDER ID
@@ -72,10 +72,54 @@ const UserRem = ({
   // reminderId
   // =========================================================
 
-  const getReminderId = (reminder) =>
+  const getReminderId = useCallback((reminder) =>
     reminder?.reminderId ??
     reminder?.id ??
-    null;
+    null, []);
+
+  const getReminderDate = useCallback((reminder) =>
+    reminder?.scheduledDate ||
+    reminder?.reminderDate ||
+    reminder?.date ||
+    "", []);
+
+  const getReminderTime = useCallback((
+    reminder
+  ) =>
+    reminder?.scheduledTime ||
+    reminder?.reminderTime ||
+    reminder?.timing ||
+    reminder?.time ||
+    "", []);
+
+  const getReminderStatus = useCallback((reminder) => {
+    const status = String(reminder?.status ?? "").trim();
+
+    return status ? status.toUpperCase() : "";
+  }, []);
+
+  const normalizeReminder = useCallback((reminder = {}) => ({
+    ...reminder,
+    id: getReminderId(reminder),
+    medicineName:
+      reminder.medicineName ||
+      reminder.name ||
+      "Medicine",
+    dosage:
+      reminder.dosage ||
+      reminder.dose ||
+      "",
+    scheduledDate:
+      getReminderDate(reminder),
+    scheduledTime:
+      getReminderTime(reminder),
+    status: getReminderStatus(reminder),
+  }), [
+    getReminderDate,
+    getReminderId,
+    getReminderStatus,
+    getReminderTime,
+  ]);
 
   // =========================================================
   // GET TODAY REMINDERS
@@ -90,7 +134,7 @@ const UserRem = ({
 
     const reminders = normalizeArray(
       response.data
-    );
+    ).map(normalizeReminder);
 
     setPendingReminders(reminders);
 
@@ -110,7 +154,7 @@ const UserRem = ({
 
     const reminders = normalizeArray(
       response.data
-    );
+    ).map(normalizeReminder);
 
     setHistoryReminders(reminders);
 
@@ -143,55 +187,13 @@ const UserRem = ({
           return;
         }
 
-        const todayData =
-          Array.isArray(
-            todayResponse.data
-          )
-            ? todayResponse.data
-            : Array.isArray(
-                  todayResponse.data
-                    ?.data
-                )
-              ? todayResponse.data
-                  .data
-              : Array.isArray(
-                    todayResponse.data
-                      ?.content
-                  )
-                ? todayResponse.data
-                    .content
-                : Array.isArray(
-                      todayResponse.data
-                        ?.reminders
-                    )
-                  ? todayResponse.data
-                      .reminders
-                  : [];
+        const todayData = normalizeArray(
+          todayResponse.data
+        ).map(normalizeReminder);
 
-        const historyData =
-          Array.isArray(
-            historyResponse.data
-          )
-            ? historyResponse.data
-            : Array.isArray(
-                  historyResponse.data
-                    ?.data
-                )
-              ? historyResponse.data
-                  .data
-              : Array.isArray(
-                    historyResponse.data
-                      ?.content
-                  )
-                ? historyResponse.data
-                    .content
-                : Array.isArray(
-                      historyResponse.data
-                        ?.reminders
-                    )
-                  ? historyResponse.data
-                      .reminders
-                  : [];
+        const historyData = normalizeArray(
+          historyResponse.data
+        ).map(normalizeReminder);
 
         setPendingReminders(
           todayData
@@ -243,7 +245,7 @@ const UserRem = ({
       active = false;
       clearInterval(intervalId);
     };
-  }, []);
+  }, [normalizeArray, normalizeReminder]);
 
   // =========================================================
   // DISPLAY DATA
@@ -283,21 +285,6 @@ const UserRem = ({
       }
     );
   };
-
-  // =========================================================
-  // GET REMINDER TIME
-  //
-  // Swagger:
-  // scheduledTime
-  // =========================================================
-
-  const getReminderTime = (
-    reminder
-  ) =>
-    reminder?.scheduledTime ||
-    reminder?.timing ||
-    reminder?.time ||
-    "";
 
   // =========================================================
   // 24 HOUR → 12 HOUR
@@ -458,7 +445,7 @@ const UserRem = ({
   };
 
   const isPendingReminder = (reminder) =>
-    String(reminder?.status || "PENDING").toUpperCase() === "PENDING";
+    getReminderStatus(reminder) === "PENDING";
 
   const isTodayReminder = (reminder) => {
     const scheduledAt = parseReminderDateTime(reminder);
@@ -1446,11 +1433,9 @@ const UserRem = ({
                       med
                     );
 
-                  const status =
-                    String(
-                      med.status ||
-                        "PENDING"
-                    ).toLowerCase();
+                  const status = String(
+                    med.status ?? ""
+                  ).trim().toLowerCase();
 
                   return (
                     <div
@@ -1531,13 +1516,15 @@ const UserRem = ({
                           }`}
                         >
                           {status
-                            .charAt(
-                              0
-                            )
-                            .toUpperCase() +
-                            status.slice(
-                              1
-                            )}
+                            ? status
+                                .charAt(
+                                  0
+                                )
+                                .toUpperCase() +
+                              status.slice(
+                                1
+                              )
+                            : "Unknown"}
                         </span>
                       </div>
 
