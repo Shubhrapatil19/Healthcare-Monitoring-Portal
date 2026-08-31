@@ -361,49 +361,49 @@
   stroke-width: 2.4;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.edit-btn {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-edit-btn {
   color: #0f766e;
   background: #f0fdfa;
   border-color: #ccfbf1;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.edit-btn:hover {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-edit-btn:hover {
   background: #ccfbf1;
   border-color: #99f6e4;
   color: #0f766e;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.delete-btn {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-delete-btn {
   color: #dc2626;
   background: #fff7f7;
   border-color: #fee2e2;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.delete-btn:hover {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-delete-btn:hover {
   background: #fee2e2;
   border-color: #fecaca;
   color: #b91c1c;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.save-btn {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-save-btn {
   color: #059669;
   background: #f0fdf4;
   border-color: #dcfce7;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.save-btn:hover {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-save-btn:hover {
   background: #dcfce7;
   border-color: #bbf7d0;
   color: #047857;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.cancel-btn {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-cancel-btn {
   color: #6b7280;
   background: #f8fafc;
   border-color: #e2e8f0;
 }
 
-.user-manage-card .medicine-list--my-medicine .action-btn.cancel-btn:hover {
+.user-manage-card .medicine-list--my-medicine .action-btn.manage-cancel-btn:hover {
   background: #f1f5f9;
   border-color: #cbd5e1;
   color: #475569;
@@ -1171,7 +1171,7 @@
     box-shadow: 0 8px 18px rgba(15, 118, 110, 0.12);
   }
 
-  .user-manage-card .medicine-list--my-medicine .delete-btn {
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn {
     box-shadow: 0 8px 18px rgba(220, 38, 38, 0.1);
   }
 
@@ -1373,5 +1373,881 @@
 
   .user-manage-card .medicine-list--my-medicine .medicine-time-chips {
     justify-self: end;
+  }
+}
+
+/* Keep My Medicine action column inside the card on tablet/desktop widths. */
+.user-manage-card .medicine-list--my-medicine .medicine-table-header,
+.user-manage-card .medicine-list--my-medicine .medicine-item {
+  box-sizing: border-box;
+  width: 100%;
+  grid-template-columns: minmax(120px, 1.25fr) minmax(74px, 0.58fr) minmax(122px, 0.9fr) minmax(112px, 0.78fr) 88px;
+  column-gap: 12px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-actions-col,
+.user-manage-card .medicine-list--my-medicine .medicine-actions {
+  min-width: 0;
+  justify-self: center;
+  width: 88px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-actions {
+  gap: 8px !important;
+}
+
+@media (max-width: 980px) and (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header,
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    grid-template-columns: minmax(104px, 1.2fr) minmax(68px, 0.55fr) minmax(112px, 0.9fr) minmax(104px, 0.75fr) 82px;
+    column-gap: 8px;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions-col,
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    width: 82px;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn {
+    width: 30px !important;
+    height: 30px !important;
+    flex-basis: 30px !important;
+  }
+}
+
+/* Final containment for My Medicine actions column. */
+.user-manage-card .medicine-list--my-medicine .medicine-table-header,
+.user-manage-card .medicine-list--my-medicine .medicine-item {
+  grid-template-columns: minmax(118px, 1.15fr) minmax(72px, 0.55fr) minmax(116px, 0.82fr) minmax(104px, 0.72fr) 76px !important;
+  column-gap: 8px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-table-header .medicine-actions-col {
+  justify-content: center;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-actions {
+  width: 76px !important;
+  justify-self: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transform: none !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .action-btn {
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+}
+
+@media (max-width: 980px) and (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header,
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    grid-template-columns: minmax(96px, 1.12fr) minmax(62px, 0.5fr) minmax(104px, 0.82fr) minmax(96px, 0.7fr) 70px !important;
+    column-gap: 6px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    width: 70px !important;
+    gap: 4px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn {
+    width: 28px !important;
+    height: 28px !important;
+    flex-basis: 28px !important;
+  }
+}
+
+/* Reset global inventory button styles inside My Medicine rows. */
+.user-manage-card .medicine-list--my-medicine .action-btn,
+.user-manage-card .medicine-list--my-medicine .manage-edit-btn,
+.user-manage-card .medicine-list--my-medicine .manage-delete-btn,
+.user-manage-card .medicine-list--my-medicine .manage-save-btn,
+.user-manage-card .medicine-list--my-medicine .manage-cancel-btn {
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  max-width: 30px !important;
+  position: static !important;
+  inset: auto !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .action-btn svg,
+.user-manage-card .medicine-list--my-medicine .manage-edit-btn svg,
+.user-manage-card .medicine-list--my-medicine .manage-delete-btn svg {
+  width: 14px !important;
+  height: 14px !important;
+  transform: none !important;
+}
+
+@media (max-width: 980px) and (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .action-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-edit-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-save-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-cancel-btn {
+    max-width: 28px !important;
+  }
+}
+
+/* Desktop zoom containment: keep both action buttons fully inside the row. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header,
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    grid-template-columns: minmax(112px, 1.2fr) minmax(64px, 0.52fr) minmax(108px, 0.85fr) minmax(96px, 0.72fr) 64px !important;
+    column-gap: 6px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    padding-left: 12px !important;
+    padding-right: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions-col,
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    width: 64px !important;
+    max-width: 64px !important;
+    justify-self: end !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    display: grid !important;
+    grid-template-columns: 26px 26px;
+    justify-content: end !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-edit-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-save-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-cancel-btn {
+    width: 26px !important;
+    height: 26px !important;
+    flex: 0 0 26px !important;
+    max-width: 26px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn svg,
+  .user-manage-card .medicine-list--my-medicine .manage-edit-btn svg,
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
+
+/* Dashboard desktop card fit: prevent Actions from being clipped at 100% zoom. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header,
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: minmax(96px, 1.08fr) minmax(58px, 0.5fr) minmax(94px, 0.78fr) minmax(92px, 0.72fr) 58px !important;
+    column-gap: 4px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header .medicine-col {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    font-size: 10px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header .medicine-actions-col {
+    width: 58px !important;
+    max-width: 58px !important;
+    justify-self: end !important;
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    width: 58px !important;
+    max-width: 58px !important;
+    display: grid !important;
+    grid-template-columns: 26px 26px !important;
+    gap: 4px !important;
+    justify-self: end !important;
+    justify-content: end !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-edit-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-save-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-cancel-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    flex: 0 0 26px !important;
+  }
+}
+
+/* Align My Medicine footer action button with pagination. */
+.user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: nowrap !important;
+  gap: 12px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-controls {
+  height: 38px !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-btn {
+  flex: 0 0 32px !important;
+}
+
+/* Place My Medicine footer controls in fixed positions: count left, add button center, pages right. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-count-info {
+    grid-column: 1 !important;
+    justify-self: start !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+    display: contents !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .add-more-btn {
+    grid-column: 2 !important;
+    justify-self: center !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .pagination-controls {
+    grid-column: 3 !important;
+    justify-self: end !important;
+  }
+}
+
+/* Auto-wrap My Medicine footer when controls do not fit in one line. */
+.user-manage-card .medicine-list--my-medicine {
+  container-type: inline-size;
+}
+
+.user-manage-card .medicine-list--my-medicine .user-manage-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  row-gap: 12px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn {
+  flex: 0 1 220px !important;
+}
+
+@container (max-width: 640px) {
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer {
+    align-items: stretch !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-count-info {
+    flex: 1 0 100% !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+    flex: 1 0 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .add-more-btn {
+    flex: 1 1 180px !important;
+  }
+}
+
+/* Polished My Medicine footer layout. */
+.user-manage-card .medicine-list--my-medicine .user-manage-footer {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  grid-template-areas:
+    "count count"
+    "add pages" !important;
+  align-items: center !important;
+  row-gap: 14px !important;
+  column-gap: 14px !important;
+  padding-top: 18px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-count-info {
+  grid-area: count !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+  display: contents !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn {
+  grid-area: add !important;
+  justify-self: start !important;
+  width: min(100%, 300px) !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 24px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%) !important;
+  border: 1px solid #7dd3c7 !important;
+  color: #0f766e !important;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.08) !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-controls {
+  grid-area: pages !important;
+  justify-self: end !important;
+  height: 44px !important;
+  gap: 8px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-btn {
+  width: 36px !important;
+  height: 36px !important;
+  flex: 0 0 36px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+}
+
+@container (max-width: 520px) {
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "count"
+      "add"
+      "pages" !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .add-more-btn,
+  .user-manage-card .medicine-list--my-medicine .pagination-controls {
+    justify-self: stretch !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .pagination-controls {
+    justify-content: center !important;
+  }
+}
+
+/* Clean toolbar redesign for My Medicine footer. */
+.user-manage-card .medicine-list--my-medicine .user-manage-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  padding-top: 16px !important;
+  margin-top: 14px !important;
+  border-top: 1px solid rgba(15, 118, 110, 0.12) !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-count-info {
+  flex: 1 1 180px !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 14px !important;
+  flex: 0 1 auto !important;
+  flex-wrap: wrap !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn {
+  width: auto !important;
+  min-width: 220px !important;
+  max-width: 260px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 22px !important;
+  border-radius: 10px !important;
+  background: #f0fdfa !important;
+  border: 1px solid #5eead4 !important;
+  color: #0f766e !important;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.08) !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn:hover {
+  background: #ccfbf1 !important;
+  border-color: #2dd4bf !important;
+  transform: translateY(-1px) !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  height: 42px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-btn {
+  width: 34px !important;
+  height: 34px !important;
+  flex: 0 0 34px !important;
+  border-radius: 10px !important;
+}
+
+@container (max-width: 560px) {
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer,
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+    justify-content: center !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-count-info {
+    flex-basis: 100% !important;
+    text-align: center !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .add-more-btn {
+    min-width: min(100%, 240px) !important;
+  }
+}
+
+/* Match Inventory Overview footer positioning for My Medicine. */
+.user-manage-card .medicine-list--my-medicine .user-manage-footer {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  grid-template-areas:
+    "count pages"
+    "add add" !important;
+  align-items: center !important;
+  row-gap: 18px !important;
+  column-gap: 14px !important;
+  padding-top: 16px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-count-info {
+  grid-area: count !important;
+  justify-self: start !important;
+  text-align: left !important;
+  flex: none !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+  display: contents !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .pagination-controls {
+  grid-area: pages !important;
+  justify-self: end !important;
+  height: 36px !important;
+}
+
+.user-manage-card .medicine-list--my-medicine .add-more-btn {
+  grid-area: add !important;
+  justify-self: center !important;
+  width: min(100%, 280px) !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+}
+
+@container (max-width: 480px) {
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "count"
+      "pages"
+      "add" !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-count-info,
+  .user-manage-card .medicine-list--my-medicine .pagination-controls,
+  .user-manage-card .medicine-list--my-medicine .add-more-btn {
+    justify-self: center !important;
+  }
+}
+
+/* Mobile My Medicine card layout only. */
+@media (max-width: 768px) {
+  .user-manage-card .user-manage-header {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 172px) !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    padding: 16px 18px !important;
+  }
+
+  .user-manage-card .header-title {
+    min-width: 0 !important;
+    gap: 7px !important;
+    color: #0f766e !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+  }
+
+  .user-manage-card .header-title svg {
+    width: 18px !important;
+    height: 18px !important;
+    color: #0f766e !important;
+  }
+
+  .user-manage-card .medicine-search-box {
+    width: 100% !important;
+    max-width: 172px !important;
+    min-height: 38px !important;
+    justify-self: end !important;
+    border-radius: 11px !important;
+    padding: 7px 10px !important;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.1) !important;
+  }
+
+  .user-manage-card .medicine-search-box input {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine {
+    padding: 12px 18px 18px !important;
+    gap: 14px !important;
+    overflow: visible !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-table-header {
+    display: none !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-items-wrapper {
+    gap: 14px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    display: grid !important;
+    grid-template-columns: 1fr 96px !important;
+    gap: 10px 8px !important;
+    padding: 18px !important;
+    min-height: 0 !important;
+    border: 1px solid #e4eef7 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+    overflow: hidden !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item::before,
+  .user-manage-card .medicine-list--my-medicine .medicine-item::after {
+    display: none !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-info {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-info h5 {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #243044 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-dosage-value,
+  .user-manage-card .medicine-list--my-medicine .medicine-frequency-value {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border: 1px solid #edf2f7 !important;
+    border-radius: 9px !important;
+    background: #f8fafc !important;
+    color: #475569 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: right !important;
+    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.035) !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-dosage-value::before,
+  .user-manage-card .medicine-list--my-medicine .medicine-frequency-value::before {
+    justify-self: start !important;
+    color: #64748b !important;
+    font-weight: 800 !important;
+    font-size: 14px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-dosage-value::before {
+    content: "Dosage" !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-frequency-value::before {
+    content: "Frequency" !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-frequency-value {
+    background: #f7f7ff !important;
+    color: #4f46e5 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 12px !important;
+    color: #475569 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: right !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value::before {
+    content: "Timing" !important;
+    justify-self: start !important;
+    color: #64748b !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value > svg {
+    display: inline-flex !important;
+    grid-column: 2 !important;
+    justify-self: end !important;
+    margin-right: 54px !important;
+    color: #94a3b8 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chips {
+    grid-column: 2 !important;
+    justify-self: end !important;
+    align-items: flex-end !important;
+    gap: 4px !important;
+    padding-left: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chips::before,
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chip::before {
+    display: none !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chip {
+    font-size: 14px !important;
+    color: #475569 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-actions {
+    grid-column: 2 !important;
+    width: auto !important;
+    max-width: none !important;
+    justify-self: end !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    margin-top: 2px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-edit-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-delete-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-save-btn,
+  .user-manage-card .medicine-list--my-medicine .manage-cancel-btn {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    flex: 0 0 42px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 7px 16px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .action-btn svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    padding-top: 4px !important;
+    margin-top: 4px !important;
+    border-top: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-count-info {
+    justify-self: start !important;
+    text-align: left !important;
+    color: #64748b !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .user-manage-footer-actions {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .pagination-controls {
+    order: 2 !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .add-more-btn {
+    order: 3 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    background: #f0fdfa !important;
+    border: 1px solid #99f6e4 !important;
+    color: #0f766e !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .user-manage-card .user-manage-header {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-manage-card .medicine-search-box {
+    max-width: none !important;
+    justify-self: stretch !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value {
+    grid-template-columns: 92px 18px minmax(0, 1fr) !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value > svg {
+    grid-column: 2 !important;
+    justify-self: center !important;
+    margin-right: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chips {
+    grid-column: 3 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value {
+    grid-template-columns: auto 18px minmax(80px, auto) !important;
+    column-gap: 8px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value::before {
+    grid-column: 1 !important;
+    justify-self: start !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value > svg {
+    grid-column: 2 !important;
+    justify-self: end !important;
+    align-self: center !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chips {
+    grid-column: 3 !important;
+    justify-self: end !important;
+    align-items: flex-end !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value {
+    grid-template-columns: 1fr auto auto !important;
+    column-gap: 7px !important;
+    justify-items: initial !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value::before {
+    grid-column: 1 !important;
+    justify-self: start !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-value > svg {
+    grid-column: 2 !important;
+    justify-self: end !important;
+    align-self: center !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chips {
+    grid-column: 3 !important;
+    justify-self: end !important;
+    align-items: flex-end !important;
+    min-width: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-time-chip {
+    text-align: right !important;
   }
 }

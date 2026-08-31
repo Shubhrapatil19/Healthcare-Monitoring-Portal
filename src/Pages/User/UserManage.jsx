@@ -108,6 +108,15 @@ const UserManage = () => {
     return [];
   };
 
+  const getMedicineId = (medicine) => {
+    return (
+      medicine?.id ??
+      medicine?._id ??
+      medicine?.medicineId ??
+      medicine?.medicine_id
+    );
+  };
+
   // =========================================================
   // REFRESH MEDICINES
   //
@@ -331,7 +340,19 @@ const UserManage = () => {
       filteredMedicines,
       currentPage,
     ]);
+  const medicineRangeStart =
+    filteredMedicines.length === 0
+      ? 0
+      : (currentPage - 1) *
+          ITEMS_PER_PAGE +
+        1;
 
+  const medicineRangeEnd =
+    Math.min(
+      currentPage *
+        ITEMS_PER_PAGE,
+      filteredMedicines.length
+    );
   const handlePageChange = (
     page
   ) => {
@@ -384,7 +405,7 @@ const UserManage = () => {
     medicine
   ) => {
     setEditingId(
-      medicine.id
+      getMedicineId(medicine)
     );
 
     const doseTimes =
@@ -548,7 +569,7 @@ const UserManage = () => {
       try {
         const response =
           await api.put(
-            `/api/medicines/${medicine.id}`,
+            `/api/medicines/${getMedicineId(medicine)}`,
             payload
           );
 
@@ -619,7 +640,7 @@ const UserManage = () => {
       const medicine =
         deleteConfirmation.medicine;
 
-      if (!medicine?.id) {
+      if (!getMedicineId(medicine)) {
         toast.error(
           "Medicine ID not found."
         );
@@ -632,7 +653,7 @@ const UserManage = () => {
       try {
         const response =
           await api.delete(
-            `/api/medicines/${medicine.id}`
+            `/api/medicines/${getMedicineId(medicine)}`
           );
 
         toast.success(
@@ -889,7 +910,7 @@ const UserManage = () => {
                   (medicine) => {
                     const isEditing =
                       editingId ===
-                      medicine.id;
+                      getMedicineId(medicine);
 
                     const savedNotes =
                       String(
@@ -900,7 +921,7 @@ const UserManage = () => {
                     return (
                       <div
                         key={
-                          medicine.id
+                          getMedicineId(medicine)
                         }
                         className={`medicine-item ${
                           isEditing
@@ -1008,7 +1029,7 @@ const UserManage = () => {
 
                               <button
                                 type="button"
-                                className="action-btn save-btn"
+                                className="action-btn manage-save-btn"
                                 title="Save"
                                 disabled={
                                   savingEdit
@@ -1026,7 +1047,7 @@ const UserManage = () => {
 
                               <button
                                 type="button"
-                                className="action-btn cancel-btn"
+                                className="action-btn manage-cancel-btn"
                                 title="Cancel"
                                 disabled={
                                   savingEdit
@@ -1047,13 +1068,13 @@ const UserManage = () => {
                             <div className="medicine-notes-edit">
 
                               <label
-                                htmlFor={`medicine-notes-${medicine.id}`}
+                                htmlFor={`medicine-notes-${getMedicineId(medicine)}`}
                               >
                                 Notes
                               </label>
 
                               <textarea
-                                id={`medicine-notes-${medicine.id}`}
+                                id={`medicine-notes-${getMedicineId(medicine)}`}
                                 className="edit-input medicine-notes-textarea"
                                 value={
                                   editFormData.notes
@@ -1145,7 +1166,7 @@ const UserManage = () => {
 
                               <button
                                 type="button"
-                                className="action-btn edit-btn"
+                                className="action-btn manage-edit-btn"
                                 title="Edit"
                                 onClick={() =>
                                   handleStartEdit(
@@ -1162,7 +1183,7 @@ const UserManage = () => {
 
                               <button
                                 type="button"
-                                className="action-btn delete-btn"
+                                className="action-btn manage-delete-btn"
                                 title="Delete"
                                 onClick={() =>
                                   handleDeleteMedicine(
@@ -1234,7 +1255,11 @@ const UserManage = () => {
               <div className="medicine-count-info">
                 Showing{" "}
                 {
-                  paginatedMedicines.length
+                  medicineRangeStart
+                }{" "}
+                to{" "}
+                {
+                  medicineRangeEnd
                 }{" "}
                 of{" "}
                 {
@@ -1419,6 +1444,7 @@ const UserManage = () => {
 };
 
 export default UserManage;
+
 
 
 

@@ -6280,3 +6280,89 @@ body{
     font-weight: 800 !important;
     line-height: 1.15 !important;
 }
+
+/* Fit Inventory Overview table inside narrow dashboard cards. */
+.inventory-overview-card .stock-table {
+    overflow: hidden !important;
+}
+
+.inventory-overview-card .stock-table-header,
+.inventory-overview-card .stock-table-row {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(104px, 1.28fr) minmax(78px, 0.82fr) minmax(66px, 0.7fr) minmax(92px, 0.95fr) !important;
+    column-gap: 6px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    overflow: hidden !important;
+}
+
+.inventory-overview-card .stock-table-header span,
+.inventory-overview-card .stock-table-row span {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+@media (min-width: 769px) and (max-width: 1320px) {
+    .inventory-overview-card .stock-table-header,
+    .inventory-overview-card .stock-table-row {
+        grid-template-columns: minmax(96px, 1.18fr) minmax(72px, 0.78fr) minmax(58px, 0.62fr) minmax(82px, 0.88fr) !important;
+        column-gap: 4px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .inventory-overview-card .stock-table-header span,
+    .inventory-overview-card .stock-table-row span {
+        font-size: 12px !important;
+    }
+}
+
+/* Add matching animated treatment for Low Stock Alerts stat card. */
+.stats-grid .stat-card:nth-child(4) {
+    border: 2px solid transparent !important;
+    animation: statCardBorderSpin 4s linear infinite;
+    background:
+        linear-gradient(135deg, #ffffff 0%, #fffbeb 58%, #fef3c7 100%) padding-box,
+        conic-gradient(from var(--stat-border-angle), rgba(217, 119, 6, 0.08), #d97706, #f59e0b, rgba(253, 230, 138, 0.34), #d97706, rgba(217, 119, 6, 0.08)) border-box !important;
+}
+
+.stats-grid .stat-card:nth-child(4)::before {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.42);
+    animation: lowStockAccentPulse 1.9s ease-in-out infinite;
+}
+
+.stats-grid .stat-card:nth-child(4) svg {
+    animation: lowStockIconFloat 2.2s ease-in-out infinite;
+}
+
+.stats-grid .stat-card:nth-child(4):hover {
+    animation-duration: 2.4s;
+}
+
+.stats-grid .stat-card:nth-child(4):hover svg {
+    animation-duration: 1.35s;
+}
+
+@keyframes lowStockAccentPulse {
+    0%, 100% {
+        opacity: 0.78;
+        transform: scaleY(0.92);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleY(1.04);
+    }
+}
+
+@keyframes lowStockIconFloat {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-3px) scale(1.03);
+    }
+}

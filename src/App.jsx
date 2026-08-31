@@ -135,13 +135,43 @@ function App() {
       <Toaster
         position="top-center"
         reverseOrder={false}
+        containerStyle={{
+          zIndex: 20000,
+        }}
+        gutter={12}
         toastOptions={{
           duration: 4000,
           style: {
-            borderRadius: "10px",
-            padding: "14px 20px",
+            minWidth: "320px",
+            maxWidth: "420px",
+            border: "1px solid #dbe7ef",
+            borderRadius: "8px",
+            padding: "14px 18px",
+            color: "#243044",
+            background: "#ffffff",
+            boxShadow:
+              "0 18px 45px rgba(15, 23, 42, 0.18)",
             fontSize: "14px",
             fontWeight: "600",
+            lineHeight: "1.35",
+          },
+          success: {
+            iconTheme: {
+              primary: "#0f8f65",
+              secondary: "#ffffff",
+            },
+            style: {
+              borderLeft: "4px solid #0f8f65",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#ffffff",
+            },
+            style: {
+              borderLeft: "4px solid #ef4444",
+            },
           },
         }}
       />

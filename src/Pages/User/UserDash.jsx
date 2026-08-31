@@ -367,7 +367,7 @@ const UserDash = ({ onLogout }) => {
 
   const [inventoryPage, setInventoryPage] = useState(1);
 
-  const inventoryItemsPerPage = 4;
+  const inventoryItemsPerPage = 3;
 
   // =========================================================
   // CALENDAR
@@ -656,8 +656,61 @@ const UserDash = ({ onLogout }) => {
   const filterMissedWindowDoses = (doses) =>
     doses.filter((dose) => !isDosePastMissedWindow(dose));
 
+  const getScheduleDateKey = (value) => {
+    if (!value) return "";
+
+    const raw = String(value).trim();
+
+    const dmyMatch = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+
+    if (dmyMatch) {
+      return `${dmyMatch[3]}-${String(dmyMatch[2]).padStart(2, "0")}-${String(dmyMatch[1]).padStart(2, "0")}`;
+    }
+
+    const ymdMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+
+    if (ymdMatch) {
+      return `${ymdMatch[1]}-${String(ymdMatch[2]).padStart(2, "0")}-${String(ymdMatch[3]).padStart(2, "0")}`;
+    }
+
+    const parsedDate = new Date(raw);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return (
+        `${parsedDate.getFullYear()}-` +
+        `${String(parsedDate.getMonth() + 1).padStart(2, "0")}-` +
+        `${String(parsedDate.getDate()).padStart(2, "0")}`
+      );
+    }
+
+    return normalizeScheduleValue(raw);
+  };
+
+  const getDoseDateKey = (dose) =>
+    getScheduleDateKey(
+      dose?.scheduledDate || dose?.date || dose?.reminderDate
+    );
+
+  const getTodayDateKey = () => {
+    const now = new Date();
+
+    return (
+      `${now.getFullYear()}-` +
+      `${String(now.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(now.getDate()).padStart(2, "0")}`
+    );
+  };
+
+  const isDoseScheduledToday = (dose) => {
+    const doseDate = getDoseDateKey(dose);
+
+    return !doseDate || doseDate === getTodayDateKey();
+  };
+
   const getTodayDoseKeys = (dose) => {
     if (!dose) return [];
+
+    const date = getDoseDateKey(dose) || getTodayDateKey();
 
     const idKeys = [
       dose.doseLogId,
@@ -666,21 +719,15 @@ const UserDash = ({ onLogout }) => {
       dose.id,
     ]
       .filter((value) => value !== undefined && value !== null && value !== "")
-      .map((value) => `id:${value}`);
+      .map((value) => `id:${date}|${value}`);
 
     const name = normalizeScheduleValue(dose.medicineName);
-    const date = normalizeScheduleValue(
-      dose.scheduledDate || dose.date || dose.reminderDate
-    );
     const time = normalizeScheduleTime(
       dose.scheduledTime || dose.time || dose.reminderTime
     );
     const detailsKeys =
-      name && time
-        ? [
-            `details:${name}|${time}`,
-            date ? `details:${name}|${date}|${time}` : "",
-          ]
+      name && time && date
+        ? [`details:${name}|${date}|${time}`]
         : [];
 
     return [...idKeys, ...detailsKeys].filter(Boolean);
@@ -782,8 +829,10 @@ const UserDash = ({ onLogout }) => {
 
       const IS_COMPLETED_STATUS = new Set(["TAKEN", "MISSED"]);
 
-      const completedHistoryDoses = historyDoses.filter((dose) =>
-        IS_COMPLETED_STATUS.has(String(dose?.status || "").toUpperCase())
+      const completedHistoryDoses = historyDoses.filter(
+        (dose) =>
+          isDoseScheduledToday(dose) &&
+          IS_COMPLETED_STATUS.has(String(dose?.status || "").toUpperCase())
       );
 
       const mergeScheduleDoses = (primary, fallback) => {
@@ -971,10 +1020,12 @@ const UserDash = ({ onLogout }) => {
         const completedHistorySchedules = extractArray(
           historyResponse.data,
           ["reminders", "history", "data"]
-        ).filter((dose) =>
-          ["TAKEN", "MISSED"].includes(
-            String(dose?.status || "").toUpperCase()
-          )
+        ).filter(
+          (dose) =>
+            isDoseScheduledToday(dose) &&
+            ["TAKEN", "MISSED"].includes(
+              String(dose?.status || "").toUpperCase()
+            )
         );
 
         const mergeInitialScheduleDoses = (primary, fallback) => {
@@ -3360,6 +3411,7 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
 
 
 

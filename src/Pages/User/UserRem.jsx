@@ -10,6 +10,7 @@ import {
   Trash2,
   Pill,
   Calendar,
+  Info,
 } from "lucide-react";
 
 import api from "../../api/axiosInstance";
@@ -40,6 +41,7 @@ const UserRem = ({
   const [historyReminders, setHistoryReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
+  const [showAllHistoryMobile, setShowAllHistoryMobile] = useState(false);
 
   // =========================================================
   // NORMALIZE API RESPONSE
@@ -253,6 +255,8 @@ const UserRem = ({
 
   const displayHistory =
     historyReminders;
+
+  const mobileHistoryPreviewCount = 3;
 
   // =========================================================
   // FORMAT DATE
@@ -1443,9 +1447,17 @@ const UserRem = ({
                         reminderId ??
                         `history-${index}`
                       }
-                      className="rem-hl-row"
+                      className={`rem-hl-row ${
+                        !showAllHistoryMobile &&
+                        index >=
+                          mobileHistoryPreviewCount
+                          ? "rem-history-mobile-hidden"
+                          : ""
+                      }`}
                     >
                       <div className="rem-hl-col rem-hl-col-name">
+                        <span className="rem-mobile-main-icon" aria-hidden="true"><Pill size={20} /></span>
+
                         <span className="rem-hl-label">
                           Medicine Name
                         </span>
@@ -1454,11 +1466,42 @@ const UserRem = ({
                           {med.medicineName ||
                             "—"}
                         </span>
+                        <span className="rem-mobile-top-dose">
+                          {med.dosage ||
+                            "—"}
+                        </span>
+                        <span
+                          className={`rem-mobile-top-status rem-status-badge ${
+                            status ===
+                            "snoozed"
+                              ? "rem-status-snoozed"
+                              : status ===
+                                  "taken"
+                                ? "rem-status-taken"
+                                : status ===
+                                    "missed"
+                                  ? "rem-status-missed"
+                                  : "rem-status-upcoming"
+                          }`}
+                        >
+                          {status
+                            ? status
+                                .charAt(
+                                  0
+                                )
+                                .toUpperCase() +
+                              status.slice(
+                                1
+                              )
+                            : "Unknown"}
+                        </span>
                       </div>
 
                       <div className="rem-hl-col rem-hl-col-dose">
+                        <span className="rem-mobile-field-icon" aria-hidden="true"><Pill size={17} /></span>
+
                         <span className="rem-hl-label">
-                          Dosage
+                          Dose
                         </span>
 
                         <span className="rem-hl-value">
@@ -1468,6 +1511,8 @@ const UserRem = ({
                       </div>
 
                       <div className="rem-hl-col rem-hl-col-date">
+                        <span className="rem-mobile-field-icon" aria-hidden="true"><Calendar size={17} /></span>
+
                         <span className="rem-hl-label">
                           Date
                         </span>
@@ -1482,6 +1527,8 @@ const UserRem = ({
                       </div>
 
                       <div className="rem-hl-col rem-hl-col-time">
+                        <span className="rem-mobile-field-icon" aria-hidden="true"><Clock size={17} /></span>
+
                         <span className="rem-hl-label">
                           Time
                         </span>
@@ -1497,6 +1544,8 @@ const UserRem = ({
                       </div>
 
                       <div className="rem-hl-col rem-hl-col-status">
+                        <span className="rem-mobile-field-icon" aria-hidden="true"><Info size={17} /></span>
+
                         <span className="rem-hl-label">
                           Status
                         </span>
@@ -1549,6 +1598,33 @@ const UserRem = ({
                     </div>
                   );
                 }
+              )}
+              {displayHistory.length >
+                mobileHistoryPreviewCount && (
+                <div className="rem-history-mobile-controls">
+                  <span className="rem-history-mobile-count">
+                    {showAllHistoryMobile
+                      ? `${displayHistory.length} of ${displayHistory.length}`
+                      : `${Math.min(
+                          mobileHistoryPreviewCount,
+                          displayHistory.length
+                        )} of ${displayHistory.length}`}
+                  </span>
+
+                  <button
+                    className="rem-history-see-all-btn"
+                    type="button"
+                    onClick={() =>
+                      setShowAllHistoryMobile(
+                        (current) => !current
+                      )
+                    }
+                  >
+                    {showAllHistoryMobile
+                      ? "Show Less"
+                      : "See All"}
+                  </button>
+                </div>
               )}
             </div>
 
