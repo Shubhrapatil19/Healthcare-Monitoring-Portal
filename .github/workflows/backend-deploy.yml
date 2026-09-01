@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - Backend1
+
   workflow_dispatch:
 
 concurrency:
@@ -41,52 +42,74 @@ jobs:
               MODULE=$REPO/healthcare-monitoring-system
               PROD_PROPERTIES=/home/backend1/healthcare-production/application.properties
               APP_PROPERTIES=$MODULE/src/main/resources/application.properties
+              JAR=$MODULE/target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
+
+              echo "Checking production configuration..."
 
               test -f "$PROD_PROPERTIES"
+              grep -q "^server.port=5081" "$PROD_PROPERTIES"
+              grep -q "^app.backend-url=" "$PROD_PROPERTIES"
 
               cd "$REPO"
 
+              echo "Restoring tracked server files..."
               git restore .
 
+              echo "Downloading latest Backend1 code..."
               git fetch origin Backend1
               git checkout Backend1
               git pull --ff-only origin Backend1
 
-              cp "$PROD_PROPERTIES" "$APP_PROPERTIES"
+              SERVER_COMMIT=$(git rev-parse HEAD)
+              GITHUB_COMMIT=$(git rev-parse origin/Backend1)
 
-              grep -q "^app.backend-url=" "$APP_PROPERTIES"
+              echo "Server commit: $SERVER_COMMIT"
+              echo "GitHub commit: $GITHUB_COMMIT"
+
+              test "$SERVER_COMMIT" = "$GITHUB_COMMIT"
+
+              echo "Applying production properties..."
+              cp "$PROD_PROPERTIES" "$APP_PROPERTIES"
 
               cd "$MODULE"
 
-              echo "Running Maven build..."
+              echo "Starting Maven build..."
 
               bash ./mvnw clean package -DskipTests
 
-              test -f target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
+              test -f "$JAR"
 
-              echo "Deployed commit:"
-              git -C "$REPO" log -1 --oneline
+              echo "JAR generated successfully:"
+              ls -lh "$JAR"
 
               echo "BACKEND BUILD SUCCESS"
             '
 
+            echo "Restarting healthcare service..."
             sudo systemctl restart healthcare
 
-            echo "Waiting for backend startup..."
+            echo "Waiting for backend API..."
 
             for attempt in $(seq 1 45); do
               if sudo systemctl is-active --quiet healthcare && \
-                 curl -fsS http://127.0.0.1:5081/v3/api-docs >/dev/null 2>&1
+                 curl -fsS \
+                 http://127.0.0.1:5081/v3/api-docs \
+                 >/dev/null 2>&1
               then
                 echo "BACKEND DEPLOYMENT SUCCESS"
                 exit 0
               fi
 
+              echo "Startup attempt: $attempt/45"
+
               if [ "$attempt" -eq 45 ]; then
                 echo "BACKEND DEPLOYMENT FAILED"
 
                 sudo systemctl status healthcare --no-pager -l
-                sudo journalctl -u healthcare -n 100 --no-pager -l
+                sudo journalctl \
+                  -u healthcare \
+                  -n 120 \
+                  --no-pager -l
 
                 exit 1
               fi
