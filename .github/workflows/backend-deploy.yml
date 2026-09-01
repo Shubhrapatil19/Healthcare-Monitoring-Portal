@@ -39,37 +39,40 @@ jobs:
 
               REPO=/opt/project/backend1/Healthcare-Monitoring-Portal
               MODULE=$REPO/healthcare-monitoring-system
-              PRODUCTION_PROPERTIES=/home/backend1/healthcare-production/application.properties
-              APPLICATION_PROPERTIES=$MODULE/src/main/resources/application.properties
+              PROD_PROPERTIES=/home/backend1/healthcare-production/application.properties
+              APP_PROPERTIES=$MODULE/src/main/resources/application.properties
 
-              test -f "$PRODUCTION_PROPERTIES"
-              grep -q "^app.backend-url=" "$PRODUCTION_PROPERTIES"
+              test -f "$PROD_PROPERTIES"
 
               cd "$REPO"
 
-              echo "Cleaning tracked server changes..."
+              echo "Restoring tracked repository files..."
               git restore .
 
+              echo "Pulling Backend1 branch..."
               git fetch origin Backend1
               git checkout Backend1
               git pull --ff-only origin Backend1
 
-              echo "Restoring production application.properties..."
-              cp "$PRODUCTION_PROPERTIES" "$APPLICATION_PROPERTIES"
+              echo "Restoring production properties..."
+              cp "$PROD_PROPERTIES" "$APP_PROPERTIES"
 
-              echo "Building backend..."
+              grep -q "^app.backend-url=" "$APP_PROPERTIES"
+
               cd "$MODULE"
 
+              echo "Building backend..."
               bash ./mvnw clean package -DskipTests
 
               test -f target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
 
-              echo "Deployed commit:"
+              echo "Deployed backend commit:"
               git -C "$REPO" log -1 --oneline
 
               echo "BACKEND BUILD SUCCESS"
             '
 
+            echo "Restarting healthcare service..."
             sudo systemctl restart healthcare
 
             echo "Waiting for backend startup..."
@@ -84,8 +87,10 @@ jobs:
 
               if [ "$attempt" -eq 45 ]; then
                 echo "BACKEND DEPLOYMENT FAILED"
+
                 sudo systemctl status healthcare --no-pager -l
                 sudo journalctl -u healthcare -n 100 --no-pager -l
+
                 exit 1
               fi
 
