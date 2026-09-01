@@ -11,6 +11,8 @@ import {
   Pill,
   Calendar,
   Info,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import api from "../../api/axiosInstance";
@@ -41,7 +43,7 @@ const UserRem = ({
   const [historyReminders, setHistoryReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
-  const [showAllHistoryMobile, setShowAllHistoryMobile] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
 
   // =========================================================
   // NORMALIZE API RESPONSE
@@ -256,7 +258,27 @@ const UserRem = ({
   const displayHistory =
     historyReminders;
 
-  const mobileHistoryPreviewCount = 3;
+  const historyItemsPerPage = 5;
+  const historyTotalPages = Math.max(
+    1,
+    Math.ceil(displayHistory.length / historyItemsPerPage)
+  );
+  const currentHistoryPage = Math.min(
+    historyPage,
+    historyTotalPages
+  );
+  const historyStartIndex =
+    (currentHistoryPage - 1) * historyItemsPerPage;
+  const paginatedHistory = displayHistory.slice(
+    historyStartIndex,
+    historyStartIndex + historyItemsPerPage
+  );
+  const historyPageStart =
+    displayHistory.length === 0 ? 0 : historyStartIndex + 1;
+  const historyPageEnd = Math.min(
+    historyStartIndex + historyItemsPerPage,
+    displayHistory.length
+  );
 
   // =========================================================
   // FORMAT DATE
@@ -1427,7 +1449,7 @@ const UserRem = ({
                 </div>
               </div>
 
-              {displayHistory.map(
+              {paginatedHistory.map(
                 (
                   med,
                   index
@@ -1445,15 +1467,9 @@ const UserRem = ({
                     <div
                       key={
                         reminderId ??
-                        `history-${index}`
+                        `history-${historyStartIndex + index}`
                       }
-                      className={`rem-hl-row ${
-                        !showAllHistoryMobile &&
-                        index >=
-                          mobileHistoryPreviewCount
-                          ? "rem-history-mobile-hidden"
-                          : ""
-                      }`}
+                      className="rem-hl-row"
                     >
                       <div className="rem-hl-col rem-hl-col-name">
                         <span className="rem-mobile-main-icon" aria-hidden="true"><Pill size={20} /></span>
@@ -1599,35 +1615,49 @@ const UserRem = ({
                   );
                 }
               )}
-              {displayHistory.length >
-                mobileHistoryPreviewCount && (
-                <div className="rem-history-mobile-controls">
-                  <span className="rem-history-mobile-count">
-                    {showAllHistoryMobile
-                      ? `${displayHistory.length} of ${displayHistory.length}`
-                      : `${Math.min(
-                          mobileHistoryPreviewCount,
-                          displayHistory.length
-                        )} of ${displayHistory.length}`}
+
+            </div>
+            {displayHistory.length > historyItemsPerPage && (
+              <div className="rem-history-pagination">
+                <span className="rem-history-page-info">
+                  Showing {historyPageStart}-{historyPageEnd} of {displayHistory.length}
+                </span>
+
+                <div className="rem-history-page-controls">
+                  <button
+                    className="rem-history-page-btn"
+                    type="button"
+                    aria-label="Previous history page"
+                    onClick={() =>
+                      setHistoryPage((currentPage) =>
+                        Math.max(1, currentPage - 1)
+                      )
+                    }
+                    disabled={currentHistoryPage === 1}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  <span className="rem-history-page-current">
+                    Page {currentHistoryPage} of {historyTotalPages}
                   </span>
 
                   <button
-                    className="rem-history-see-all-btn"
+                    className="rem-history-page-btn"
                     type="button"
+                    aria-label="Next history page"
                     onClick={() =>
-                      setShowAllHistoryMobile(
-                        (current) => !current
+                      setHistoryPage(
+                        Math.min(historyTotalPages, currentHistoryPage + 1)
                       )
                     }
+                    disabled={currentHistoryPage === historyTotalPages}
                   >
-                    {showAllHistoryMobile
-                      ? "Show Less"
-                      : "See All"}
+                    <ChevronRight size={18} />
                   </button>
                 </div>
-              )}
-            </div>
-
+              </div>
+            )}
             {displayHistory.length ===
               0 && (
               <div className="rem-history-empty">

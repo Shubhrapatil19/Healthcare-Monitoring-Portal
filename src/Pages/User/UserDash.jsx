@@ -771,6 +771,65 @@ const UserDash = ({ onLogout }) => {
     );
   };
 
+  const getScheduleMedicineId = (item) => {
+    return (
+      item?.medicineId ??
+      item?.medicine_id ??
+      item?.medicine?.id ??
+      item?.medicine?._id ??
+      item?.medicine?.medicineId ??
+      item?.medicine?.medicine_id
+    );
+  };
+
+  const getScheduleMedicineName = (item) => {
+    return (
+      item?.medicineName ??
+      item?.medicine_name ??
+      item?.medicine?.medicineName ??
+      item?.medicine?.medicine_name ??
+      item?.medicine?.name
+    );
+  };
+
+  const getMedicineIdentity = (medicine) => ({
+    id: normalizeScheduleValue(
+      medicine?.id ??
+        medicine?._id ??
+        medicine?.medicineId ??
+        medicine?.medicine_id
+    ),
+    name: normalizeScheduleValue(
+      medicine?.medicineName ?? medicine?.medicine_name ?? medicine?.name
+    ),
+  });
+
+  const filterDosesForActiveMedicines = (doses, activeMedicines) => {
+    if (!Array.isArray(activeMedicines)) return doses;
+
+    const activeIds = new Set();
+    const activeNames = new Set();
+
+    activeMedicines.forEach((medicine) => {
+      const { id, name } = getMedicineIdentity(medicine);
+
+      if (id) activeIds.add(id);
+      if (name) activeNames.add(name);
+    });
+
+    if (activeIds.size === 0 && activeNames.size === 0) return [];
+
+    return doses.filter((dose) => {
+      const doseMedicineId = normalizeScheduleValue(getScheduleMedicineId(dose));
+      const doseMedicineName = normalizeScheduleValue(getScheduleMedicineName(dose));
+
+      if (doseMedicineId) return activeIds.has(doseMedicineId);
+      if (doseMedicineName) return activeNames.has(doseMedicineName);
+
+      return true;
+    });
+  };
+
   const clearTodayScheduleCache = () => {
     try {
       localStorage.removeItem(TODAY_SCHEDULE_CACHE_KEY);
@@ -812,9 +871,10 @@ const UserDash = ({ onLogout }) => {
 
   const fetchTodaySchedule = async () => {
     try {
-      const [todayResponse, historyResponse] = await Promise.all([
+      const [todayResponse, historyResponse, medicinesResponse] = await Promise.all([
         api.get("/api/doses/today"),
         api.get("/api/reminders/history").catch(() => ({ data: [] })),
+        api.get("/api/medicines").catch(() => null),
       ]);
 
       const doses = extractArray(
@@ -826,6 +886,10 @@ const UserDash = ({ onLogout }) => {
         historyResponse.data,
         ["reminders", "history", "data"]
       );
+
+      const activeMedicines = medicinesResponse
+        ? extractArray(medicinesResponse.data, ["medicines"])
+        : null;
 
       const IS_COMPLETED_STATUS = new Set(["TAKEN", "MISSED"]);
 
@@ -860,7 +924,10 @@ const UserDash = ({ onLogout }) => {
 
       const pendingDoses = filterCompletedTodayDoses(
         filterMissedWindowDoses(
-          mergeScheduleDoses(rawPendingDoses, readTodayScheduleCache())
+          filterDosesForActiveMedicines(
+            mergeScheduleDoses(rawPendingDoses, readTodayScheduleCache()),
+            activeMedicines
+          )
         ),
         completedHistoryDoses
       );
@@ -871,8 +938,19 @@ const UserDash = ({ onLogout }) => {
       } else {
         setTodaySchedule((current) =>
           current.length > 0
-            ? filterCompletedTodayDoses(filterMissedWindowDoses(current))
-            : filterCompletedTodayDoses(filterMissedWindowDoses(readTodayScheduleCache()))
+            ? filterCompletedTodayDoses(
+                filterMissedWindowDoses(
+                  filterDosesForActiveMedicines(current, activeMedicines)
+                )
+              )
+            : filterCompletedTodayDoses(
+                filterMissedWindowDoses(
+                  filterDosesForActiveMedicines(
+                    readTodayScheduleCache(),
+                    activeMedicines
+                  )
+                )
+              )
         );
       }
     } catch (error) {
@@ -971,6 +1049,7 @@ const UserDash = ({ onLogout }) => {
           historyResponse,
           inventoryResponse,
           calendarResponse,
+          medicinesResponse,
         ] = await Promise.all([
           api.get("/api/dashboard"),
 
@@ -981,6 +1060,8 @@ const UserDash = ({ onLogout }) => {
           api.get("/api/inventory"),
 
           api.get("/api/doses/calendar"),
+
+          api.get("/api/medicines").catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -1017,6 +1098,10 @@ const UserDash = ({ onLogout }) => {
         // TAKEN/MISSED nahi hui hain. Backend koi bhi status de sakta
         // hai (PENDING/UPCOMING/SCHEDULED/ACTIVE), isliye sirf
         // TAKEN/MISSED ko filter out karna sabse safe hai.
+        const initialActiveMedicines = medicinesResponse
+          ? extractArray(medicinesResponse.data, ["medicines"])
+          : null;
+
         const completedHistorySchedules = extractArray(
           historyResponse.data,
           ["reminders", "history", "data"]
@@ -1053,7 +1138,10 @@ const UserDash = ({ onLogout }) => {
 
         const pendingSchedules = filterCompletedTodayDoses(
           filterMissedWindowDoses(
-            mergeInitialScheduleDoses(rawPendingSchedules, readTodayScheduleCache())
+            filterDosesForActiveMedicines(
+              mergeInitialScheduleDoses(rawPendingSchedules, readTodayScheduleCache()),
+              initialActiveMedicines
+            )
           ),
           completedHistorySchedules
         );
@@ -1067,7 +1155,12 @@ const UserDash = ({ onLogout }) => {
           setTodaySchedule(pendingSchedules);
         } else {
           const cached = filterCompletedTodayDoses(
-            filterMissedWindowDoses(readTodayScheduleCache()),
+            filterMissedWindowDoses(
+              filterDosesForActiveMedicines(
+                readTodayScheduleCache(),
+                initialActiveMedicines
+              )
+            ),
             completedHistorySchedules
           );
           setTodaySchedule(cached);

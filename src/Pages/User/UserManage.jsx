@@ -22,6 +22,8 @@ import api from "../../api/axiosInstance";
 import "./UserManage.css";
 
 const ITEMS_PER_PAGE = 3;
+const TODAY_SCHEDULE_CACHE_KEY = "todayScheduleCache";
+const COMPLETED_TODAY_DOSE_KEYS = "completedTodayDoseKeys";
 
 const UserManage = () => {
   // =========================================================
@@ -116,6 +118,93 @@ const UserManage = () => {
       medicine?.medicine_id
     );
   };
+
+  const normalizeScheduleValue = (value) =>
+    String(value ?? "").trim().toLowerCase();
+
+  const getScheduleMedicineId = (item) => {
+    return (
+      item?.medicineId ??
+      item?.medicine_id ??
+      item?.medicine?.id ??
+      item?.medicine?._id ??
+      item?.medicine?.medicineId ??
+      item?.medicine?.medicine_id
+    );
+  };
+
+  const getScheduleMedicineName = (item) => {
+    return (
+      item?.medicineName ??
+      item?.medicine_name ??
+      item?.medicine?.medicineName ??
+      item?.medicine?.medicine_name ??
+      item?.medicine?.name
+    );
+  };
+
+  const removeMedicineFromTodayScheduleCache = (medicine) => {
+    const deletedMedicineId = normalizeScheduleValue(getMedicineId(medicine));
+    const deletedMedicineName = normalizeScheduleValue(
+      medicine?.medicineName || medicine?.medicine_name || medicine?.name
+    );
+
+    if (!deletedMedicineId && !deletedMedicineName) return;
+
+    try {
+      const rawSchedule = localStorage.getItem(TODAY_SCHEDULE_CACHE_KEY);
+      const cachedSchedule = JSON.parse(rawSchedule || "[]");
+
+      if (Array.isArray(cachedSchedule)) {
+        const nextSchedule = cachedSchedule.filter((dose) => {
+          const doseMedicineId = normalizeScheduleValue(
+            getScheduleMedicineId(dose)
+          );
+          const doseMedicineName = normalizeScheduleValue(
+            getScheduleMedicineName(dose)
+          );
+
+          if (deletedMedicineId && doseMedicineId === deletedMedicineId) {
+            return false;
+          }
+
+          return !(
+            deletedMedicineName &&
+            !doseMedicineId &&
+            doseMedicineName === deletedMedicineName
+          );
+        });
+
+        if (nextSchedule.length > 0) {
+          localStorage.setItem(
+            TODAY_SCHEDULE_CACHE_KEY,
+            JSON.stringify(nextSchedule)
+          );
+        } else {
+          localStorage.removeItem(TODAY_SCHEDULE_CACHE_KEY);
+          localStorage.removeItem("todaySchedulePage");
+        }
+      }
+
+      const rawCompletedKeys = localStorage.getItem(COMPLETED_TODAY_DOSE_KEYS);
+      const completedKeys = JSON.parse(rawCompletedKeys || "[]");
+
+      if (Array.isArray(completedKeys) && deletedMedicineName) {
+        const nextKeys = completedKeys.filter(
+          (key) => !String(key).startsWith(`details:${deletedMedicineName}|`)
+        );
+
+        localStorage.setItem(
+          COMPLETED_TODAY_DOSE_KEYS,
+          JSON.stringify(nextKeys)
+        );
+      }
+    } catch {
+      localStorage.removeItem(TODAY_SCHEDULE_CACHE_KEY);
+      localStorage.removeItem("todaySchedulePage");
+    }
+  };
+
 
   // =========================================================
   // REFRESH MEDICINES
@@ -660,6 +749,8 @@ const UserManage = () => {
           response?.data?.message ||
             "Medicine deleted successfully!"
         );
+
+        removeMedicineFromTodayScheduleCache(medicine);
 
         setDeleteConfirmation({
           visible: false,

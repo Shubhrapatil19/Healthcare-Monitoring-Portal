@@ -1618,61 +1618,88 @@
     margin: 0 16px;
   }
 }
-/* Mobile history See All controls */
-.rem-history-mobile-controls {
-  display: none;
+
+.rem-history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #e7ecf2;
+  background: #f8fafc;
 }
 
+.rem-history-page-info,
+.rem-history-page-current {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.rem-history-page-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rem-history-page-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccfbf1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f766e;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.rem-history-page-btn:hover:not(:disabled) {
+  background: #ecfdf5;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.14);
+  transform: translateY(-1px);
+}
+
+.rem-history-page-btn:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+}
 @media (max-width: 768px) {
-  .rem-history-mobile-hidden {
-    display: none !important;
-  }
-
-  .rem-history-mobile-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .rem-history-pagination {
+    align-items: stretch;
+    flex-direction: column;
     gap: 12px;
-    margin: 4px 0 2px;
-    padding: 12px 12px 0;
+    padding: 14px 16px 18px;
   }
 
-  .rem-history-mobile-count {
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.2;
+  .rem-history-page-controls {
+    justify-content: space-between;
+    width: 100%;
   }
 
-  .rem-history-see-all-btn {
-    min-width: 92px;
-    height: 38px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #ccfbf1;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 8px 18px rgba(20, 184, 166, 0.2);
-  }
-
-  .rem-history-see-all-btn:active {
-    transform: translateY(1px);
+  .rem-history-page-current {
+    flex: 1;
+    text-align: center;
   }
 }
 
 @media (max-width: 480px) {
-  .rem-history-mobile-controls {
-    padding: 10px 6px 0;
+  .rem-history-pagination {
+    padding: 12px 10px 16px;
   }
 
-  .rem-history-see-all-btn {
-    min-width: 84px;
-    height: 36px;
+  .rem-history-page-info,
+  .rem-history-page-current {
     font-size: 12px;
+  }
+
+  .rem-history-page-btn {
+    width: 36px;
+    height: 36px;
   }
 }
