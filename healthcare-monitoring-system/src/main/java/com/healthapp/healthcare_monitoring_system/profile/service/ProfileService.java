@@ -2,6 +2,7 @@ package com.healthapp.healthcare_monitoring_system.profile.service;
 
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
+import com.healthapp.healthcare_monitoring_system.common.util.IndianMobileNumberUtil;
 import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
 import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 import com.healthapp.healthcare_monitoring_system.profile.dto.ProfileResponseDto;
@@ -9,7 +10,7 @@ import com.healthapp.healthcare_monitoring_system.profile.dto.UpdateProfileReque
 import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
 import com.healthapp.healthcare_monitoring_system.profile.repository.UserProfileRepository;
 
-import com.healthapp.healthcare_monitoring_system.sms.util.IndianMobileNumberUtil;
+import com.healthapp.healthcare_monitoring_system.common.util.IndianMobileNumberUtil;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

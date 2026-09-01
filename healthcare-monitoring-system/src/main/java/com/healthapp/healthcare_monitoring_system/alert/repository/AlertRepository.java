@@ -17,9 +17,13 @@ public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
 
     Optional<AlertEntity> findByIdAndUserId(Long id, Long userId);
 
-    // used to avoid spamming duplicate alerts for the same medicine on the same day
     boolean existsByUserIdAndMedicineIdAndAlertTypeAndAlertTimeAfter(
             Long userId, Long medicineId, AlertType alertType, LocalDateTime after);
 
     long countByUserIdAndStatus(Long userId, AlertStatus status);
+
+    // NEW — system-wide — used by the SMS escalation job to find MISSED_DOSE alerts that
+    // are still unacknowledged and haven't already escalated all the way to contact 2
+    List<AlertEntity> findByAlertTypeAndAcknowledgedFalseAndEscalationLevelLessThanAndSmsSentAtIsNotNull(
+            AlertType alertType, int escalationLevel);
 }

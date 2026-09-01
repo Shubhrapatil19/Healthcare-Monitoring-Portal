@@ -1,5 +1,7 @@
 package com.healthapp.healthcare_monitoring_system.reminder.service;
 
+import com.healthapp.healthcare_monitoring_system.alert.enums.RecipientType;
+import com.healthapp.healthcare_monitoring_system.alert.service.EmergencyAlertLogService;
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.dose.entity.MedicineDoseLogEntity;
@@ -8,10 +10,16 @@ import com.healthapp.healthcare_monitoring_system.dose.repository.MedicineDoseLo
 import com.healthapp.healthcare_monitoring_system.dose.service.DoseService;
 import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
 import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
+import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
+import com.healthapp.healthcare_monitoring_system.profile.repository.UserProfileRepository;
 import com.healthapp.healthcare_monitoring_system.reminder.dto.ReminderResponseDto;
 import com.healthapp.healthcare_monitoring_system.reminder.entity.MedicineReminderEntity;
 import com.healthapp.healthcare_monitoring_system.reminder.repository.MedicineReminderRepository;
+import com.healthapp.healthcare_monitoring_system.actiontoken.enums.ActionType;
+import com.healthapp.healthcare_monitoring_system.actiontoken.service.ActionTokenService;
+import com.healthapp.healthcare_monitoring_system.auth.service.EmailService;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,34 +39,52 @@ public class ReminderService {
     private final MedicineReminderRepository reminderRepository;
     private final MedicineDoseLogRepository doseLogRepository;
     private final RegisterRepository registerRepository;
+    private final UserProfileRepository profileRepository;
     private final DoseService doseService;
     private final NotificationService notificationService;
+    private final EmailService emailService;
+    private final ActionTokenService smsActionTokenService;
+    private final EmergencyAlertLogService emergencyAlertLogService;
 
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a");
+
+    /** How many minutes before the dose's scheduled time the reminder should fire. */
+    private static final int REMINDER_LEAD_MINUTES = 10;
+
+    /** "Snooze" always pushes the reminder this many minutes into the future. */
+    private static final int SNOOZE_MINUTES = 15;
+
+    /** If the patient doesn't act on the reminder within this many minutes, escalate. */
+    private static final int ESCALATION_WAIT_MINUTES = 15;
+
+    @Value("${app.backend-url}")
+    private String backendUrl;
 
     public ReminderService(
             MedicineReminderRepository reminderRepository,
             MedicineDoseLogRepository doseLogRepository,
             RegisterRepository registerRepository,
+            UserProfileRepository profileRepository,
             DoseService doseService,
-            NotificationService notificationService
+            NotificationService notificationService,
+            EmailService emailService,
+            ActionTokenService smsActionTokenService,
+            EmergencyAlertLogService emergencyAlertLogService
     ) {
         this.reminderRepository = reminderRepository;
         this.doseLogRepository = doseLogRepository;
         this.registerRepository = registerRepository;
+        this.profileRepository = profileRepository;
         this.doseService = doseService;
         this.notificationService = notificationService;
+        this.emailService = emailService;
+        this.smsActionTokenService = smsActionTokenService;
+        this.emergencyAlertLogService = emergencyAlertLogService;
     }
 
-    /** How many minutes before the dose's scheduled time the reminder should fire. */
-    private static final int REMINDER_LEAD_MINUTES = 10;
-
     /**
-     * Runs every 1 minute (needs to be frequent since reminders are precision-sensitive).
-     * Creates a reminder row for every today's PENDING dose log that doesn't have one yet.
-     * reminderTime is set to (scheduled dose time - 10 minutes) — the row is created ahead of
-     * time, but getTodayReminders() only surfaces it once "now" reaches that reminderTime, so
-     * the user sees the popup/notification exactly 10 minutes before the dose is due.
+     * Runs every 1 minute. Creates a reminder row for every today's PENDING dose log
+     * that doesn't have one yet. reminderTime = scheduled dose time - 10 minutes.
      */
     @Scheduled(fixedRate = 60 * 1000)
     public void generateMissingReminders() {
@@ -88,11 +114,11 @@ public class ReminderService {
     }
 
     /**
-     * Runs every 1 minute (system-wide — no logged-in user, so it scans across all users).
-     * Raises an INFO "Medicine Reminder" notification the moment a reminder becomes due
-     * (reminderTime <= now), i.e. exactly 10 minutes before the dose's scheduled time.
-     * Deduped for 40 minutes (via NotificationService.notifyOnce) so the same due reminder
-     * doesn't spam multiple notification rows across repeated job runs.
+     * Runs every 1 minute (system-wide). The moment a reminder becomes due (reminderTime <= now):
+     * 1) Raises an INFO app notification (deduped 40 min, unchanged from before).
+     * 2) Sends an email to the patient with Taken/Snooze links —
+     *    but ONLY ONCE per due-window (guarded by smsSentAt being null). After a snooze,
+     *    smsSentAt is cleared, so the email goes out again 15 minutes later automatically.
      */
     @Scheduled(fixedRate = 60 * 1000)
     public void raiseDueReminderNotifications() {
@@ -104,40 +130,112 @@ public class ReminderService {
 
         for (MedicineReminderEntity reminder : dueReminders) {
 
-            // Notification already sent for this reminder
-            if (reminder.isNotificationSent()) {
-                continue;
-            }
-
-            // still snoozed -> don't notify yet
             if (reminder.getSnoozeUntil() != null && reminder.getSnoozeUntil().isAfter(now)) {
-                continue;
+                continue; // still snoozed — not due yet
             }
 
             MedicineDoseLogEntity dose = reminder.getDoseLog();
 
-            String message = "It's time to take " + dose.getMedicine().getMedicineName()
+            String appMessage = "It's time to take " + dose.getMedicine().getMedicineName()
                     + " " + dose.getMedicine().getDosage() + " at "
                     + dose.getScheduledTime().format(TIME_FORMAT) + ".";
 
             notificationService.notifyOnce(
-                    reminder.getUser(),
-                    NotificationType.INFO,
-                    "Medicine Reminder",
-                    message,
-                    40 // minutes — comfortably covers the reminder's active window
+                    reminder.getUser(), NotificationType.INFO, "Medicine Reminder", appMessage, 40
             );
-            reminder.setNotificationSent(true);
+
+            if (reminder.getSmsSentAt() == null) {
+                sendReminderSms(reminder, dose);
+            }
+        }
+    }
+
+    private void sendReminderSms(MedicineReminderEntity reminder, MedicineDoseLogEntity dose) {
+
+        RegisterEntity user = reminder.getUser();
+
+        String takenToken = smsActionTokenService.generateToken(ActionType.DOSE_TAKEN, reminder.getId());
+        String snoozeToken = smsActionTokenService.generateToken(ActionType.DOSE_SNOOZE, reminder.getId());
+
+        String takenLink = backendUrl + "/api/actions/" + takenToken;
+        String snoozeLink = backendUrl + "/api/actions/" + snoozeToken;
+
+        boolean success = true;
+        try {
+            emailService.sendReminderEmail(
+                    user.getEmail(), user.getFullName(),
+                    dose.getMedicine().getMedicineName(), dose.getMedicine().getDosage(),
+                    takenLink, snoozeLink
+            );
+        } catch (Exception e) {
+            success = false;
+        }
+
+        emergencyAlertLogService.log(
+                user, RecipientType.PATIENT, "You", user.getEmail(),
+                "REMINDER", dose.getMedicine().getMedicineName(), success
+        );
+
+        reminder.setSmsSentAt(LocalDateTime.now());
+        reminder.setEscalationLevel(0);
+        reminderRepository.save(reminder);
+    }
+
+    /**
+     * Runs every 1 minute (system-wide).
+     * If the patient hasn't acted (still PENDING) 15 minutes after the last email,
+     * escalate: level 0 -> Emergency Contact 1, level 1 -> Emergency Contact 2.
+     */
+    /*
+     * DISABLED: escalation to Emergency Contacts used to SMS them here.
+     * SmsService was removed (email-only for now). Emergency contacts don't have an
+     * email on file yet — re-enable this once contact-email fields exist in the UI/DB.
+     */
+    @Scheduled(fixedRate = 60 * 1000)
+    public void escalateUnactionedReminders() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        List<MedicineReminderEntity> candidates =
+                reminderRepository.findByStatusAndEscalationLevelLessThanAndSmsSentAtIsNotNull("PENDING", 2);
+
+        for (MedicineReminderEntity reminder : candidates) {
+
+            if (reminder.getSmsSentAt().plusMinutes(ESCALATION_WAIT_MINUTES).isAfter(now)) {
+                continue; // still inside the wait window
+            }
+
+            // TODO: once emergency contacts have email addresses, notify them here
+            // and log via emergencyAlertLogService as before.
+
+            reminder.setEscalationLevel(reminder.getEscalationLevel() + 1);
+            reminder.setSmsSentAt(now); // restart the wait window for the next escalation level
             reminderRepository.save(reminder);
         }
     }
 
-    /** Today's Reminder section. */
-    /**
-     * Today's Reminder section.
-     * A snoozed reminder stays hidden until its snoozeUntil time has passed,
-     * then it automatically re-appears here (15-min snooze cycle).
-     */
+    private String resolveEscalationContact(UserProfileEntity profile, int currentLevel) {
+
+        if (profile == null) {
+            return null;
+        }
+
+        if (currentLevel == 0 && isFilled(profile.getContact1Phone())) {
+            return profile.getContact1Phone();
+        }
+
+        if (currentLevel == 1 && isFilled(profile.getContact2Phone())) {
+            return profile.getContact2Phone();
+        }
+
+        return null;
+    }
+
+    private boolean isFilled(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    /** Today's Reminder section — hides reminders until their 10-min-before mark, and while snoozed. */
     public List<ReminderResponseDto> getTodayReminders() {
 
         RegisterEntity user = getLoggedInUser();
@@ -148,7 +246,6 @@ public class ReminderService {
                 .stream()
                 .filter(r -> !"TAKEN".equals(r.getStatus()))
                 .filter(r -> !"MISSED".equals(r.getStatus()))
-                // only surface the reminder once its (dose time - 10 min) mark has actually arrived
                 .filter(r -> !r.getReminderTime().isAfter(now))
                 .filter(r -> r.getSnoozeUntil() == null || !r.getSnoozeUntil().isAfter(now))
                 .map(this::convertToResponse)
@@ -166,7 +263,7 @@ public class ReminderService {
                 .collect(Collectors.toList());
     }
 
-    /** "Taken" button — marks dose TAKEN (reduces inventory too) and closes the reminder. */
+    /** "Taken" button in the APP — marks dose TAKEN and closes the reminder. */
     public ReminderResponseDto markTaken(Long reminderId) {
 
         RegisterEntity user = getLoggedInUser();
@@ -179,16 +276,15 @@ public class ReminderService {
 
         reminder.setStatus("TAKEN");
         reminder.setSnoozeUntil(null);
+        reminder.setSmsSentAt(null);
+        reminder.setEscalationLevel(0);
 
         MedicineReminderEntity saved = reminderRepository.save(reminder);
 
         return convertToResponse(saved);
     }
 
-    /** "Snooze" button — pushes reminder N minutes (default 5) into the future. */
-    private static final int SNOOZE_MINUTES = 15;
-
-    /** "Snooze" button — always pushes reminder 15 minutes into the future, every time. */
+    /** "Snooze" button in the APP — pushes reminder 15 minutes into the future. */
     public ReminderResponseDto snooze(Long reminderId) {
 
         RegisterEntity user = getLoggedInUser();
@@ -197,21 +293,57 @@ public class ReminderService {
                 reminderRepository.findByIdAndUserId(reminderId, user.getId())
                         .orElseThrow(() -> new IllegalArgumentException("Reminder not found."));
 
+        applySnooze(reminder);
+
+        return convertToResponse(reminderRepository.save(reminder));
+    }
+
+    /**
+     * Same as markTaken(), but for email link clicks where there is NO logged-in user
+     * (no JWT available). Safe because reminderId only ever comes from a single-use token
+     * that was generated exclusively for that reminder's own owner.
+     */
+    public void markTakenInternal(Long reminderId) {
+
+        MedicineReminderEntity reminder = reminderRepository.findById(reminderId)
+                .orElseThrow(() -> new IllegalArgumentException("Reminder not found."));
+
+        doseService.updateStatusInternal(reminder.getDoseLog().getId(), DoseStatus.TAKEN);
+
+        reminder.setStatus("TAKEN");
+        reminder.setSnoozeUntil(null);
+        reminder.setSmsSentAt(null);
+        reminder.setEscalationLevel(0);
+
+        reminderRepository.save(reminder);
+    }
+
+    /** Same as snooze(), but for email link clicks (no logged-in user). */
+    public void snoozeInternal(Long reminderId) {
+
+        MedicineReminderEntity reminder = reminderRepository.findById(reminderId)
+                .orElseThrow(() -> new IllegalArgumentException("Reminder not found."));
+
+        applySnooze(reminder);
+
+        reminderRepository.save(reminder);
+    }
+
+    private void applySnooze(MedicineReminderEntity reminder) {
+
         reminder.setSnoozeUntil(LocalDateTime.now().plusMinutes(SNOOZE_MINUTES));
         reminder.setSnoozeCount(reminder.getSnoozeCount() + 1);
         reminder.setStatus("PENDING");
-
-        MedicineReminderEntity saved = reminderRepository.save(reminder);
+        reminder.setSmsSentAt(null);      // clears the "already sent" flag so a fresh email goes out next cycle
+        reminder.setEscalationLevel(0);   // reset escalation for the new cycle
 
         notificationService.notify(
-                user,
+                reminder.getUser(),
                 NotificationType.INFO,
                 "Snoozed Reminder",
-                saved.getDoseLog().getMedicine().getMedicineName() + " reminder snoozed until "
-                        + saved.getSnoozeUntil().format(TIME_FORMAT) + "."
+                reminder.getDoseLog().getMedicine().getMedicineName() + " reminder snoozed for "
+                        + SNOOZE_MINUTES + " minutes."
         );
-
-        return convertToResponse(saved);
     }
 
     /**
@@ -227,7 +359,7 @@ public class ReminderService {
         });
     }
 
-    /** Delete ONE reminder history entry (not bulk, as required). */
+    /** Delete ONE reminder history entry (not bulk). */
     public void deleteReminder(Long reminderId) {
 
         RegisterEntity user = getLoggedInUser();

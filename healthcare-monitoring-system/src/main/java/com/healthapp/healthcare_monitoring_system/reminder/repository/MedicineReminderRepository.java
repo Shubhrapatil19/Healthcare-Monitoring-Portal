@@ -4,6 +4,7 @@ import com.healthapp.healthcare_monitoring_system.reminder.entity.MedicineRemind
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +20,12 @@ public interface MedicineReminderRepository extends JpaRepository<MedicineRemind
 
     Optional<MedicineReminderEntity> findByDoseLogId(Long doseLogId);
 
-    // system-wide (not user-scoped) — used by the "reminder due -> notify" scheduled job,
-    // which has no logged-in user/auth context to filter by
-    List<MedicineReminderEntity> findByStatusAndReminderTimeLessThanEqual(String status, java.time.LocalDateTime now);
+    // system-wide (not user-scoped) — used by the "reminder due -> notify" scheduled job
+    List<MedicineReminderEntity> findByStatusAndReminderTimeLessThanEqual(String status, LocalDateTime now);
+
+    // NEW — system-wide — used by the SMS escalation job to find reminders whose patient
+    // SMS is still unactioned (status still PENDING, an SMS was sent, and we haven't
+    // already escalated all the way to contact 2)
+    List<MedicineReminderEntity> findByStatusAndEscalationLevelLessThanAndSmsSentAtIsNotNull(
+            String status, int escalationLevel);
 }

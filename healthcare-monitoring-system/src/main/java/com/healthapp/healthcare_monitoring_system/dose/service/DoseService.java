@@ -308,4 +308,25 @@ public class DoseService {
                 log.getStatus()
         );
     }
+    public void updateStatusInternal(Long doseLogId, DoseStatus status) {
+
+        MedicineDoseLogEntity doseLog = doseLogRepository.findById(doseLogId)
+                .orElseThrow(() -> new IllegalArgumentException("Dose log not found."));
+
+        doseLog.setStatus(status);
+
+        if (status == DoseStatus.TAKEN) {
+            doseLog.setTakenAt(LocalDateTime.now());
+            reduceInventoryStock(doseLog.getMedicine().getId(), doseLog.getUser().getId());
+
+            notificationService.notify(
+                    doseLog.getUser(),
+                    NotificationType.SUCCESS,
+                    "Medicine Taken",
+                    doseLog.getMedicine().getMedicineName() + " has been marked as taken (via SMS)."
+            );
+        }
+
+        doseLogRepository.save(doseLog);
+    }
 }

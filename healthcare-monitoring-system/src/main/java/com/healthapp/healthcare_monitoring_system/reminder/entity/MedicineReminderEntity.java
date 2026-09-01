@@ -38,6 +38,12 @@ public class MedicineReminderEntity {
 
     @Column(name = "snooze_count", nullable = false)
     private int snoozeCount = 0;
+    @Column(name = "sms_sent_at")
+    private LocalDateTime smsSentAt;
+
+    @Column(name = "escalation_level", nullable = false)
+    private int escalationLevel = 0;
+
     @Column(name = "notification_sent", nullable = false)
     private boolean notificationSent = false;
 

@@ -6,7 +6,7 @@ import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.auth.exception.BadRequestException;
 
-import com.healthapp.healthcare_monitoring_system.sms.util.IndianMobileNumberUtil;
+import com.healthapp.healthcare_monitoring_system.common.util.IndianMobileNumberUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

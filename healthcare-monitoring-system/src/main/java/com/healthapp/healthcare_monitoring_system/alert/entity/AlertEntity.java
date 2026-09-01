@@ -49,6 +49,18 @@ public class AlertEntity {
     @Column(name = "alert_time", nullable = false)
     private LocalDateTime alertTime;
 
+    @Column(name = "acknowledged", nullable = false)
+    private boolean acknowledged = false;
+
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
+    @Column(name = "sms_sent_at")
+    private LocalDateTime smsSentAt;
+
+    @Column(name = "escalation_level", nullable = false)
+    private int escalationLevel = 0;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

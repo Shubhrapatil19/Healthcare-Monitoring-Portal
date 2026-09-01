@@ -1,9 +1,11 @@
 package com.healthapp.healthcare_monitoring_system.alert.controller;
 
 import com.healthapp.healthcare_monitoring_system.alert.dto.AlertResponseDto;
+import com.healthapp.healthcare_monitoring_system.alert.dto.EmergencyAlertLogResponseDto;
 import com.healthapp.healthcare_monitoring_system.alert.enums.AlertType;
 import com.healthapp.healthcare_monitoring_system.alert.service.AlertService;
 
+import com.healthapp.healthcare_monitoring_system.alert.service.EmergencyAlertLogService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,9 +15,14 @@ import java.util.List;
 public class AlertController {
 
     private final AlertService alertService;
+    private final EmergencyAlertLogService emergencyAlertLogService;
 
-    public AlertController(AlertService alertService) {
+    public AlertController(
+            AlertService alertService,
+            EmergencyAlertLogService emergencyAlertLogService
+    ) {
         this.alertService = alertService;
+        this.emergencyAlertLogService = emergencyAlertLogService;
     }
 
     /**
@@ -38,4 +45,10 @@ public class AlertController {
     public AlertResponseDto markAsRead(@PathVariable Long alertId) {
         return alertService.markAsRead(alertId);
     }
+    // "Recent Emergency Alerts" panel
+    @GetMapping("/emergency-log")
+    public List<EmergencyAlertLogResponseDto> getRecentEmergencyAlerts() {
+        return emergencyAlertLogService.getRecentEmergencyAlerts();
+    }
+
 }
