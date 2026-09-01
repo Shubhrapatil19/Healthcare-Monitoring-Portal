@@ -6,10 +6,14 @@ on:
       - Backend1
   workflow_dispatch:
 
+concurrency:
+  group: healthcare-backend-deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Deploy backend to private app server
@@ -23,7 +27,7 @@ jobs:
           proxy_username: ${{ secrets.JUMP_USER }}
           proxy_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-          command_timeout: 25m
+          command_timeout: 30m
 
           script: |
             set -e
@@ -33,33 +37,57 @@ jobs:
             sudo -u backend1 bash -lc '
               set -e
 
-              cd /opt/project/backend1/Healthcare-Monitoring-Portal/healthcare-monitoring-system
+              REPO=/opt/project/backend1/Healthcare-Monitoring-Portal
+              MODULE=$REPO/healthcare-monitoring-system
+              PRODUCTION_PROPERTIES=/home/backend1/healthcare-production/application.properties
+              APPLICATION_PROPERTIES=$MODULE/src/main/resources/application.properties
+
+              test -f "$PRODUCTION_PROPERTIES"
+              grep -q "^app.backend-url=" "$PRODUCTION_PROPERTIES"
+
+              cd "$REPO"
+
+              echo "Cleaning tracked server changes..."
+              git restore .
 
               git fetch origin Backend1
               git checkout Backend1
               git pull --ff-only origin Backend1
 
-              ./mvnw clean package -DskipTests
+              echo "Restoring production application.properties..."
+              cp "$PRODUCTION_PROPERTIES" "$APPLICATION_PROPERTIES"
+
+              echo "Building backend..."
+              cd "$MODULE"
+
+              bash ./mvnw clean package -DskipTests
 
               test -f target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
+
+              echo "Deployed commit:"
+              git -C "$REPO" log -1 --oneline
+
+              echo "BACKEND BUILD SUCCESS"
             '
 
             sudo systemctl restart healthcare
 
-            for attempt in 1 2 3 4 5 6 7 8 9 10; do
-              if curl -fsS http://127.0.0.1:5081/v3/api-docs >/dev/null; then
-                echo "Backend deployment successful"
-                sudo systemctl is-active healthcare
+            echo "Waiting for backend startup..."
+
+            for attempt in $(seq 1 45); do
+              if sudo systemctl is-active --quiet healthcare && \
+                 curl -fsS http://127.0.0.1:5081/v3/api-docs >/dev/null 2>&1
+              then
+                echo "BACKEND DEPLOYMENT SUCCESS"
                 exit 0
               fi
 
-              echo "Waiting for backend: $attempt"
-              sleep 5
+              if [ "$attempt" -eq 45 ]; then
+                echo "BACKEND DEPLOYMENT FAILED"
+                sudo systemctl status healthcare --no-pager -l
+                sudo journalctl -u healthcare -n 100 --no-pager -l
+                exit 1
+              fi
+
+              sleep 2
             done
-
-            echo "Backend failed to start"
-
-            sudo systemctl status healthcare --no-pager -l
-            sudo journalctl -u healthcare -n 100 --no-pager -l
-
-            exit 1
