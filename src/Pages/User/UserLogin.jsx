@@ -710,7 +710,7 @@ const UserLogin = ({
       ===================================================== */}
 
       <footer className="login-footer">
-        © 2025 Healthcare Monitoring
+        � 2026 Healthcare Monitoring
         System. All Rights Reserved
       </footer>
     </div>

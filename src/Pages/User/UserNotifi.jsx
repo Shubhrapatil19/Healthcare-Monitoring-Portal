@@ -427,6 +427,11 @@ const UserNotifi = () => {
 
   const unreadCount = apiUnreadCount || localUnreadCount;
 
+  const readCount = Math.max(
+    0,
+    (totalCount || notifications.length) - unreadCount
+  );
+
   // ================================================================
   // FILTER + SEARCH
   // ================================================================
@@ -558,6 +563,86 @@ const UserNotifi = () => {
       ========================================================= */}
 
       <div className="nt-header-section">
+
+        <div className="nt-mobile-controls">
+          <div className="nt-filter-tabs nt-mobile-filter-tabs">
+            <button
+              className={`nt-filter-tab ${
+                filter === "all"
+                  ? "active"
+                  : ""
+              }`}
+              onClick={() => {
+                setFilter("all");
+                setCurrentPage(1);
+              }}
+            >
+              All ({totalCount || notifications.length})
+            </button>
+
+            <button
+              className={`nt-filter-tab ${
+                filter === "unread"
+                  ? "active"
+                  : ""
+              }`}
+              onClick={() => {
+                setFilter("unread");
+                setCurrentPage(1);
+              }}
+            >
+              Unread ({unreadCount})
+            </button>
+
+            <button
+              className={`nt-filter-tab ${
+                filter === "read"
+                  ? "active"
+                  : ""
+              }`}
+              onClick={() => {
+                setFilter("read");
+                setCurrentPage(1);
+              }}
+            >
+              Read ({readCount})
+            </button>
+          </div>
+
+          <div className="nt-search-box">
+            <Search size={18} />
+
+            <input
+              type="text"
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+
+          <div className="nt-mobile-action-row">
+            <button
+              className="nt-mark-all-btn"
+              onClick={handleMarkAllRead}
+              disabled={unreadCount === 0}
+            >
+              <CheckCheck size={18} />
+              Mark All Read
+            </button>
+
+            <button
+              className="nt-clear-all-btn"
+              onClick={handleClearAll}
+              disabled={notifications.length === 0}
+            >
+              <Trash2 size={18} />
+              Clear All
+            </button>
+          </div>
+        </div>
 
         <div className="nt-header-top">
 

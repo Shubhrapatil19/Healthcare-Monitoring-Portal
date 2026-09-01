@@ -1020,3 +1020,842 @@
     justify-content: center;
   }
 }
+/* Mobile notification search bar refinement */
+@media (max-width: 640px) {
+  .nt-header-actions {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .nt-search-box {
+    width: 100%;
+    min-width: 100%;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 12px;
+    gap: 11px;
+    align-items: center;
+    flex: none;
+  }
+
+  .nt-search-box svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nt-search-box input {
+    height: 100%;
+    min-height: 46px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+}
+
+/* Reference-style mobile notifications layout */
+@media (max-width: 640px) {
+  .nt-page {
+    padding: 14px 12px 18px;
+    background: #f8fbfc;
+  }
+
+  .nt-header-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .nt-header-top,
+  .nt-summary-bar {
+    display: contents;
+  }
+
+  .nt-header-left,
+  .nt-summary-info {
+    display: none;
+  }
+
+  .nt-filter-tabs {
+    order: 1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .nt-filter-tab {
+    width: 100%;
+    height: 44px;
+    border-radius: 9px;
+    border: 1px solid #e5edf2;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+
+  .nt-filter-tab.active {
+    background: #078f86;
+    border-color: #078f86;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(7, 143, 134, 0.24);
+  }
+
+  .nt-filter-count {
+    min-width: auto;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .nt-header-actions {
+    order: 2;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .nt-search-box {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    height: 43px;
+    min-height: 43px;
+    padding: 0 13px;
+    border: 1px solid #dfe8ee;
+    border-radius: 9px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+
+  .nt-search-box svg {
+    width: 17px;
+    height: 17px;
+    color: #8da0b3;
+  }
+
+  .nt-search-box input {
+    min-height: 41px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .nt-mark-all-btn,
+  .nt-clear-all-btn {
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    gap: 7px;
+    box-shadow: none;
+  }
+
+  .nt-mark-all-btn {
+    background: #078f86;
+    color: #ffffff;
+  }
+
+  .nt-clear-all-btn {
+    background: #ffffff;
+    color: #ef4444;
+    border: 1.5px solid #fecaca;
+  }
+
+  .nt-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    margin-bottom: 0;
+  }
+
+  .nt-table-body {
+    gap: 14px;
+  }
+
+  .nt-table-row {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    grid-template-areas:
+      "type message status"
+      "type date actions";
+    align-items: start;
+    gap: 9px 10px;
+    padding: 15px 12px;
+    border: 1px solid #e8edf2;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  }
+
+  .nt-table-row.nt-row-unread,
+  .nt-table-row.nt-row-unread:hover,
+  .nt-table-row:hover {
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  }
+
+  .nt-td-type {
+    grid-area: type;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 0;
+  }
+
+  .nt-type-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+  }
+
+  .nt-type-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nt-type-label {
+    position: absolute;
+    left: 64px;
+    top: 15px;
+    font-size: 10px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 7px;
+    letter-spacing: 0.02em;
+  }
+
+  .nt-td-message {
+    grid-area: message;
+    gap: 5px;
+    padding-top: 27px;
+  }
+
+  .nt-msg-title {
+    gap: 5px;
+  }
+
+  .nt-unread-dot {
+    display: none;
+  }
+
+  .nt-msg-title-text {
+    font-size: 13px;
+    font-weight: 800;
+    color: #334155;
+    white-space: normal;
+  }
+
+  .nt-msg-desc {
+    padding-left: 0;
+    font-size: 12px;
+    color: #64748b;
+    white-space: normal;
+    line-height: 1.45;
+  }
+
+  .nt-td-status {
+    grid-area: status;
+    justify-content: flex-end;
+  }
+
+  .nt-status-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .nt-status-pill svg {
+    display: none;
+  }
+
+  .nt-td-date {
+    grid-area: date;
+  }
+
+  .nt-td-time {
+    grid-area: date;
+    margin-left: 112px;
+  }
+
+  .nt-td-date,
+  .nt-td-time {
+    justify-content: flex-start;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a9aab;
+    white-space: nowrap;
+  }
+
+  .nt-td-date svg,
+  .nt-td-time svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .nt-td-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    align-self: end;
+  }
+
+  .nt-dismiss-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+  }
+
+  .nt-bottom-bar {
+    margin-top: 14px;
+    gap: 10px;
+  }
+}
+
+/* Dedicated mobile notification controls */
+.nt-mobile-controls {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .nt-header-section {
+    margin-bottom: 16px;
+  }
+
+  .nt-header-top,
+  .nt-summary-bar {
+    display: none !important;
+  }
+
+  .nt-mobile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nt-mobile-filter-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+
+  .nt-mobile-filter-tabs .nt-filter-tab {
+    height: 45px;
+    padding: 0 8px;
+    border-radius: 9px;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .nt-mobile-controls .nt-search-box {
+    width: 100%;
+    min-width: 0;
+    height: 43px;
+    min-height: 43px;
+    flex: none;
+  }
+
+  .nt-mobile-action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .nt-mobile-action-row .nt-mark-all-btn,
+  .nt-mobile-action-row .nt-clear-all-btn {
+    width: 100%;
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 8px;
+    justify-content: center;
+    font-size: 12px;
+  }
+}
+
+/* Pixel-closer compact mobile notification cards */
+@media (max-width: 640px) {
+  .nt-page {
+    padding: 12px 12px 16px !important;
+    background: #f8fbfc !important;
+  }
+
+  .nt-header-section {
+    margin-bottom: 12px !important;
+  }
+
+  .nt-mobile-controls {
+    gap: 10px !important;
+  }
+
+  .nt-mobile-filter-tabs {
+    gap: 9px !important;
+  }
+
+  .nt-mobile-filter-tabs .nt-filter-tab {
+    height: 39px !important;
+    border-radius: 7px !important;
+    font-size: 11px !important;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  .nt-mobile-controls .nt-search-box {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 7px !important;
+    gap: 9px !important;
+  }
+
+  .nt-mobile-controls .nt-search-box svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .nt-mobile-controls .nt-search-box input {
+    min-height: 34px !important;
+    font-size: 11px !important;
+  }
+
+  .nt-mobile-action-row {
+    gap: 8px !important;
+  }
+
+  .nt-mobile-action-row .nt-mark-all-btn,
+  .nt-mobile-action-row .nt-clear-all-btn {
+    height: 34px !important;
+    border-radius: 7px !important;
+    font-size: 11px !important;
+  }
+
+  .nt-mobile-action-row .nt-mark-all-btn svg,
+  .nt-mobile-action-row .nt-clear-all-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .nt-table-body {
+    gap: 12px !important;
+  }
+
+  .nt-table-row {
+    position: relative !important;
+    display: grid !important;
+    grid-template-columns: 38px 1fr 42px !important;
+    grid-template-areas:
+      "type message status"
+      "type message actions"
+      ". meta actions" !important;
+    min-height: 116px !important;
+    padding: 13px 12px 12px !important;
+    gap: 6px 9px !important;
+    border-radius: 11px !important;
+    border: 1px solid #e9eef3 !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07) !important;
+  }
+
+  .nt-td-type {
+    grid-area: type !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+  }
+
+  .nt-type-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+  }
+
+  .nt-type-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .nt-type-label {
+    position: static !important;
+    display: inline-flex !important;
+    width: fit-content !important;
+    max-width: 132px !important;
+    margin-bottom: 7px !important;
+    padding: 4px 8px !important;
+    border-radius: 999px !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .nt-td-message {
+    grid-area: message !important;
+    padding-top: 0 !important;
+    gap: 3px !important;
+    align-self: start !important;
+  }
+
+  .nt-msg-title {
+    display: block !important;
+  }
+
+  .nt-msg-title-text {
+    display: block !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    font-weight: 800 !important;
+    color: #26364a !important;
+    margin-bottom: 4px !important;
+  }
+
+  .nt-msg-desc {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+    color: #64748b !important;
+    max-height: 30px !important;
+    overflow: hidden !important;
+  }
+
+  .nt-td-status {
+    grid-area: status !important;
+    align-self: start !important;
+    justify-content: flex-end !important;
+  }
+
+  .nt-status-pill {
+    padding: 4px 9px !important;
+    border-radius: 999px !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+  }
+
+  .nt-td-date,
+  .nt-td-time {
+    grid-area: meta !important;
+    align-self: end !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    gap: 4px !important;
+    color: #8494a6 !important;
+  }
+
+  .nt-td-date {
+    justify-content: flex-start !important;
+  }
+
+  .nt-td-time {
+    justify-content: flex-start !important;
+    margin-left: 102px !important;
+  }
+
+  .nt-td-date svg,
+  .nt-td-time svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .nt-td-actions {
+    grid-area: actions !important;
+    align-self: end !important;
+    justify-content: flex-end !important;
+  }
+
+  .nt-dismiss-btn {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 6px !important;
+  }
+
+  .nt-dismiss-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+/* Fix mobile notification card alignment */
+@media (max-width: 640px) {
+  .nt-table-row {
+    grid-template-columns: 36px minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "type message status"
+      ". meta actions" !important;
+    min-height: 104px !important;
+    padding: 14px 12px !important;
+    gap: 8px 10px !important;
+  }
+
+  .nt-td-type {
+    grid-area: type !important;
+    align-self: start !important;
+    justify-content: flex-start !important;
+  }
+
+  .nt-type-icon {
+    width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+  }
+
+  .nt-td-message {
+    grid-area: message !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    padding-top: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .nt-msg-title {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 7px !important;
+    width: 100% !important;
+  }
+
+  .nt-type-label {
+    position: static !important;
+    order: -1 !important;
+    margin: 0 !important;
+  }
+
+  .nt-msg-title-text {
+    margin: 0 !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .nt-msg-desc {
+    text-align: left !important;
+    width: 100% !important;
+    margin: 0 !important;
+    max-height: none !important;
+  }
+
+  .nt-td-status {
+    grid-area: status !important;
+    align-self: start !important;
+    justify-content: flex-end !important;
+  }
+
+  .nt-td-date,
+  .nt-td-time {
+    grid-area: meta !important;
+    align-self: end !important;
+  }
+
+  .nt-td-date {
+    justify-content: flex-start !important;
+  }
+
+  .nt-td-time {
+    justify-content: flex-start !important;
+    margin-left: 104px !important;
+  }
+
+  .nt-td-actions {
+    grid-area: actions !important;
+    align-self: end !important;
+  }
+}
+
+/* Screenshot-matched mobile notification card structure */
+@media (max-width: 640px) {
+  .nt-table-row {
+    grid-template-columns: 38px minmax(0, 1fr) 46px !important;
+    grid-template-areas:
+      "type label status"
+      ". message ."
+      ". meta actions" !important;
+    min-height: 128px !important;
+    padding: 16px 13px 14px !important;
+    column-gap: 10px !important;
+    row-gap: 7px !important;
+    align-items: start !important;
+  }
+
+  .nt-td-type {
+    grid-area: type !important;
+  }
+
+  .nt-type-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .nt-td-message {
+    display: contents !important;
+  }
+
+  .nt-msg-title {
+    grid-area: label !important;
+    display: grid !important;
+    grid-template-rows: auto auto !important;
+    justify-items: start !important;
+    align-items: start !important;
+    gap: 11px !important;
+    width: 100% !important;
+  }
+
+  .nt-type-label {
+    order: 0 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    padding: 5px 9px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
+  }
+
+  .nt-msg-title-text {
+    grid-row: 2 !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    font-weight: 800 !important;
+  }
+
+  .nt-msg-desc {
+    grid-area: message !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    color: #64748b !important;
+    padding: 0 !important;
+  }
+
+  .nt-td-status {
+    grid-area: status !important;
+    align-self: start !important;
+    padding-top: 2px !important;
+  }
+
+  .nt-status-pill {
+    font-size: 10px !important;
+    padding: 5px 10px !important;
+  }
+
+  .nt-td-date {
+    grid-area: meta !important;
+    justify-self: start !important;
+  }
+
+  .nt-td-time {
+    grid-area: meta !important;
+    justify-self: start !important;
+    margin-left: 116px !important;
+  }
+
+  .nt-td-date,
+  .nt-td-time {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+
+  .nt-td-actions {
+    grid-area: actions !important;
+    align-self: center !important;
+    justify-self: end !important;
+  }
+
+  .nt-dismiss-btn {
+    width: 31px !important;
+    height: 31px !important;
+  }
+}
+
+/* Final mobile notification overlap fix */
+@media (max-width: 640px) {
+  .nt-table-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "icon label status"
+      ". title ."
+      ". desc ."
+      ". meta actions" !important;
+    min-height: 124px !important;
+    padding: 14px 12px 13px !important;
+    row-gap: 6px !important;
+    column-gap: 9px !important;
+  }
+
+  .nt-td-type {
+    display: contents !important;
+  }
+
+  .nt-type-icon {
+    grid-area: icon !important;
+    width: 30px !important;
+    height: 30px !important;
+    align-self: start !important;
+    justify-self: start !important;
+  }
+
+  .nt-type-label {
+    grid-area: label !important;
+    position: static !important;
+    align-self: center !important;
+    justify-self: start !important;
+    margin: 0 !important;
+    max-width: 160px !important;
+    white-space: nowrap !important;
+  }
+
+  .nt-td-message {
+    display: contents !important;
+  }
+
+  .nt-msg-title {
+    display: contents !important;
+  }
+
+  .nt-msg-title-text {
+    grid-area: title !important;
+    align-self: start !important;
+    justify-self: start !important;
+    margin: 4px 0 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .nt-msg-desc {
+    grid-area: desc !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .nt-td-status {
+    grid-area: status !important;
+    align-self: start !important;
+    justify-self: end !important;
+  }
+
+  .nt-td-date {
+    grid-area: meta !important;
+    justify-self: start !important;
+    align-self: center !important;
+  }
+
+  .nt-td-time {
+    grid-area: meta !important;
+    justify-self: start !important;
+    align-self: center !important;
+    margin-left: 104px !important;
+  }
+
+  .nt-td-actions {
+    grid-area: actions !important;
+    align-self: center !important;
+    justify-self: end !important;
+  }
+}

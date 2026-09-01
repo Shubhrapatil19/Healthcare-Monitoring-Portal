@@ -210,8 +210,9 @@ const UserDash = ({ onLogout }) => {
   const notificationSoundPendingRef = useRef(false);
   const notificationAudioContextRef = useRef(null);
   const lastNotificationSoundRef = useRef({ count: 0, playedAt: 0 });
+  const latestNotificationKeyRef = useRef("");
 
-  const getNotificationAudioContext = useCallback(() => {
+  const getNotificationAudioContext = useCallback((allowCreate = false) => {
     if (typeof window === "undefined") return null;
 
     const AudioContext =
@@ -219,7 +220,7 @@ const UserDash = ({ onLogout }) => {
 
     if (!AudioContext) return null;
 
-    if (!notificationAudioContextRef.current) {
+    if (!notificationAudioContextRef.current && allowCreate) {
       notificationAudioContextRef.current = new AudioContext();
     }
 
@@ -255,13 +256,16 @@ const UserDash = ({ onLogout }) => {
 
   const playNotificationSound = useCallback(async () => {
     try {
+      if (!notificationSoundUnlockedRef.current) {
+        notificationSoundPendingRef.current = true;
+        return;
+      }
+
       const audioContext = getNotificationAudioContext();
 
-      if (!audioContext) return;
-
-      if (audioContext.state === "suspended") {
+      if (!audioContext) {
         notificationSoundPendingRef.current = true;
-        await audioContext.resume();
+        return;
       }
 
       if (audioContext.state !== "running") {
@@ -278,9 +282,11 @@ const UserDash = ({ onLogout }) => {
     }
   }, [emitNotificationTone, getNotificationAudioContext]);
 
-  const unlockNotificationSound = useCallback(async () => {
+  const unlockNotificationSound = useCallback(async (event) => {
     try {
-      const audioContext = getNotificationAudioContext();
+      if (event?.isTrusted === false) return;
+
+      const audioContext = getNotificationAudioContext(true);
 
       if (!audioContext) return;
 
@@ -302,15 +308,19 @@ const UserDash = ({ onLogout }) => {
   }, [getNotificationAudioContext, playNotificationSound]);
 
   useEffect(() => {
-    const unlock = () => {
-      void unlockNotificationSound();
+    const unlock = (event) => {
+      void unlockNotificationSound(event);
     };
 
-    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("click", unlock, { passive: true });
+    window.addEventListener("touchstart", unlock, { passive: true });
     window.addEventListener("keydown", unlock);
 
     return () => {
       window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
       window.removeEventListener("keydown", unlock);
     };
   }, [unlockNotificationSound]);
@@ -442,6 +452,37 @@ const UserDash = ({ onLogout }) => {
     return [];
   };
 
+  const getNotificationKey = (notification = {}) => {
+    const id = notification.notificationId ?? notification.id ?? "";
+    const createdAt =
+      notification.createdAt || notification.time || notification.date || "";
+    const title = notification.title || "";
+    const message = notification.message || "";
+
+    return [id, createdAt, title, message].map(String).join("|");
+  };
+
+  const getLatestNotificationKey = (notifications = []) => {
+    if (!notifications.length) return "";
+
+    const latestNotification = notifications.reduce((latest, notification) => {
+      const currentTime = new Date(
+        notification.createdAt || notification.time || notification.date || 0
+      ).getTime();
+      const latestTime = new Date(
+        latest.createdAt || latest.time || latest.date || 0
+      ).getTime();
+
+      if (!Number.isFinite(currentTime) || !Number.isFinite(latestTime)) {
+        return latest;
+      }
+
+      return currentTime > latestTime ? notification : latest;
+    }, notifications[0]);
+
+    return getNotificationKey(latestNotification);
+  };
+
   // =========================================================
   // DASHBOARD SUMMARY
   //
@@ -497,48 +538,80 @@ const UserDash = ({ onLogout }) => {
           0
       );
 
-      if (!Number.isFinite(count) || count === 0) {
-        const listResponse = await api.get("/api/notifications", {
-          params: { status: "UNREAD" },
-        });
+      let latestNotificationKey = latestNotificationKeyRef.current;
 
-        const unreadNotifications = extractArray(listResponse.data, [
+      try {
+        const listResponse = await api.get("/api/notifications");
+        const notifications = extractArray(listResponse.data, [
           "notifications",
           "data",
           "items",
         ]);
 
-        count = Number(
-          listResponse.data?.unreadCount ??
-            listResponse.data?.totalCount ??
-            unreadNotifications.length ??
-            0
-        );
+        latestNotificationKey = getLatestNotificationKey(notifications);
+
+        if (!Number.isFinite(count) || count === 0) {
+          count = Number(
+            listResponse.data?.unreadCount ??
+              notifications.filter(
+                (notification) =>
+                  String(notification.status || "UNREAD").toUpperCase() ===
+                  "UNREAD"
+              ).length ??
+              0
+          );
+        }
+      } catch (error) {
+        if (!Number.isFinite(count) || count === 0) {
+          const unreadResponse = await api.get("/api/notifications", {
+            params: { status: "UNREAD" },
+          });
+
+          const unreadNotifications = extractArray(unreadResponse.data, [
+            "notifications",
+            "data",
+            "items",
+          ]);
+
+          count = Number(
+            unreadResponse.data?.unreadCount ??
+              unreadResponse.data?.totalCount ??
+              unreadNotifications.length ??
+              0
+          );
+        }
       }
 
       const safeCount = Number.isFinite(count) ? count : 0;
       const previousCount = notificationCountRef.current;
+      const previousNotificationKey = latestNotificationKeyRef.current;
+      const hasNewNotification =
+        Boolean(latestNotificationKey) &&
+        Boolean(previousNotificationKey) &&
+        latestNotificationKey !== previousNotificationKey;
 
       setNotificationCount(safeCount);
 
       if (!notificationSoundReadyRef.current) {
         notificationSoundReadyRef.current = true;
-      } else if (safeCount > previousCount) {
+      } else if (safeCount > previousCount || hasNewNotification) {
         const now = Date.now();
         const lastSound = lastNotificationSoundRef.current;
+        const soundKey = latestNotificationKey || String(safeCount);
         const isDuplicateSound =
-          lastSound.count === safeCount && now - lastSound.playedAt < 1500;
+          lastSound.count === soundKey && now - lastSound.playedAt < 1500;
 
         if (!isDuplicateSound) {
           void playNotificationSound();
           lastNotificationSoundRef.current = {
-            count: safeCount,
+            count: soundKey,
             playedAt: now,
           };
         }
       }
 
       notificationCountRef.current = safeCount;
+      latestNotificationKeyRef.current = latestNotificationKey;
     } catch (error) {
       console.error(
         "Notification Count Error:",
@@ -3504,6 +3577,10 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
 
 
 
