@@ -46,33 +46,30 @@ jobs:
 
               cd "$REPO"
 
-              echo "Restoring tracked repository files..."
               git restore .
 
-              echo "Pulling Backend1 branch..."
               git fetch origin Backend1
               git checkout Backend1
               git pull --ff-only origin Backend1
 
-              echo "Restoring production properties..."
               cp "$PROD_PROPERTIES" "$APP_PROPERTIES"
 
               grep -q "^app.backend-url=" "$APP_PROPERTIES"
 
               cd "$MODULE"
 
-              echo "Building backend..."
+              echo "Running Maven build..."
+
               bash ./mvnw clean package -DskipTests
 
               test -f target/healthcare-monitoring-system-0.0.1-SNAPSHOT.jar
 
-              echo "Deployed backend commit:"
+              echo "Deployed commit:"
               git -C "$REPO" log -1 --oneline
 
               echo "BACKEND BUILD SUCCESS"
             '
 
-            echo "Restarting healthcare service..."
             sudo systemctl restart healthcare
 
             echo "Waiting for backend startup..."
