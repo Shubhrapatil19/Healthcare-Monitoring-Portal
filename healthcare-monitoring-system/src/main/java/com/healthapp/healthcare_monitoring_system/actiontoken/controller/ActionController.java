@@ -5,6 +5,13 @@ import com.healthapp.healthcare_monitoring_system.reminder.service.ReminderServi
 import com.healthapp.healthcare_monitoring_system.actiontoken.entity.ActionTokenEntity;
 import com.healthapp.healthcare_monitoring_system.actiontoken.service.ActionTokenService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Optional;
 
 /** Handles clicks on the Taken / Snooze / OK buttons from reminder and alert emails. */
+@Tag(name = "Action Links", description = "Public, single-use links embedded in reminder/alert emails (Taken, Snooze, Confirm OK). " +
+        "Not meant to be called directly from a frontend app — these are plain browser links clicked from an email client. " +
+        "Reminder links (Taken/Snooze) expire after 30 minutes; alert-acknowledge links expire after 12 hours.")
 @RestController
 @RequestMapping("/api/actions")
 public class ActionController {
@@ -32,8 +42,19 @@ public class ActionController {
         this.alertService = alertService;
     }
 
+    @Operation(
+            summary = "Handle a Taken / Snooze / Confirm click",
+            description = "Validates the single-use token, performs the corresponding action (mark dose taken, " +
+                    "snooze 15 min, or acknowledge a missed-dose alert), and returns a small HTML confirmation page. " +
+                    "Returns an \"expired\" page if the token was already used or its time window has passed."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "HTML confirmation page (shown whether the action succeeded or the link was already expired/used)")
+    })
+    @SecurityRequirements
     @GetMapping(value = "/{token}", produces = MediaType.TEXT_HTML_VALUE)
-    public String handleAction(@PathVariable String token) {
+    public String handleAction(
+            @Parameter(description = "Single-use token from the email link") @PathVariable String token) {
 
         Optional<ActionTokenEntity> validated = tokenService.validateAndConsume(token);
 
