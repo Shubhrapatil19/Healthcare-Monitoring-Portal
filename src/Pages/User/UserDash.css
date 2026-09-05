@@ -921,7 +921,7 @@ body{
 
     margin-bottom:22px;
 
-    align-items: stretch;
+    align-items: start;
 
 }
 
@@ -2577,6 +2577,8 @@ body{
     border:0;
     border-radius:6px;
     box-shadow:none;
+    position:relative;
+    z-index:2;
     width:fit-content;
     flex:0 0 auto;
 }
@@ -2607,6 +2609,8 @@ body{
     font-size:11px;
     font-weight:800;
     box-shadow:none;
+    position:relative;
+    z-index:2;
 }
 
 .alert-btn{
@@ -4119,6 +4123,8 @@ body{
     color:#0f766e;
     background:#c7efea;
     box-shadow:none;
+    position:relative;
+    z-index:2;
 }
 
 .today-timeline-date-card span{
@@ -4141,7 +4147,8 @@ body{
 
 .today-timeline-scale{
     display:grid;
-    grid-template-columns:repeat(3, 1fr);
+    grid-template-columns:96px minmax(0, 1fr);
+    column-gap:14px;
     align-items:center;
     margin-bottom:16px;
     color:#334155;
@@ -4149,14 +4156,24 @@ body{
     font-weight:800;
 }
 
-.today-timeline-scale span:nth-child(2){
+.today-timeline-scale-labels{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    align-items:center;
+    margin:0 18px 0 6px;
+}
+
+.today-timeline-scale-labels span{
     text-align:center;
 }
 
-.today-timeline-scale span:nth-child(3){
-    text-align:right;
+.today-timeline-scale-labels span:first-child{
+    text-align:left;
 }
 
+.today-timeline-scale-labels span:last-child{
+    text-align:right;
+}
 .today-timeline-track{
     position:relative;
     height:132px;
@@ -4185,31 +4202,80 @@ body{
     z-index:1;
 }
 
-.today-timeline-node.start{ left:0; }
-.today-timeline-node.mid{ left:50%; }
-.today-timeline-node.end{ left:100%; }
 
 .today-timeline-medicine{
     position:absolute;
     top:0;
+    width:84px;
+    min-height:96px;
     transform:translateX(-50%);
     z-index:3;
+    cursor:pointer;
+}
+
+.today-timeline-medicine:hover,
+.today-timeline-medicine:focus-within,
+.today-timeline-medicine.expanded{
+    z-index:20;
 }
 
 .today-timeline-pin{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;
+    height:18px;
+    margin:1px auto 10px;
+    color:#2563eb;
+    background:transparent;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+    position:relative;
+    z-index:2;
+}
+
+.today-timeline-pill-icon{
+    position:relative;
     display:block;
-    width:8px;
-    height:8px;
-    margin:7px auto 16px;
-    border-radius:50%;
-    background:#2563eb;
-    box-shadow:0 0 0 3px rgba(37, 99, 235, 0.12);
+    width:18px;
+    height:9px;
+    border-radius:999px;
+    background:linear-gradient(90deg, #ef476f 0 50%, #ffd166 50% 100%);
+    box-shadow:0 2px 4px rgba(15, 23, 42, 0.16);
+    transform:rotate(-45deg);
+    overflow:hidden;
+}
+
+.today-timeline-pill-icon::before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:1px;
+    background:rgba(255, 255, 255, 0.86);
+    transform:translateX(-50%);
+}
+
+.today-timeline-pill-icon::after{
+    content:"";
+    position:absolute;
+    left:3px;
+    top:2px;
+    width:4px;
+    height:2px;
+    border-radius:999px;
+    background:rgba(255, 255, 255, 0.62);
 }
 
 .today-timeline-card{
-    width:78px;
+    appearance:none;
+    font:inherit;
+    text-align:left;
+    width:100%;
     min-height:54px;
-    padding:8px 8px;
+    padding:8px 9px;
     border:1px solid #bfdbfe;
     border-radius:8px;
     background:#eff6ff;
@@ -4218,6 +4284,52 @@ body{
     display:flex;
     flex-direction:column;
     gap:4px;
+    cursor:pointer;
+    transform-origin:top center;
+    transition:width 180ms ease, min-height 180ms ease, padding 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease;
+    margin-left:50%;
+    transform:translateX(-50%);
+}
+
+.today-timeline-medicine:hover .today-timeline-card,
+.today-timeline-medicine:focus-within .today-timeline-card,
+.today-timeline-medicine.expanded .today-timeline-card{
+    width:min(150px, calc(100vw - 40px));
+    min-height:78px;
+    padding:9px 12px;
+    outline:none;
+    border-color:#93c5fd;
+    background:#f8fbff;
+    transform:translateX(calc(-50% + var(--card-offset, 0px))) translateY(8px);
+    box-shadow:0 14px 28px rgba(15, 23, 42, 0.14), 0 7px 16px rgba(37, 99, 235, 0.16);
+    pointer-events:none;
+}
+
+.today-timeline-medicine-name,
+.today-timeline-dose{
+    display:none;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.today-timeline-card:hover .today-timeline-medicine-name,
+.today-timeline-card:focus-visible .today-timeline-medicine-name,
+.today-timeline-medicine.expanded .today-timeline-medicine-name,
+.today-timeline-medicine.expanded .today-timeline-dose{
+    display:block;
+}
+
+.today-timeline-medicine-name{
+    color:#1e3a8a;
+    font-size:11px;
+    font-weight:800;
+}
+
+.today-timeline-dose{
+    color:#475569;
+    font-size:10px;
+    font-weight:700;
 }
 
 .today-timeline-card strong{
@@ -4254,8 +4366,12 @@ body{
 }
 
 .today-timeline-medicine.taken .today-timeline-pin{
-    background:#16a34a;
-    box-shadow:0 0 0 3px rgba(22, 163, 74, 0.12);
+    color:#16a34a;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    position:relative;
+    z-index:2;
 }
 
 .today-timeline-medicine.taken .today-timeline-card{
@@ -4266,8 +4382,12 @@ body{
 }
 
 .today-timeline-medicine.missed .today-timeline-pin{
-    background:#ef4444;
-    box-shadow:0 0 0 3px rgba(239, 68, 68, 0.12);
+    color:#ef4444;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+    position:relative;
+    z-index:2;
 }
 
 .today-timeline-medicine.missed .today-timeline-card{
@@ -4302,7 +4422,8 @@ body{
 }
 
 .today-timeline-medicine .today-timeline-card{
-    transform:translateX(var(--card-offset, 0px));
+    margin-left:50%;
+    transform:translateX(calc(-50% + var(--card-offset, 0px)));
 }
 
 .today-timeline-rows{
@@ -4403,6 +4524,14 @@ body{
     .today-timeline-row-name{
         min-height:auto;
         padding-top:0;
+    }
+
+    .today-timeline-scale{
+        grid-template-columns:1fr;
+    }
+
+    .today-timeline-scale-spacer{
+        display:none;
     }
 }
 
@@ -5758,17 +5887,17 @@ body{
 }
 
 .calendar-date-popup {
-    position: absolute;
-    top: calc(100% - 8px);
-    right: 16px;
-    width: min(300px, calc(100% - 32px));
+    position: relative;
+    width: 100%;
+    margin-top: 14px;
     background: #ffffff;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
     border: 1px solid rgba(13, 148, 136, 0.15);
-    z-index: 30;
+    z-index: 2;
     overflow: hidden;
     animation: calendarPopupIn 0.2s ease-out;
+    flex-shrink: 0;
 }
 
 @keyframes calendarPopupIn {
@@ -5878,11 +6007,8 @@ body{
 /* Responsive popup */
 @media(max-width: 640px){
     .calendar-date-popup {
-        top: auto;
-        bottom: calc(100% + 8px);
-        right: 8px;
-        left: 8px;
-        width: auto;
+        margin-top: 12px;
+        width: 100%;
     }
 }
 
@@ -6364,5 +6490,453 @@ body{
     }
     50% {
         transform: translateY(-3px) scale(1.03);
+    }
+}
+
+/* Calendar selected date medicine details */
+.calendar-grid .calendar-date.selected,
+.calendar-grid .calendar-date.selected:hover {
+    outline: 2px solid #0f766e;
+    outline-offset: 3px;
+}
+
+.calendar-date-popup-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.calendar-date-popup-header strong {
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+.calendar-date-popup-header span {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+.calendar-date-popup-section + .calendar-date-popup-section {
+    margin-top: 12px;
+}
+
+.calendar-date-popup-section h4 {
+    margin: 0 0 6px;
+    padding: 0 4px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+
+.calendar-date-popup-icon {
+    flex: 0 0 auto;
+}
+
+.calendar-date-popup-icon.taken {
+    color: #2563eb;
+}
+
+.calendar-date-popup-icon.missed {
+    color: #ef4444;
+}
+
+.calendar-date-popup-meta {
+    flex: 0 0 auto;
+    max-width: 120px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+}
+
+@media(max-width: 640px){
+    .calendar-date-popup-meta {
+        max-width: 96px;
+    }
+}
+
+
+/* Keep calendar details visible inside the calendar card */
+.card-row .calendar-card {
+    overflow: visible;
+}
+
+.calendar-card .calendar-container {
+    overflow: visible;
+}
+
+.calendar-card .calendar-date-popup {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    margin: 12px 0 0;
+}
+
+.calendar-card .calendar-date-popup-body {
+    max-height: 160px;
+}
+
+/* Calendar detail row content */
+.calendar-date-popup-info {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.calendar-date-popup-info .calendar-date-popup-name {
+    flex: none;
+    width: 100%;
+}
+
+.calendar-date-popup-info .calendar-date-popup-meta {
+    flex: none;
+    max-width: 100%;
+    text-align: left;
+}
+
+.calendar-date-popup-status.taken {
+    color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.12);
+}
+
+.calendar-date-popup-status.missed {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.12);
+}
+
+/* Compact calendar medicine card */
+.calendar-card .calendar-date-popup {
+    width: min(260px, 100%) !important;
+    margin: 10px auto 0;
+    border-radius: 10px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.calendar-date-popup-header {
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.calendar-date-popup-header strong {
+    font-size: 13px;
+}
+
+.calendar-date-popup-header span {
+    font-size: 10px;
+}
+
+.calendar-date-popup-close {
+    width: 20px;
+    height: 20px;
+    font-size: 15px;
+}
+
+.calendar-date-popup-body {
+    max-height: 130px !important;
+    padding: 7px;
+}
+
+.calendar-date-popup-section + .calendar-date-popup-section {
+    margin-top: 8px;
+}
+
+.calendar-date-popup-section h4 {
+    margin-bottom: 4px;
+    font-size: 11px;
+}
+
+.calendar-date-popup-list {
+    gap: 3px;
+}
+
+.calendar-date-popup-list li {
+    gap: 6px;
+    padding: 5px 7px;
+    border-radius: 7px;
+    font-size: 12px;
+}
+
+.calendar-date-popup-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.calendar-date-popup-name {
+    font-size: 12px;
+}
+
+.calendar-date-popup-meta {
+    font-size: 10px;
+}
+
+.calendar-date-popup-status {
+    padding: 2px 6px;
+    font-size: 10px;
+}
+
+.today-timeline-track:has(.today-timeline-medicine.expanded) .today-timeline-medicine:not(.expanded){
+    z-index:1 !important;
+}
+
+.today-timeline-track:has(.today-timeline-medicine.expanded) .today-timeline-medicine:not(.expanded) .today-timeline-card{
+    opacity:0;
+    transform:translateX(calc(-50% + var(--card-offset, 0px))) scale(0.94);
+}
+
+.today-timeline-track:has(.today-timeline-medicine.expanded) .today-timeline-medicine:not(.expanded) .today-timeline-pin{
+    opacity:0.72;
+}
+
+.today-timeline-medicine.expanded .today-timeline-card::before,
+.today-timeline-medicine:hover .today-timeline-card::before,
+.today-timeline-medicine:focus-within .today-timeline-card::before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:-6px;
+    width:10px;
+    height:10px;
+    background:inherit;
+    border-left:1px solid #93c5fd;
+    border-top:1px solid #93c5fd;
+    transform:translateX(-50%) rotate(45deg);
+}
+
+.today-timeline-card{
+    position:relative;
+}
+
+/* Compact Today's Schedule reminder cards */
+.today-reminder-rows {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.today-reminder-card {
+    width:min(100%, 360px);
+    border:1px solid #99f6e4;
+    border-radius:8px;
+    background:#f8fffd;
+    box-shadow:0 8px 18px rgba(15, 118, 110, 0.08);
+    overflow:hidden;
+}
+
+.today-reminder-card-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:32px;
+    padding:8px 12px;
+    border-bottom:1px solid #ccfbf1;
+    color:#0f766e;
+    background:#ecfdf5;
+}
+
+.today-reminder-card-header strong {
+    font-size:12px;
+    font-weight:900;
+    line-height:1;
+}
+
+.today-reminder-card-header svg {
+    width:16px;
+    height:16px;
+    flex:0 0 16px;
+    color:#0f766e;
+}
+
+.today-reminder-list {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:9px 12px 11px;
+}
+
+.today-reminder-item {
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) minmax(78px, auto);
+    align-items:center;
+    gap:14px;
+    color:#1d4ed8;
+    font-size:12px;
+    font-weight:800;
+    line-height:1.1;
+}
+
+.today-reminder-time,
+.today-reminder-status {
+    display:inline-flex;
+    align-items:center;
+    min-width:0;
+    gap:7px;
+    white-space:nowrap;
+}
+
+.today-reminder-time strong {
+    font-size:12px;
+    font-weight:900;
+}
+
+.today-reminder-time svg,
+.today-reminder-status svg {
+    width:13px;
+    height:13px;
+    flex:0 0 13px;
+    color:#3b82f6;
+}
+
+.today-reminder-item.taken,
+.today-reminder-item.taken svg {
+    color:#15803d;
+}
+
+.today-reminder-item.missed,
+.today-reminder-item.missed svg {
+    color:#be123c;
+}
+
+.today-reminder-card .today-schedule-notes {
+    grid-column:auto;
+    margin:0 12px 12px;
+}
+
+@media (max-width: 640px){
+    .today-reminder-card {
+        width:100%;
+    }
+
+    .today-reminder-item {
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+    }
+}
+
+/* Keep the time scale while showing reminders as a compact card */
+.today-reminder-track {
+    min-height:116px;
+    padding-top:34px;
+    overflow:visible;
+}
+
+.today-reminder-pin {
+    position:absolute;
+    top:2px;
+    width:18px;
+    height:9px;
+    border-radius:999px;
+    background:linear-gradient(90deg, #ef476f 0 50%, #ffd166 50% 100%);
+    box-shadow:0 2px 5px rgba(15, 23, 42, 0.18);
+    transform:translateX(-50%) rotate(-45deg);
+    z-index:3;
+}
+
+.today-reminder-pin.taken {
+    background:#16a34a;
+}
+
+.today-reminder-pin.missed {
+    background:#ef4444;
+}
+
+.today-reminder-track .today-reminder-card {
+    position:absolute;
+    top:34px;
+    left:max(132px, min(var(--reminder-card-left, 50%), calc(100% - 132px)));
+    width:min(264px, 100%);
+    transform:translateX(-50%);
+    z-index:4;
+}
+
+.today-reminder-track .today-schedule-notes {
+    margin:0 10px 10px;
+}
+
+@media (max-width: 640px){
+    .today-reminder-track {
+        min-height:122px;
+        padding-top:34px;
+        margin:0 10px;
+    }
+
+    .today-reminder-track .today-reminder-card {
+        left:50%;
+        width:min(264px, 100%);
+    }
+}
+
+.today-reminder-card-header {
+    appearance:none;
+    width:100%;
+    border:0;
+    border-bottom:1px solid #ccfbf1;
+    cursor:pointer;
+    text-align:left;
+}
+
+.today-reminder-card-header svg {
+    transition:transform 160ms ease;
+}
+
+.today-reminder-card.open .today-reminder-card-header svg {
+    transform:rotate(180deg);
+}
+
+.today-reminder-card.collapsed .today-reminder-card-header {
+    border-bottom:0;
+}
+
+.today-reminder-card.collapsed {
+    background:#ecfdf5;
+}
+
+.today-timeline-row .today-reminder-track {
+    height:auto;
+}
+
+
+.card-row > .dashboard-card {
+    align-self:start;
+}
+
+.card-row > .inventory-overview-card {
+    height:auto;
+}
+
+.dashboard-card-columns {
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+    gap:20px;
+    align-items:start;
+    margin-bottom:22px;
+}
+
+.dashboard-card-column {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    min-width:0;
+}
+
+@media(max-width:1200px){
+    .dashboard-card-columns {
+        grid-template-columns:1fr;
+        gap:14px;
+        margin-bottom:16px;
+    }
+
+    .dashboard-card-column {
+        gap:14px;
     }
 }

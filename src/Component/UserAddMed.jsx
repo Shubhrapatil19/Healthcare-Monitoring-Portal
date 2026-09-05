@@ -15,7 +15,6 @@ import {
 import api from "../api/axiosInstance";
 
 import "./UserAddMed.css";
-
 // =========================================================
 // FREQUENCY UI CONFIG
 // =========================================================
@@ -46,6 +45,16 @@ const FREQUENCY_CONFIG = {
     required: true,
   },
 };
+
+const TIME_HOUR_OPTIONS = Array.from(
+  { length: 12 },
+  (_, index) => String(index + 1).padStart(2, "0")
+);
+
+const TIME_MINUTE_OPTIONS = Array.from(
+  { length: 60 },
+  (_, index) => String(index).padStart(2, "0")
+);
 
 // =========================================================
 // SWAGGER / BACKEND FREQUENCY VALUES
@@ -923,11 +932,14 @@ const AddMedicineModal = ({
                       index
                     ) => {
                       const {
+                        hour12,
+                        minute,
                         period,
-                      } =
-                        to12Hour(
-                          timing.time
-                        );
+                      } = to12Hour(
+                        timing.time
+                      );
+
+                      const displayHour = String(hour12 || 12).padStart(2, "0");
 
                       return (
                         <div
@@ -942,39 +954,56 @@ const AddMedicineModal = ({
                               1}
                           </span>
 
-                          <div className="add-med-time-control">
-
-                            <input
-                              type="time"
-                              value={
-                                timing.time
-                              }
-                              onChange={(
-                                e
-                              ) =>
+                          <div className="add-med-time-control add-med-time-control--twelve-hour">
+                            <select
+                              value={displayHour}
+                              onChange={(e) =>
                                 handleTimingChange(
                                   index,
-                                  e
-                                    .target
-                                    .value
+                                  buildTiming24(
+                                    `${e.target.value}:${minute}`,
+                                    period
+                                  )
                                 )
                               }
-                            />
+                              aria-label={`Dose ${index + 1} hour`}
+                            >
+                              {TIME_HOUR_OPTIONS.map((hour) => (
+                                <option key={hour} value={hour}>
+                                  {hour}
+                                </option>
+                              ))}
+                            </select>
 
                             <select
-                              value={
-                                period
-                              }
-                              onChange={(
-                                e
-                              ) =>
-                                handleTimingPeriodChange(
+                              value={minute}
+                              onChange={(e) =>
+                                handleTimingChange(
                                   index,
-                                  e
-                                    .target
-                                    .value
+                                  buildTiming24(
+                                    `${displayHour}:${e.target.value}`,
+                                    period
+                                  )
                                 )
                               }
+                              aria-label={`Dose ${index + 1} minute`}
+                            >
+                              {TIME_MINUTE_OPTIONS.map((minuteOption) => (
+                                <option key={minuteOption} value={minuteOption}>
+                                  {minuteOption}
+                                </option>
+                              ))}
+                            </select>
+
+                            <select
+                              value={period}
+                              onChange={(e) =>
+                                handleTimingPeriodChange(
+                                  index,
+                                  e.target.value
+                                )
+                              }
+                              aria-label={`Dose ${index + 1} AM or PM`}
                             >
                               <option value="AM">
                                 AM
@@ -984,7 +1013,6 @@ const AddMedicineModal = ({
                                 PM
                               </option>
                             </select>
-
                           </div>
                         </div>
                       );
@@ -1088,6 +1116,8 @@ const AddMedicineModal = ({
 };
 
 export default AddMedicineModal;
+
+
 
 
 

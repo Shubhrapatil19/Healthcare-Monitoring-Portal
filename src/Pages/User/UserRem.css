@@ -1414,7 +1414,7 @@
     grid-column: 1 / -1;
     min-height: 56px !important;
     display: grid !important;
-    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-columns: 48px minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-items: center;
     gap: 4px 12px;
@@ -1448,6 +1448,7 @@
     font-weight: 800;
     line-height: 1.2;
     text-align: left;
+    justify-self: start;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1458,6 +1459,8 @@
     grid-column: 2;
     grid-row: 2;
     align-self: start;
+    justify-self: start;
+    text-align: left;
     color: #64748b;
     font-size: 13px;
     font-weight: 700;
@@ -1465,16 +1468,7 @@
   }
 
   .rem-mobile-top-status {
-    display: inline-flex;
-    grid-column: 3;
-    grid-row: 1 / span 2;
-    align-self: center;
-    height: 28px;
-    min-width: 82px;
-    justify-content: center;
-    padding: 0 12px;
-    font-size: 11px !important;
-    font-weight: 700;
+    display: none !important;
   }
 
   .rem-history-list .rem-hl-col-dose,
@@ -1483,30 +1477,56 @@
   .rem-history-list .rem-hl-col-status {
     min-height: 82px !important;
     display: grid !important;
-    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-columns: 20px minmax(0, 1fr);
     grid-template-rows: auto auto;
-    align-items: center;
-    gap: 4px 10px;
+    align-items: start;
+    align-content: center;
+    gap: 9px 8px;
     padding: 13px 12px !important;
     border: 1px solid #e5eef6 !important;
     border-radius: 9px;
     background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
     box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+  }
+
+  .rem-history-list .rem-hl-col-date {
+    justify-content: center;
+    justify-items: center;
+    grid-template-columns: 20px auto;
+  }
+
+  .rem-history-list .rem-hl-col-date .rem-hl-label {
+    justify-self: start;
+  }
+
+  .rem-history-list .rem-hl-col-date .rem-hl-value {
+    grid-column: 1 / -1;
+    justify-self: center;
+    text-align: center;
+    max-width: 96px;
   }
 
   .rem-mobile-field-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    grid-row: 1 / span 2;
-    width: 30px;
-    height: 30px;
+    grid-column: 1;
+    grid-row: 1;
+    width: 20px;
+    height: 20px;
     color: #0faaa0;
+  }
+
+  .rem-mobile-field-icon svg {
+    width: 17px;
+    height: 17px;
   }
 
   .rem-history-list .rem-hl-label {
     display: block !important;
     grid-column: 2;
+    align-self: center;
     color: #64748b;
     font-size: 10px !important;
     font-weight: 800;
@@ -1515,7 +1535,6 @@
     text-align: left;
     text-transform: uppercase;
   }
-
   .rem-history-list .rem-hl-value {
     grid-column: 2;
     color: #334155;
@@ -1523,19 +1542,31 @@
     font-weight: 700;
     line-height: 1.2;
     text-align: left;
-    white-space: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .rem-history-list .rem-hl-col-status {
+    justify-content: center;
+    justify-items: center;
+    grid-template-columns: 20px auto;
   }
 
+  .rem-history-list .rem-hl-col-status .rem-hl-label {
+    justify-self: start;
+  }
   .rem-history-list .rem-hl-col-status .rem-status-badge {
     position: static !important;
-    grid-column: 2;
-    justify-self: start;
+    grid-column: 1 / -1;
+    justify-self: center;
     height: 25px;
     min-width: 78px;
     justify-content: center;
     padding: 0 10px;
     font-size: 10px !important;
     font-weight: 700;
+    max-width: 100%;
   }
 
   .rem-history-list .rem-hl-col-action {
@@ -1578,7 +1609,7 @@
   }
 
   .rem-history-list .rem-hl-col-name {
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-columns: 46px minmax(0, 1fr);
     gap: 4px 10px;
   }
 
@@ -1588,10 +1619,7 @@
   }
 
   .rem-mobile-top-status {
-    min-width: 74px;
-    height: 27px;
-    padding: 0 10px;
-    font-size: 10px !important;
+    display: none !important;
   }
 
   .rem-mobile-top-dose {
@@ -1602,12 +1630,66 @@
   .rem-history-list .rem-hl-col-date,
   .rem-history-list .rem-hl-col-time,
   .rem-history-list .rem-hl-col-status {
-    min-height: 80px !important;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 4px 8px;
-    padding: 12px 10px !important;
+    min-height: 82px !important;
+    display: grid !important;
+    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: start;
+    align-content: center;
+    gap: 9px 8px;
+    padding: 13px 12px !important;
+    border: 1px solid #e5eef6 !important;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
   }
 
+  .rem-history-list .rem-hl-col-date {
+    justify-content: center;
+    justify-items: center;
+    grid-template-columns: 20px auto;
+  }
+
+  .rem-history-list .rem-hl-col-date .rem-hl-label {
+    justify-self: start;
+  }
+
+  .rem-history-list .rem-hl-col-date .rem-hl-value {
+    grid-column: 1 / -1;
+    justify-self: center;
+    text-align: center;
+    max-width: 96px;
+  }
+
+  .rem-mobile-field-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    grid-column: 1;
+    grid-row: 1;
+    width: 20px;
+    height: 20px;
+    color: #0faaa0;
+  }
+
+  .rem-mobile-field-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .rem-history-list .rem-hl-label {
+    display: block !important;
+    grid-column: 2;
+    align-self: center;
+    color: #64748b;
+    font-size: 10px !important;
+    font-weight: 800;
+    letter-spacing: 0.65px !important;
+    line-height: 1;
+    text-align: left;
+    text-transform: uppercase;
+  }
   .rem-history-list .rem-hl-value {
     font-size: 12px !important;
   }

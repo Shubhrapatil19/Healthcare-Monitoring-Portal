@@ -347,6 +347,16 @@ const UserDash = ({ onLogout }) => {
     return savedPage > 0 ? savedPage : 1;
   });
 
+  const [collapsedReminderCards, setCollapsedReminderCards] = useState({});
+
+  const toggleReminderCard = (rowKey) => {
+    setCollapsedReminderCards((current) => ({
+      ...current,
+      [rowKey]: !current[rowKey],
+    }));
+  };
+
+
   const changeSchedulePage = (nextPageOrUpdater) => {
     setSchedulePage((currentPage) => {
       const nextPage =
@@ -365,7 +375,7 @@ const UserDash = ({ onLogout }) => {
     });
   };
 
-  const scheduleItemsPerPage = 1;
+  const scheduleItemsPerPage = 4;
 
   // =========================================================
   // INVENTORY
@@ -392,6 +402,9 @@ const UserDash = ({ onLogout }) => {
   const [calendarData, setCalendarData] =
     useState([]);
 
+  const [calendarMedicines, setCalendarMedicines] =
+    useState([]);
+
   const [calendarLoading, setCalendarLoading] =
     useState(true);
 
@@ -399,6 +412,9 @@ const UserDash = ({ onLogout }) => {
     taken: true,
     missed: true,
   });
+
+  const [selectedCalendarDate, setSelectedCalendarDate] =
+    useState(null);
 
   // =========================================================
   // CURRENT USER NAME
@@ -964,6 +980,8 @@ const UserDash = ({ onLogout }) => {
         ? extractArray(medicinesResponse.data, ["medicines"])
         : null;
 
+      setCalendarMedicines(activeMedicines || []);
+
       const IS_COMPLETED_STATUS = new Set(["TAKEN", "MISSED"]);
 
       const completedHistoryDoses = historyDoses.filter(
@@ -1175,6 +1193,8 @@ const UserDash = ({ onLogout }) => {
           ? extractArray(medicinesResponse.data, ["medicines"])
           : null;
 
+        setCalendarMedicines(initialActiveMedicines || []);
+
         const completedHistorySchedules = extractArray(
           historyResponse.data,
           ["reminders", "history", "data"]
@@ -1334,6 +1354,28 @@ const UserDash = ({ onLogout }) => {
       fetchNotificationCount,
     };
   });
+
+  useEffect(() => {
+    const handleMedicineScheduleChanged = () => {
+      const handlers = refreshHandlersRef.current;
+
+      handlers.fetchTodaySchedule();
+      handlers.fetchDashboardSummary();
+      handlers.fetchCalendarData();
+    };
+
+    window.addEventListener(
+      "medicineScheduleChanged",
+      handleMedicineScheduleChanged
+    );
+
+    return () => {
+      window.removeEventListener(
+        "medicineScheduleChanged",
+        handleMedicineScheduleChanged
+      );
+    };
+  }, []);
   const AUTO_REFRESH_INTERVAL_MS = 5000;
 
   useEffect(() => {
@@ -1792,10 +1834,6 @@ const UserDash = ({ onLogout }) => {
     medicine.time ||
     "00:00";
 
-  // =========================================================
-  // TIMELINE POSITION
-  // =========================================================
-
   const getScheduleTimelinePosition = (
     medicine
   ) => {
@@ -1805,60 +1843,37 @@ const UserDash = ({ onLogout }) => {
       )
     ).trim();
 
-    const match =
-      rawTime.match(
-        /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i
-      );
+    const match = rawTime.match(
+      /(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i
+    );
 
     if (!match) {
       return 50;
     }
 
-    let hours =
-      Number(match[1]);
+    let hours = Number(match[1]);
+    const minutes = Number(match[2] || 0);
+    const period = match[3]?.toUpperCase();
 
-    const minutes =
-      Number(
-        match[2] || 0
-      );
-
-    const period =
-      match[3]?.toUpperCase();
-
-    if (
-      period === "PM" &&
-      hours < 12
-    ) {
+    if (period === "PM" && hours < 12) {
       hours += 12;
     }
 
-    if (
-      period === "AM" &&
-      hours === 12
-    ) {
+    if (period === "AM" && hours === 12) {
       hours = 0;
     }
 
-    const totalMinutes =
-      Math.min(
-        Math.max(
-          hours * 60 +
-            minutes,
-          0
-        ),
-        1440
-      );
+    const totalMinutes = Math.min(
+      Math.max(hours * 60 + minutes, 0),
+      1440
+    );
 
     return Math.min(
-      Math.max(
-        (totalMinutes /
-          1440) *
-          100,
-        6
-      ),
-      82
+      Math.max((totalMinutes / 1440) * 100, 1),
+      99
     );
   };
+
 
   // =========================================================
   // CALENDAR
@@ -1916,6 +1931,53 @@ const UserDash = ({ onLogout }) => {
     calendarDays.push("");
   }
 
+  const getCalendarDateKey = useCallback((value) => {
+    const dateStr =
+      typeof value === "string"
+        ? value
+        : value?.scheduledDate || value?.date || value?.reminderDate;
+
+    if (!dateStr) return "";
+
+    const dateParts = String(dateStr).match(
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+    );
+
+    if (dateParts) {
+      return (
+        `${dateParts[3]}-` +
+        `${String(dateParts[2]).padStart(2, "0")}-` +
+        `${String(dateParts[1]).padStart(2, "0")}`
+      );
+    }
+
+    const date = new Date(dateStr);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return (
+      `${date.getFullYear()}-` +
+      `${String(date.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(date.getDate()).padStart(2, "0")}`
+    );
+  }, []);
+
+  const getCalendarDayKey = useCallback(
+    (day) => {
+      const dateValue = Number(day);
+
+      if (!dateValue) return "";
+
+      return (
+        `${calendarYear}-` +
+        `${String(calendarMonth + 1).padStart(2, "0")}-` +
+        `${String(dateValue).padStart(2, "0")}`
+      );
+    },
+    [calendarMonth, calendarYear]
+  );
   // =========================================================
   // CALENDAR STATUS MAP
   // =========================================================
@@ -1926,38 +1988,7 @@ const UserDash = ({ onLogout }) => {
 
       calendarData.forEach(
         (item) => {
-          const dateStr =
-            item.scheduledDate ||
-            item.date ||
-            item.reminderDate;
-
-          if (!dateStr) return;
-
-          const key = (() => {
-            const dateParts = String(dateStr).match(
-              /^(\d{1,2})-(\d{1,2})-(\d{4})$/
-            );
-
-            if (dateParts) {
-              return (
-                `${dateParts[3]}-` +
-                `${String(dateParts[2]).padStart(2, "0")}-` +
-                `${String(dateParts[1]).padStart(2, "0")}`
-              );
-            }
-
-            const date = new Date(dateStr);
-
-            if (Number.isNaN(date.getTime())) {
-              return "";
-            }
-
-            return (
-              `${date.getFullYear()}-` +
-              `${String(date.getMonth() + 1).padStart(2, "0")}-` +
-              `${String(date.getDate()).padStart(2, "0")}`
-            );
-          })();
+          const key = getCalendarDateKey(item);
 
           if (!key) return;
 
@@ -1975,7 +2006,7 @@ const UserDash = ({ onLogout }) => {
       );
 
       return map;
-    }, [calendarData]);
+    }, [calendarData, getCalendarDateKey]);
 
   // =========================================================
   // CALENDAR DATE CLASS
@@ -1991,20 +2022,7 @@ const UserDash = ({ onLogout }) => {
       return "";
     }
 
-    const key =
-      `${calendarYear}-` +
-      `${String(
-        calendarMonth + 1
-      ).padStart(
-        2,
-        "0"
-      )}-` +
-      `${String(
-        dateValue
-      ).padStart(
-        2,
-        "0"
-      )}`;
+    const key = getCalendarDayKey(day);
 
     const statuses =
       calendarStatusMap[
@@ -2110,10 +2128,7 @@ const UserDash = ({ onLogout }) => {
       return "";
     }
 
-    const key =
-      `${calendarYear}-` +
-      `${String(calendarMonth + 1).padStart(2, "0")}-` +
-      `${String(dateValue).padStart(2, "0")}`;
+    const key = getCalendarDayKey(day);
 
     const statuses = calendarStatusMap[key] || [];
 
@@ -2134,11 +2149,218 @@ const UserDash = ({ onLogout }) => {
     return "";
   };
 
+  const formatCalendarSelectedDate = (dateKey) => {
+    if (!dateKey) return "Selected date";
+
+    const date = new Date(`${dateKey}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateKey;
+    }
+
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatCalendarMedicineTime = (item, medicineRecord = null) => {
+    const rawTime =
+      item?.time ||
+      item?.scheduledTime ||
+      item?.scheduled_time ||
+      item?.reminderTime ||
+      item?.reminder_time ||
+      item?.doseTime ||
+      item?.dose_time ||
+      item?.medicine?.time ||
+      item?.medicine?.scheduledTime ||
+      item?.medicine?.doseTime ||
+      medicineRecord?.time ||
+      medicineRecord?.scheduledTime ||
+      medicineRecord?.doseTime ||
+      (Array.isArray(item?.doseTimes) ? item.doseTimes[0] : "") ||
+      (Array.isArray(item?.medicine?.doseTimes)
+        ? item.medicine.doseTimes[0]
+        : "") ||
+      (Array.isArray(medicineRecord?.doseTimes)
+        ? medicineRecord.doseTimes[0]
+        : "");
+
+    if (!rawTime) return "Time not set";
+
+    const timeText = String(rawTime).trim();
+
+    if (/\b(?:AM|PM)\b/i.test(timeText)) {
+      return timeText.replace(/\b(am|pm)\b/i, (match) => match.toUpperCase());
+    }
+
+    const [hours, minutes = "00"] = timeText.split(":");
+    const date = new Date();
+
+    date.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0);
+
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const getCalendarItemDoseEntries = useCallback((item) => {
+    const nestedGroups = [
+      [item?.doses, item?.status],
+      [item?.reminders, item?.status],
+      [item?.medicines, item?.status],
+      [item?.takenMedicines, "taken"],
+      [item?.taken_medicines, "taken"],
+      [item?.missedMedicines, "missed"],
+      [item?.missed_medicines, "missed"],
+    ];
+
+    const nestedEntries = nestedGroups.flatMap(([entries, fallbackStatus]) =>
+      Array.isArray(entries)
+        ? entries.map((entry) => ({
+            ...entry,
+            date: entry?.date || item?.date || item?.scheduledDate,
+            scheduledDate:
+              entry?.scheduledDate || item?.scheduledDate || item?.date,
+            status: entry?.status || fallbackStatus,
+          }))
+        : []
+    );
+
+    return nestedEntries.length > 0 ? nestedEntries : [item];
+  }, []);
+
+  const selectedCalendarMedicines = useMemo(() => {
+    if (!selectedCalendarDate) {
+      return {
+        taken: [],
+        missed: [],
+      };
+    }
+
+    return calendarData.reduce(
+      (groups, item) => {
+        getCalendarItemDoseEntries(item).forEach((entry) => {
+          if (getCalendarDateKey(entry) !== selectedCalendarDate) {
+            return;
+          }
+
+          const status = String(entry.status || "").toLowerCase();
+
+          if (status === "taken" || status === "missed") {
+            groups[status].push(entry);
+          }
+        });
+
+        return groups;
+      },
+      {
+        taken: [],
+        missed: [],
+      }
+    );
+  }, [
+    calendarData,
+    getCalendarDateKey,
+    getCalendarItemDoseEntries,
+    selectedCalendarDate,
+  ]);
+
+  const selectedCalendarTotal =
+    selectedCalendarMedicines.taken.length +
+    selectedCalendarMedicines.missed.length;
+
+  const getCalendarMedicineRecord = (item) => {
+    const directMedicine =
+      typeof item?.medicine === "object" ? item.medicine : null;
+
+    if (directMedicine) return directMedicine;
+
+    const itemMedicineId = normalizeScheduleValue(
+      getScheduleMedicineId(item) ||
+        item?.medicine ||
+        item?.medicationId ||
+        item?.medication_id
+    );
+
+    if (!itemMedicineId) return null;
+
+    return (
+      calendarMedicines.find((medicine) => {
+        const medicineId = normalizeScheduleValue(
+          medicine?.id ??
+            medicine?._id ??
+            medicine?.medicineId ??
+            medicine?.medicine_id
+        );
+
+        return medicineId && medicineId === itemMedicineId;
+      }) || null
+    );
+  };
+
+  const getCalendarMedicineName = (item) => {
+    const medicine =
+      getCalendarMedicineRecord(item) ||
+      item?.medication ||
+      item?.medicineDetails;
+
+    return (
+      item?.medicineName ||
+      item?.medicine_name ||
+      item?.medName ||
+      item?.med_name ||
+      item?.name ||
+      item?.title ||
+      medicine?.medicineName ||
+      medicine?.medicine_name ||
+      medicine?.medName ||
+      medicine?.name ||
+      "Medicine"
+    );
+  };
+
+  const getCalendarMedicineStatus = (item) =>
+    String(item?.status || "")
+      .toLowerCase()
+      .replace(/^./, (letter) => letter.toUpperCase());
+
+  const getCalendarMedicineMeta = (item) => {
+    const medicine =
+      getCalendarMedicineRecord(item) ||
+      item?.medication ||
+      item?.medicineDetails;
+    const dosage =
+      item?.dosage ||
+      item?.dose ||
+      item?.strength ||
+      medicine?.dosage ||
+      medicine?.dose ||
+      medicine?.strength;
+    const time = formatCalendarMedicineTime(item, medicine);
+
+    return dosage ? `${dosage} | ${time}` : time;
+  };
+
+  const handleCalendarDateClick = (day) => {
+    const key = getCalendarDayKey(day);
+
+    if (!key) return;
+
+    setSelectedCalendarDate((current) =>
+      current === key ? null : key
+    );
+  };
   // =========================================================
   // CALENDAR NAVIGATION
   // =========================================================
 
   const handlePrevMonth = () => {
+    setSelectedCalendarDate(null);
+
     if (
       calendarMonth === 0
     ) {
@@ -2157,6 +2379,8 @@ const UserDash = ({ onLogout }) => {
   };
 
   const handleNextMonth = () => {
+    setSelectedCalendarDate(null);
+
     if (
       calendarMonth === 11
     ) {
@@ -2175,6 +2399,8 @@ const UserDash = ({ onLogout }) => {
   };
 
   const handleGoToToday = () => {
+    setSelectedCalendarDate(null);
+
     setCalendarMonth(
       todayMonth
     );
@@ -2697,7 +2923,8 @@ const UserDash = ({ onLogout }) => {
                     ROW 1
                 ===================================== */}
 
-                <div className="card-row">
+                <div className="dashboard-card-columns">
+                  <div className="dashboard-card-column">
                   {/* TODAY'S SCHEDULE */}
 
                   <div className="dashboard-card today-schedule-card">
@@ -2771,17 +2998,36 @@ const UserDash = ({ onLogout }) => {
 
                             <div className="today-timeline-track-wrap">
                               <div className="today-timeline-scale">
-                                <span>
-                                  00:00
-                                </span>
+                                <span
+                                  className="today-timeline-scale-spacer"
+                                  aria-hidden="true"
+                                />
 
-                                <span>
-                                  12:00
-                                </span>
-
-                                <span>
-                                  24:00
-                                </span>
+                                <div className="today-timeline-scale-labels">
+                                  {[
+                                    "00:00",
+                                    "04:00",
+                                    "08:00",
+                                    "12:00",
+                                    "16:00",
+                                    "20:00",
+                                    "24:00",
+                                  ].map(
+                                    (
+                                      label
+                                    ) => (
+                                      <span
+                                        key={
+                                          label
+                                        }
+                                      >
+                                        {
+                                          label
+                                        }
+                                      </span>
+                                    )
+                                  )}
+                                </div>
                               </div>
 
                               <div className="today-timeline-rows">
@@ -2800,113 +3046,178 @@ const UserDash = ({ onLogout }) => {
                                       </div>
 
                                       <div
-                                        className="today-timeline-track"
+                                        className="today-timeline-track today-reminder-track"
                                         style={{
-                                          minHeight: `${
-                                            96 +
-                                            Math.max(
-                                              0,
-                                              row
-                                                .medicines
-                                                .length -
-                                                1
-                                            ) *
-                                              8
-                                          }px`,
+                                          minHeight: collapsedReminderCards[row.name]
+                                            ? "76px"
+                                            : `${Math.max(
+                                                122,
+                                                94 +
+                                                  row.medicines.length * 26 +
+                                                  (row.notes ? 84 : 0)
+                                              )}px`,
                                         }}
                                       >
-                                        <span className="today-timeline-node start" />
-                                        <span className="today-timeline-node mid" />
-                                        <span className="today-timeline-node end" />
+                                        {[
+                                          "0%",
+                                          "16.6667%",
+                                          "33.3333%",
+                                          "50%",
+                                          "66.6667%",
+                                          "83.3333%",
+                                          "100%",
+                                        ].map(
+                                          (
+                                            position
+                                          ) => (
+                                            <span
+                                              className="today-timeline-node"
+                                              key={
+                                                position
+                                              }
+                                              style={{
+                                                left: position,
+                                              }}
+                                            />
+                                          )
+                                        )}
 
                                         {row.medicines.map(
                                           (
                                             medicine,
                                             index
-                                          ) => {
-                                            const status =
-                                              String(
-                                                medicine.status ||
-                                                  "PENDING"
-                                              ).toLowerCase();
+                                          ) => (
+                                            <span
+                                              key={
+                                                medicine.doseId ||
+                                                medicine.id ||
+                                                `${row.name}-pin-${index}`
+                                              }
+                                              className={`today-reminder-pin ${String(
+                                                medicine.status || "PENDING"
+                                              ).toLowerCase()}`}
+                                              style={{
+                                                left: `${getScheduleTimelinePosition(
+                                                  medicine
+                                                )}%`,
+                                              }}
+                                            />
+                                          )
+                                        )}
 
-                                            return (
-                                              <div
-                                                key={
-                                                  medicine.doseId ||
-                                                  medicine.id ||
-                                                  `${row.name}-${index}`
-                                                }
-                                                className={`today-timeline-medicine ${status}`}
-                                                style={{
-                                                  left: `${getScheduleTimelinePosition(
-                                                    medicine
-                                                  )}%`,
+                                        <div
+                                          className={`today-reminder-card ${
+                                            collapsedReminderCards[row.name] ? "collapsed" : "open"
+                                          }`}
+                                          style={{
+                                            "--reminder-card-left": `${
+                                              row.medicines.reduce(
+                                                (sum, medicine) =>
+                                                  sum + getScheduleTimelinePosition(medicine),
+                                                0
+                                              ) / row.medicines.length
+                                            }%`,
+                                          }}
+                                        >
+                                          <button
+                                            type="button"
+                                            className="today-reminder-card-header"
+                                            aria-expanded={!collapsedReminderCards[row.name]}
+                                            onClick={() => toggleReminderCard(row.name)}
+                                          >
+                                            <strong>
+                                              {row.medicines.length} Reminder
+                                              {row.medicines.length === 1 ? "" : "s"}
+                                            </strong>
 
-                                                  "--card-offset": `${
-                                                    (index -
-                                                      (row
-                                                        .medicines
-                                                        .length -
-                                                        1) /
-                                                        2) *
-                                                    44
-                                                  }px`,
-                                                }}
-                                              >
-                                                <span className="today-timeline-pin" />
+                                            <ChevronDown
+                                              size={
+                                                16
+                                              }
+                                              aria-hidden="true"
+                                            />
+                                          </button>
 
-                                                <div className="today-timeline-card">
-                                                  <strong>
-                                                    {getScheduleTimeLabel(
-                                                      medicine
-                                                    )}
-                                                  </strong>
+                                          {!collapsedReminderCards[row.name] && (
+                                            <>
+                                              <div className="today-reminder-list">
+                                                {row.medicines.map(
+                                                  (
+                                                    medicine,
+                                                    index
+                                                  ) => {
+                                                    const status = String(
+                                                      medicine.status || "PENDING"
+                                                    ).toLowerCase();
+                                                    const statusLabel =
+                                                      status.charAt(0).toUpperCase() +
+                                                      status.slice(1);
 
-                                                  <small>
-                                                    <Clock
+                                                    return (
+                                                      <div
+                                                        key={
+                                                          medicine.doseId ||
+                                                          medicine.id ||
+                                                          `${row.name}-${index}`
+                                                        }
+                                                        className={`today-reminder-item ${status}`}
+                                                      >
+                                                        <span className="today-reminder-time">
+                                                          <Clock
+                                                            size={
+                                                              13
+                                                            }
+                                                            aria-hidden="true"
+                                                          />
+
+                                                          <strong>
+                                                            {getScheduleTimeLabel(
+                                                              medicine
+                                                            )}
+                                                          </strong>
+                                                        </span>
+
+                                                        <span className="today-reminder-status">
+                                                          <Clock
+                                                            size={
+                                                              13
+                                                            }
+                                                            aria-hidden="true"
+                                                          />
+
+                                                          {statusLabel}
+                                                        </span>
+                                                      </div>
+                                                    );
+                                                  }
+                                                )}
+                                              </div>
+
+                                              {row.notes && (
+                                                <div className="today-schedule-notes">
+                                                  <div className="today-schedule-notes-label">
+                                                    <FileText
                                                       size={
-                                                        12
+                                                        14
                                                       }
                                                     />
 
-                                                    {status
-                                                      .charAt(
-                                                        0
-                                                      )
-                                                      .toUpperCase() +
-                                                      status.slice(
-                                                        1
-                                                      )}
-                                                  </small>
+                                                    <span>
+                                                      Notes
+                                                    </span>
+                                                  </div>
+
+                                                  <p>
+                                                    {
+                                                      row.notes
+                                                    }
+                                                  </p>
                                                 </div>
-                                              </div>
-                                            );
-                                          }
-                                        )}
-                                      </div>
-
-                                      {row.notes && (
-                                        <div className="today-schedule-notes">
-                                          <div className="today-schedule-notes-label">
-                                            <FileText
-                                              size={
-                                                14
-                                              }
-                                            />
-
-                                            <span>
-                                              Notes
-                                            </span>
-                                          </div>
-
-                                          <p>
-                                            {
-                                              row.notes
-                                            }
-                                          </p>
+                                              )}
+                                            </>
+                                          )}
                                         </div>
-                                      )}
+                                      </div>
                                     </div>
                                   )
                                 )}
@@ -3032,6 +3343,15 @@ const UserDash = ({ onLogout }) => {
                       )}
                     </div>
                   </div>
+
+                    <div ref={myMedicineRef}>
+                      {/* UserManage now handles its own
+                          GET/PUT/DELETE APIs */}
+
+                      <UserManage />
+                    </div>
+                  </div>
+                  <div className="dashboard-card-column">
 
                   {/* INVENTORY OVERVIEW */}
 
@@ -3338,21 +3658,6 @@ const UserDash = ({ onLogout }) => {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* =====================================
-                    ROW 2
-                ===================================== */}
-
-                <div
-                  className="card-row"
-                  ref={myMedicineRef}
-                >
-                  {/* UserManage now handles its own
-                      GET/PUT/DELETE APIs */}
-
-                  <UserManage />
-
                   {/* CALENDAR */}
 
                   <div className="dashboard-card calendar-card">
@@ -3466,30 +3771,158 @@ const UserDash = ({ onLogout }) => {
                           (
                             day,
                             index
-                          ) => (
-                            <div
-                              key={
-                                index
-                              }
-                              className={`calendar-date${getCalendarDateClass(
-                                day
-                              )}`}
-                            >
-                              <span className="calendar-date-number">
-                                {day}
-                              </span>
+                          ) => {
+                            const dayKey = getCalendarDayKey(day);
 
-                              {getCalendarDateDotClass(day) && (
-                                <span
-                                  className={`calendar-status-dot ${getCalendarDateDotClass(
-                                    day
-                                  )}`}
-                                />
-                              )}
-                            </div>
-                          )
+                            return (
+                              <button
+                                key={
+                                  index
+                                }
+                                type="button"
+                                disabled={!day}
+                                className={`calendar-date clickable${getCalendarDateClass(
+                                  day
+                                )}${
+                                  dayKey && dayKey === selectedCalendarDate
+                                    ? " selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleCalendarDateClick(day)
+                                }
+                                aria-label={
+                                  dayKey
+                                    ? `Show medicines for ${formatCalendarSelectedDate(
+                                        dayKey
+                                      )}`
+                                    : "Empty calendar slot"
+                                }
+                              >
+                                <span className="calendar-date-number">
+                                  {day}
+                                </span>
+
+                                {getCalendarDateDotClass(day) && (
+                                  <span
+                                    className={`calendar-status-dot ${getCalendarDateDotClass(
+                                      day
+                                    )}`}
+                                  />
+                                )}
+                              </button>
+                            );
+                          }
                         )}
                       </div>
+
+                      {selectedCalendarDate && (
+                        <div className="calendar-date-popup">
+                          <div className="calendar-date-popup-header">
+                            <div>
+                              <strong>
+                                {formatCalendarSelectedDate(
+                                  selectedCalendarDate
+                                )}
+                              </strong>
+
+                              <span>
+                                {selectedCalendarTotal} medicine
+                                {selectedCalendarTotal === 1 ? "" : "s"}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="calendar-date-popup-close"
+                              onClick={() => setSelectedCalendarDate(null)}
+                              aria-label="Close calendar details"
+                            >
+                              x
+                            </button>
+                          </div>
+
+                          <div className="calendar-date-popup-body">
+                            {selectedCalendarTotal === 0 ? (
+                              <div className="calendar-date-popup-empty">
+                                No taken or missed medicines for this date.
+                              </div>
+                            ) : (
+                              <>
+                                {selectedCalendarMedicines.taken.length > 0 && (
+                                  <div className="calendar-date-popup-section">
+                                    <h4>
+                                      Taken
+                                    </h4>
+
+                                    <ul className="calendar-date-popup-list">
+                                      {selectedCalendarMedicines.taken.map(
+                                        (item, index) => (
+                                          <li key={`taken-${item.id || index}`}>
+                                            <CircleCheck
+                                              size={16}
+                                              className="calendar-date-popup-icon taken"
+                                            />
+
+                                            <span className="calendar-date-popup-info">
+                                              <span className="calendar-date-popup-name">
+                                                {getCalendarMedicineName(item)}
+                                              </span>
+
+                                              <span className="calendar-date-popup-meta">
+                                                {getCalendarMedicineMeta(item)}
+                                              </span>
+                                            </span>
+
+                                            <span className="calendar-date-popup-status taken">
+                                              {getCalendarMedicineStatus(item)}
+                                            </span>
+                                          </li>
+                                        )
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {selectedCalendarMedicines.missed.length > 0 && (
+                                  <div className="calendar-date-popup-section">
+                                    <h4>
+                                      Missed
+                                    </h4>
+
+                                    <ul className="calendar-date-popup-list">
+                                      {selectedCalendarMedicines.missed.map(
+                                        (item, index) => (
+                                          <li key={`missed-${item.id || index}`}>
+                                            <CircleX
+                                              size={16}
+                                              className="calendar-date-popup-icon missed"
+                                            />
+
+                                            <span className="calendar-date-popup-info">
+                                              <span className="calendar-date-popup-name">
+                                                {getCalendarMedicineName(item)}
+                                              </span>
+
+                                              <span className="calendar-date-popup-meta">
+                                                {getCalendarMedicineMeta(item)}
+                                              </span>
+                                            </span>
+
+                                            <span className="calendar-date-popup-status missed">
+                                              {getCalendarMedicineStatus(item)}
+                                            </span>
+                                          </li>
+                                        )
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="calendar-footer">
                         <div className="calendar-legend">
@@ -3566,7 +3999,9 @@ const UserDash = ({ onLogout }) => {
                       </div>
                     </div>
                   </div>
+                  </div>
                 </div>
+
               </>
             )}
           </main>
@@ -3577,6 +4012,26 @@ const UserDash = ({ onLogout }) => {
 };
 
 export default UserDash;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

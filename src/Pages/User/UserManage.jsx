@@ -21,10 +21,35 @@ import api from "../../api/axiosInstance";
 
 import "./UserManage.css";
 
+
+const TIME_HOUR_OPTIONS = Array.from(
+  { length: 12 },
+  (_, index) => String(index + 1).padStart(2, "0")
+);
+
+const TIME_MINUTE_OPTIONS = Array.from(
+  { length: 60 },
+  (_, index) => String(index).padStart(2, "0")
+);
 const ITEMS_PER_PAGE = 3;
 const TODAY_SCHEDULE_CACHE_KEY = "todayScheduleCache";
 const COMPLETED_TODAY_DOSE_KEYS = "completedTodayDoseKeys";
 
+const FREQUENCY_OPTIONS = [
+  { value: "ONCE_A_DAY", label: "Once a day" },
+  { value: "TWICE_A_DAY", label: "Twice a day" },
+  { value: "THRICE_A_DAY", label: "Three times a day" },
+  { value: "AS_NEEDED", label: "As needed" },
+  { value: "WEEKLY", label: "Weekly" },
+];
+
+const FREQUENCY_LABEL_TO_VALUE = FREQUENCY_OPTIONS.reduce(
+  (labels, option) => ({
+    ...labels,
+    [option.label.toLowerCase()]: option.value,
+  }),
+  {}
+);
 const UserManage = () => {
   // =========================================================
   // MEDICINES
@@ -66,6 +91,9 @@ const UserManage = () => {
       endDate: "",
       notes: "",
     });
+
+  const [editTimingValues, setEditTimingValues] =
+    useState([""]);
 
   // =========================================================
   // DELETE STATE
@@ -117,6 +145,200 @@ const UserManage = () => {
       medicine?.medicineId ??
       medicine?.medicine_id
     );
+  };
+  const todayForDateInput = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const normalizeDateForInput = (value) => {
+    const raw = String(value || "").trim();
+
+    if (!raw) return "";
+
+    const ymdMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (ymdMatch) {
+      return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+    }
+
+    const dmyMatch = raw.match(/^(\d{2})-(\d{2})-(\d{4})/);
+    if (dmyMatch) {
+      return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+    }
+
+    return "";
+  };
+
+  const formatDateForBackend = (value) => {
+    const inputDate = normalizeDateForInput(value);
+    if (!inputDate) return "";
+
+    const [year, month, day] = inputDate.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
+  const getEditableScheduleDates = (medicine) => {
+    const today = todayForDateInput();
+    const originalStart = normalizeDateForInput(medicine?.startDate);
+    const originalEnd = normalizeDateForInput(medicine?.endDate);
+    const startDate = originalStart && originalStart >= today ? originalStart : today;
+    const endDate = originalEnd && originalEnd >= startDate ? originalEnd : startDate;
+
+    return {
+      startDate: formatDateForBackend(startDate),
+      endDate: formatDateForBackend(endDate),
+    };
+  };
+
+  const formatTimeForBackend = (value) => {
+    const raw = String(value || "").trim();
+
+    if (!raw) return "";
+
+    const meridiemMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+    if (meridiemMatch) {
+      const hour = String(Number(meridiemMatch[1])).padStart(2, "0");
+      return `${hour}:${meridiemMatch[2]} ${meridiemMatch[3].toUpperCase()}`;
+    }
+
+    const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!twentyFourHourMatch) return raw;
+
+    const hour24 = Number(twentyFourHourMatch[1]);
+    const minute = twentyFourHourMatch[2];
+    const period = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+
+    return `${String(hour12).padStart(2, "0")}:${minute} ${period}`;
+  };
+
+  const normalizeTimeForInput = (value) => {
+    const raw = String(value || "").trim();
+
+    if (!raw) return "";
+
+    const meridiemMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+
+    if (meridiemMatch) {
+      let hour = Number(meridiemMatch[1]);
+      const minute = meridiemMatch[2];
+      const period = meridiemMatch[3].toUpperCase();
+
+      if (period === "PM" && hour < 12) {
+        hour += 12;
+      }
+
+      if (period === "AM" && hour === 12) {
+        hour = 0;
+      }
+
+      return String(hour).padStart(2, "0") + ":" + minute;
+    }
+
+    const twentyFourHourMatch = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+
+    if (!twentyFourHourMatch) return "";
+
+    return String(Number(twentyFourHourMatch[1])).padStart(2, "0") + ":" + twentyFourHourMatch[2];
+  };
+
+  const getTimePeriod = (value) => {
+    const raw = String(value || "").trim();
+    const meridiemMatch = raw.match(/\b(AM|PM)\b/i);
+
+    if (meridiemMatch) {
+      return meridiemMatch[1].toUpperCase();
+    }
+
+    const timeInput = normalizeTimeForInput(raw);
+    const hour = Number(timeInput.split(":")[0]);
+
+    return Number.isFinite(hour) && hour >= 12 ? "PM" : "AM";
+  };
+
+  const getTimeParts12 = (value) => {
+    const timeInput = normalizeTimeForInput(value);
+    const [hourValue = "00", minute = "00"] = timeInput.split(":");
+    const hour12 = Number(hourValue) % 12 || 12;
+
+    return {
+      hour: String(hour12).padStart(2, "0"),
+      minute,
+      period: getTimePeriod(value),
+    };
+  };
+
+  const buildTimeWithPeriod = (timeValue, period) => {
+    const timeInput = normalizeTimeForInput(timeValue);
+
+    if (!timeInput) return "";
+
+    const [hourValue, minute] = timeInput.split(":");
+    let hour = Number(hourValue) % 12;
+
+    if (String(period).toUpperCase() === "PM") {
+      hour += 12;
+    }
+
+    return String(hour).padStart(2, "0") + ":" + minute;
+  };
+
+  const getFrequencyDoseCount = (frequency) => {
+    const normalizedFrequency =
+      normalizeFrequencyValue(frequency);
+
+    const counts = {
+      ONCE_A_DAY: 1,
+      TWICE_A_DAY: 2,
+      THRICE_A_DAY: 3,
+      THREE_TIMES_A_DAY: 3,
+    };
+
+    return counts[normalizedFrequency] || null;
+  };
+
+  const alignTimingSlots = (times, frequency) => {
+    const normalizedTimes =
+      times.map((time) => normalizeTimeForInput(time));
+    const expectedCount =
+      getFrequencyDoseCount(frequency);
+
+    if (!expectedCount) {
+      return normalizedTimes.length > 0
+        ? normalizedTimes
+        : [""];
+    }
+
+    return Array.from(
+      { length: expectedCount },
+      (_, index) => normalizedTimes[index] || ""
+    );
+  };
+
+  const getEditTimingValues = () => {
+    return editTimingValues.length > 0
+      ? editTimingValues
+      : [""];
+  };
+
+  const normalizeFrequencyValue = (value) => {
+    const raw = String(value || "").trim();
+
+    if (!raw) return "";
+
+    const directOption = FREQUENCY_OPTIONS.find(
+      (option) => option.value === raw
+    );
+
+    if (directOption) {
+      return directOption.value;
+    }
+
+    return FREQUENCY_LABEL_TO_VALUE[raw.toLowerCase()] || raw;
   };
 
   const normalizeScheduleValue = (value) =>
@@ -363,6 +585,14 @@ const UserManage = () => {
 
       return medicines.filter(
         (medicine) => {
+          if (
+            editingId &&
+            getMedicineId(medicine) ===
+              editingId
+          ) {
+            return true;
+          }
+
           const medicineName =
             String(
               medicine.medicineName ||
@@ -397,7 +627,21 @@ const UserManage = () => {
     }, [
       medicines,
       searchTerm,
+      editingId,
     ]);
+
+  const editingMedicine =
+    useMemo(() => {
+      if (!editingId) {
+        return null;
+      }
+
+      return medicines.find(
+        (medicine) =>
+          getMedicineId(medicine) ===
+          editingId
+      ) || null;
+    }, [medicines, editingId]);
 
   // =========================================================
   // PAGINATION
@@ -420,14 +664,33 @@ const UserManage = () => {
         (currentPage - 1) *
         ITEMS_PER_PAGE;
 
-      return filteredMedicines.slice(
-        start,
-        start +
-          ITEMS_PER_PAGE
-      );
+      const pageItems =
+        filteredMedicines.slice(
+          start,
+          start +
+            ITEMS_PER_PAGE
+        );
+
+      if (
+        editingMedicine &&
+        !pageItems.some(
+          (medicine) =>
+            getMedicineId(medicine) ===
+            editingId
+        )
+      ) {
+        return [
+          editingMedicine,
+          ...pageItems,
+        ].slice(0, ITEMS_PER_PAGE);
+      }
+
+      return pageItems;
     }, [
       filteredMedicines,
       currentPage,
+      editingMedicine,
+      editingId,
     ]);
   const medicineRangeStart =
     filteredMedicines.length === 0
@@ -504,6 +767,24 @@ const UserManage = () => {
         ? medicine.doseTimes
         : [];
 
+    const rawTimingValues =
+      doseTimes.length > 0
+        ? doseTimes
+        : String(
+            medicine.timing ||
+              medicine.time ||
+              ""
+          )
+            .split(",")
+            .map((time) => time.trim())
+            .filter(Boolean);
+
+    setEditTimingValues(
+      alignTimingSlots(
+        rawTimingValues,
+        medicine.frequency
+      )
+    );
     setEditFormData({
       medicineName:
         medicine.medicineName ||
@@ -544,6 +825,7 @@ const UserManage = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
+    setEditTimingValues([""]);
 
     setEditFormData({
       medicineName: "",
@@ -570,6 +852,55 @@ const UserManage = () => {
         [field]: value,
       })
     );
+
+    if (field === "frequency") {
+      setEditTimingValues((prev) =>
+        alignTimingSlots(prev, value)
+      );
+    }
+  };
+
+  const handleEditTimingChange = (
+    index,
+    value
+  ) => {
+    setEditTimingValues((prev) => {
+      const times = [...prev];
+      const currentPeriod = getTimePeriod(times[index]);
+
+      times[index] = buildTimeWithPeriod(
+        value,
+        currentPeriod
+      );
+
+      setEditFormData((form) => ({
+        ...form,
+        timing: times.join(", "),
+      }));
+
+      return times;
+    });
+  };
+
+  const handleEditTimingPeriodChange = (
+    index,
+    period
+  ) => {
+    setEditTimingValues((prev) => {
+      const times = [...prev];
+
+      times[index] = buildTimeWithPeriod(
+        times[index],
+        period
+      );
+
+      setEditFormData((form) => ({
+        ...form,
+        timing: times.join(", "),
+      }));
+
+      return times;
+    });
   };
 
   // =========================================================
@@ -601,7 +932,7 @@ const UserManage = () => {
       }
 
       if (
-        !editFormData.frequency.trim()
+        !normalizeFrequencyValue(editFormData.frequency)
       ) {
         toast.error(
           "Frequency is required"
@@ -611,13 +942,17 @@ const UserManage = () => {
       }
 
       const doseTimes =
-        editFormData.timing
-          .split(",")
+        editTimingValues
           .map(
             (time) =>
-              time.trim()
+              formatTimeForBackend(time)
           )
           .filter(Boolean);
+
+      const scheduleDates =
+        getEditableScheduleDates(
+          medicine
+        );
 
       const payload = {
         medicineName:
@@ -627,26 +962,19 @@ const UserManage = () => {
           editFormData.dosage.trim(),
 
         frequency:
-          editFormData.frequency.trim(),
+          normalizeFrequencyValue(editFormData.frequency),
 
         doseTimes,
 
         startDate:
-          editFormData.startDate ||
-          medicine.startDate,
+          scheduleDates.startDate,
+
+        endDate:
+          scheduleDates.endDate,
 
         notes:
           editFormData.notes.trim(),
       };
-
-      if (
-        editFormData.endDate ||
-        medicine.endDate
-      ) {
-        payload.endDate =
-          editFormData.endDate ||
-          medicine.endDate;
-      }
 
       console.log(
         "UPDATE MEDICINE PAYLOAD:",
@@ -667,6 +995,11 @@ const UserManage = () => {
             "Medicine updated successfully!"
         );
 
+        removeMedicineFromTodayScheduleCache(medicine);
+
+        window.dispatchEvent(
+          new CustomEvent("medicineScheduleChanged")
+        );
         setEditingId(null);
 
         await refreshMedicines();
@@ -866,7 +1199,7 @@ const UserManage = () => {
       WEEKLY: "Weekly",
     };
 
-    return labels[frequency] || frequency || "—";
+    return labels[frequency] || frequency || "-";
   };
 
   // =========================================================
@@ -1070,35 +1403,91 @@ const UserManage = () => {
 
                             {/* TIMING */}
 
-                            <div className="medicine-time-value">
-                              <input
-                                type="text"
-                                className="edit-input"
-                                value={
-                                  editFormData.timing
-                                }
-                                onChange={(
-                                  e
-                                ) =>
-                                  handleEditFieldChange(
-                                    "timing",
-                                    e
-                                      .target
-                                      .value
-                                  )
-                                }
-                                placeholder="08:00, 20:00"
-                              />
+                            <div className="medicine-time-value medicine-edit-time-value">
+                              <div className="medicine-edit-time-list">
+                                {getEditTimingValues().map(
+                                  (
+                                    timeValue,
+                                    timeIndex
+                                  ) => {
+                                    const timeParts = getTimeParts12(timeValue);
+
+                                    return (
+                                      <div
+                                        className="medicine-edit-time-row"
+                                        key={`edit-time-${timeIndex}`}
+                                      >
+                                        <select
+                                          className="edit-input medicine-edit-time-input"
+                                          value={timeParts.hour}
+                                          onChange={(e) =>
+                                            handleEditTimingChange(
+                                              timeIndex,
+                                              `${e.target.value}:${timeParts.minute}`
+                                            )
+                                          }
+                                          aria-label={`Dose ${timeIndex + 1} hour`}
+                                        >
+                                          {TIME_HOUR_OPTIONS.map((hour) => (
+                                            <option key={hour} value={hour}>
+                                              {hour}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <select
+                                          className="edit-input medicine-edit-time-input"
+                                          value={timeParts.minute}
+                                          onChange={(e) =>
+                                            handleEditTimingChange(
+                                              timeIndex,
+                                              `${timeParts.hour}:${e.target.value}`
+                                            )
+                                          }
+                                          aria-label={`Dose ${timeIndex + 1} minute`}
+                                        >
+                                          {TIME_MINUTE_OPTIONS.map((minuteOption) => (
+                                            <option key={minuteOption} value={minuteOption}>
+                                              {minuteOption}
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        <select
+                                          className="edit-input medicine-edit-period-select"
+                                          value={timeParts.period}
+                                          onChange={(e) =>
+                                            handleEditTimingPeriodChange(
+                                              timeIndex,
+                                              e.target.value
+                                            )
+                                          }
+                                          aria-label={`Dose ${timeIndex + 1} AM or PM`}
+                                        >
+                                          <option value="AM">
+                                            AM
+                                          </option>
+
+                                          <option value="PM">
+                                            PM
+                                          </option>
+                                        </select>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
                             </div>
 
                             {/* FREQUENCY */}
 
-                            <div className="medicine-frequency-value">
-                              <input
-                                type="text"
-                                className="edit-input"
+                            <div className="medicine-frequency-value medicine-frequency-value--editing">
+                              <select
+                                className="edit-input medicine-edit-frequency-select"
                                 value={
-                                  editFormData.frequency
+                                  normalizeFrequencyValue(
+                                    editFormData.frequency
+                                  )
                                 }
                                 onChange={(
                                   e
@@ -1110,8 +1499,23 @@ const UserManage = () => {
                                       .value
                                   )
                                 }
-                                placeholder="Frequency"
-                              />
+                                aria-label="Medicine frequency"
+                              >
+                                <option value="">
+                                  Select frequency
+                                </option>
+
+                                {FREQUENCY_OPTIONS.map(
+                                  (option) => (
+                                    <option
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </option>
+                                  )
+                                )}
+                              </select>
                             </div>
 
                             {/* ACTIONS */}
@@ -1206,7 +1610,6 @@ const UserManage = () => {
                             </div>
 
                             {/* TIMING */}
-
                             <div className="medicine-time-value">
                               <Clock
                                 size={

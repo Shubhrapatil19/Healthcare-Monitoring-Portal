@@ -1419,9 +1419,11 @@
   }
 
   .header-left {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
     gap: 10px;
+    text-align: left;
   }
 
   .inventory-title {
@@ -1430,6 +1432,7 @@
 
   .header-left h1 {
     font-size: 22px;
+    text-align: left;
   }
 
   .title-underline {
