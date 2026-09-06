@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AlertCircle,
+  Camera,
   Calendar,
   CheckCircle,
+  ChevronDown,
   Edit2,
   Heart,
   Loader2,
@@ -12,8 +14,11 @@ import {
   Save,
   Shield,
   Stethoscope,
+  Trash2,
+  Upload,
   User,
   UserCircle,
+  Eye,
   Users,
   X,
 } from "lucide-react";
@@ -46,6 +51,75 @@ const DISEASES = [
   "ALZHEIMERS",
   "OTHER",
 ];
+const PROFILE_PHOTO_MAX_SIZE = 5 * 1024 * 1024;
+const PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
+const PROFILE_PHOTO_URL_KEY = "profilePhotoUrl";
+
+const toProfilePhotoUrl = (value) => {
+  if (!value) return "";
+
+  const photoUrl = String(value).trim();
+  if (!photoUrl) return "";
+
+  if (/^(https?:|data:|blob:)/i.test(photoUrl)) {
+    return photoUrl;
+  }
+
+  const apiBaseUrl = api.defaults.baseURL || window.location.origin;
+  return new URL(photoUrl, apiBaseUrl).href;
+};
+
+const PROFILE_PHOTO_FIELDS = [
+  "profilePhotoUrl",
+  "profilePhotoURL",
+  "photoUrl",
+  "photoURL",
+  "imageUrl",
+  "avatarUrl",
+];
+
+
+const getProfilePhotoUrl = (profile) =>
+  toProfilePhotoUrl(PROFILE_PHOTO_FIELDS.map((field) => profile?.[field]).find(Boolean));
+
+const addPhotoCacheBust = (url) => {
+  if (!url || /^(data:|blob:)/i.test(url)) return url;
+
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${Date.now()}`;
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Unable to read file."));
+    reader.readAsDataURL(file);
+  });
+const isSupportedImageBlob = async (blob) => {
+  const bytes = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isPng =
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a;
+
+  return isJpeg || isPng;
+};
+const REQUIRED_PROFILE_LABELS = new Set([
+  "Full Name",
+  "Email Address",
+  "Mobile Number",
+  "Age",
+  "Gender",
+  "Relation",
+  "Phone Number",
+]);
 
 const readLocalJSON = (key, fallback) => {
   try {
@@ -87,7 +161,6 @@ const isProfileComplete = (profile) =>
       profile?.mobile &&
       profile?.age &&
       profile?.gender &&
-      profile?.diseaseCondition &&
       profile?.contact1Relation &&
       profile?.contact1Phone &&
       profile?.contact2Relation &&
@@ -117,7 +190,9 @@ const normalizeProfile = (data = {}) => {
 };
 
 const UserProfiles = () => {
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState(() =>
+    normalizeProfile(readLocalJSON("profileData", {}))
+  );
   const [registeredUser, setRegisteredUser] = useState(() =>
     readLocalJSON("registeredUser", {})
   );
@@ -127,6 +202,16 @@ const UserProfiles = () => {
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState("");
   const [errors, setErrors] = useState({});
+  const [profilePhoto, setProfilePhoto] = useState(() =>
+    getProfilePhotoUrl(readLocalJSON("profileData", {})) ||
+    toProfilePhotoUrl(localStorage.getItem(PROFILE_PHOTO_URL_KEY))
+  );
+  const [uploadedPhotoPreview, setUploadedPhotoPreview] = useState("");
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [isPhotoSaving, setIsPhotoSaving] = useState(false);
+  const [openProfileSelect, setOpenProfileSelect] = useState(null);
+  const photoInputRef = useRef(null);
+  const profilePhotoObjectUrlRef = useRef("");
   const [editFormData, setEditFormData] = useState({
     fullName: "",
     email: "",
@@ -161,7 +246,6 @@ const UserProfiles = () => {
       Boolean(displayMobile && displayMobile !== "Not specified"),
       Boolean(profileData?.age),
       Boolean(profileData?.gender),
-      Boolean(profileData?.diseaseCondition),
       Boolean(profileData?.contact1Phone),
       Boolean(profileData?.contact2Phone),
     ],
@@ -175,6 +259,61 @@ const UserProfiles = () => {
     ? Number(profileData?.completionPercentage)
     : calculatedCompletionPercent;
 
+  const clearProfilePhotoObjectUrl = useCallback(() => {
+    if (profilePhotoObjectUrlRef.current) {
+      URL.revokeObjectURL(profilePhotoObjectUrlRef.current);
+      profilePhotoObjectUrlRef.current = "";
+    }
+  }, []);
+
+  const setResolvedProfilePhoto = useCallback(async (profile, fallbackPhoto = "") => {
+    const photoUrl = getProfilePhotoUrl(profile) || toProfilePhotoUrl(fallbackPhoto);
+
+    if (!photoUrl) {
+      clearProfilePhotoObjectUrl();
+      setProfilePhoto("");
+      return;
+    }
+
+    localStorage.setItem(PROFILE_PHOTO_URL_KEY, photoUrl);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(photoUrl, {
+        headers: {
+          Accept: "image/*,*/*;q=0.8",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Photo request failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      if (!blob.size) {
+        throw new Error("Photo response is empty.");
+      }
+
+      if (!(await isSupportedImageBlob(blob))) {
+        console.error("Profile photo URL returned non-image data", {
+          url: photoUrl,
+          status: response.status,
+          contentType: response.headers.get("content-type"),
+          size: blob.size,
+        });
+        throw new Error("Photo URL did not return a JPG or PNG image.");
+      }
+
+      clearProfilePhotoObjectUrl();
+      const objectUrl = URL.createObjectURL(blob);
+      profilePhotoObjectUrlRef.current = objectUrl;
+      setProfilePhoto(objectUrl);
+    } catch (error) {
+      console.error("Profile photo load error:", error);
+      setProfilePhoto(toProfilePhotoUrl(fallbackPhoto));
+    }
+  }, [clearProfilePhotoObjectUrl]);
   useEffect(() => {
     let active = true;
 
@@ -184,8 +323,23 @@ const UserProfiles = () => {
 
         if (!active) return;
 
-        const data = normalizeProfile(response?.data || {});
+        const apiProfile = response?.data || {};
+        const cachedProfile = readLocalJSON("profileData", {});
+        const apiPhotoUrl = getProfilePhotoUrl(apiProfile);
+        const cachedPhotoUrl =
+          getProfilePhotoUrl(cachedProfile) ||
+          toProfilePhotoUrl(localStorage.getItem(PROFILE_PHOTO_URL_KEY));
+        const mergedProfile = {
+          ...cachedProfile,
+          ...apiProfile,
+          profilePhotoUrl: apiPhotoUrl || cachedPhotoUrl || "",
+        };
+        const data = normalizeProfile(mergedProfile);
         setProfileData(data);
+        await setResolvedProfilePhoto(data);
+        if (getProfilePhotoUrl(data)) {
+          localStorage.setItem(PROFILE_PHOTO_URL_KEY, getProfilePhotoUrl(data));
+        }
         localStorage.setItem("profileData", JSON.stringify(data));
         localStorage.setItem("profileCompleted", data.completed ? "true" : "false");
 
@@ -215,8 +369,9 @@ const UserProfiles = () => {
 
     return () => {
       active = false;
+      clearProfilePhotoObjectUrl();
     };
-  }, []);
+  }, [clearProfilePhotoObjectUrl, setResolvedProfilePhoto]);
 
   const getInitials = () =>
     displayName
@@ -226,6 +381,106 @@ const UserProfiles = () => {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  const handlePhotoButtonClick = () => {
+    setSaveError("");
+    setSaveSuccess("");
+    photoInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!PROFILE_PHOTO_TYPES.includes(file.type)) {
+      setSaveError("Only JPG and PNG images are allowed.");
+      setSaveSuccess("");
+      return;
+    }
+
+    if (file.size > PROFILE_PHOTO_MAX_SIZE) {
+      setSaveError("Profile photo must be 5 MB or smaller.");
+      setSaveSuccess("");
+      return;
+    }
+    const uploadedPreview = await readFileAsDataUrl(file);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsPhotoSaving(true);
+
+    setUploadedPhotoPreview(uploadedPreview);
+    setSaveError("");
+    setSaveSuccess("");
+
+    try {
+      const response = await api.post("/api/profile/photo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const updatedProfile = normalizeProfile(response?.data || {});
+      const nextPhoto = addPhotoCacheBust(getProfilePhotoUrl(updatedProfile));
+
+      setProfileData((currentProfile) =>
+        normalizeProfile({ ...(currentProfile || {}), ...updatedProfile })
+      );
+      await setResolvedProfilePhoto({ ...updatedProfile, profilePhotoUrl: nextPhoto }, uploadedPreview);
+      if (nextPhoto) {
+        localStorage.setItem(PROFILE_PHOTO_URL_KEY, nextPhoto);
+      }
+      localStorage.setItem("profileData", JSON.stringify({ ...updatedProfile, profilePhotoUrl: nextPhoto || getProfilePhotoUrl(updatedProfile) }));
+      if (!nextPhoto) {
+        setSaveError("Photo uploaded, but backend did not return profilePhotoUrl.");
+        setSaveSuccess("");
+        return;
+      }
+      setSaveSuccess("Profile photo updated successfully!");
+
+      setTimeout(() => {
+        setSaveSuccess("");
+      }, 3000);
+    } catch (error) {
+      console.error("Profile photo upload error:", error?.response?.data || error.message);
+      await setResolvedProfilePhoto(profileData);
+      setUploadedPhotoPreview("");
+      setSaveError(error.response?.data?.message || "Unable to upload profile photo.");
+      setSaveSuccess("");
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    setIsPhotoSaving(true);
+    setSaveError("");
+    setSaveSuccess("");
+
+    try {
+      const response = await api.delete("/api/profile/photo");
+      const updatedProfile = normalizeProfile(response?.data || {});
+
+      setProfileData((currentProfile) =>
+        normalizeProfile({ ...(currentProfile || {}), ...updatedProfile, profilePhotoUrl: "" })
+      );
+      clearProfilePhotoObjectUrl();
+      setProfilePhoto("");
+      setUploadedPhotoPreview("");
+      setPhotoViewerOpen(false);
+      localStorage.removeItem(PROFILE_PHOTO_URL_KEY);
+      localStorage.setItem("profileData", JSON.stringify({ ...updatedProfile, profilePhotoUrl: "" }));
+      setSaveSuccess("Profile photo removed.");
+
+      setTimeout(() => {
+        setSaveSuccess("");
+      }, 3000);
+    } catch (error) {
+      console.error("Profile photo delete error:", error?.response?.data || error.message);
+      setSaveError(error.response?.data?.message || "Unable to delete profile photo.");
+      setSaveSuccess("");
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
 
   const getEditableValue = (field) => editFormData[field] || "";
 
@@ -249,6 +504,7 @@ const UserProfiles = () => {
     setSaveSuccess("");
     setErrors({});
     resetEditForm();
+    setOpenProfileSelect(null);
     setIsEditing(true);
   };
 
@@ -296,10 +552,6 @@ const UserProfiles = () => {
 
     if (!editFormData.gender) {
       newErrors.gender = "Please select gender";
-    }
-
-    if (!editFormData.disease) {
-      newErrors.disease = "Disease / condition is required";
     }
 
     if (!editFormData.relation1) {
@@ -364,11 +616,13 @@ const UserProfiles = () => {
     try {
       const response = await api.put("/api/profile", payload);
       const responseData = normalizeProfile(response?.data || {});
+      const nextPhotoUrl = getProfilePhotoUrl(responseData) || getProfilePhotoUrl(profileData);
 
       const nextProfile = normalizeProfile({
         ...profileData,
         ...payload,
         ...responseData,
+        profilePhotoUrl: nextPhotoUrl || profileData?.profilePhotoUrl || "",
         fullName:
           responseData.fullName || editFormData.fullName.trim() || profileData?.fullName || registeredUser?.fullName || "",
         email:
@@ -378,6 +632,10 @@ const UserProfiles = () => {
       });
 
       setProfileData(nextProfile);
+      await setResolvedProfilePhoto(nextProfile, profilePhoto);
+      if (getProfilePhotoUrl(nextProfile)) {
+        localStorage.setItem(PROFILE_PHOTO_URL_KEY, getProfilePhotoUrl(nextProfile));
+      }
       localStorage.setItem("profileData", JSON.stringify(nextProfile));
 
       const nextRegisteredUser = {
@@ -388,6 +646,7 @@ const UserProfiles = () => {
       setRegisteredUser(nextRegisteredUser);
       localStorage.setItem("registeredUser", JSON.stringify(nextRegisteredUser));
       localStorage.setItem("profileCompleted", nextProfile.completed ? "true" : "false");
+      setOpenProfileSelect(null);
       setIsEditing(false);
       setSaveSuccess("Profile updated successfully!");
 
@@ -407,18 +666,9 @@ const UserProfiles = () => {
     setErrors({});
     setSaveError("");
     setSaveSuccess("");
+    setOpenProfileSelect(null);
     setIsEditing(false);
   };
-
-  const renderStaticInfo = (label, value, icon, className = "") => (
-    <div className={`up-info-item ${className}`.trim()}>
-      <div className="up-icon">{icon}</div>
-      <div className="up-info-content">
-        <label>{label}</label>
-        <p className="up-value">{value || "Not specified"}</p>
-      </div>
-    </div>
-  );
 
   const renderEditableField = (
     label,
@@ -432,26 +682,61 @@ const UserProfiles = () => {
     <div className={`up-info-item ${className}`.trim()}>
       <div className="up-icon">{icon}</div>
       <div className="up-info-content">
-        <label>{label}</label>
+        <label>
+          {label}
+          {REQUIRED_PROFILE_LABELS.has(label) && (
+            <span className="up-required-star">*</span>
+          )}
+        </label>
 
         {isEditing ? (
           editType === "select" ? (
-            <select
-              value={getEditableValue(editField)}
-              onChange={(event) =>
-                handleInputChange(editField, event.target.value)
-              }
-              className={`up-input-field ${
-                errors[editField] ? "up-input-error" : ""
-              }`}
+            <div
+              className={`up-custom-select ${
+                openProfileSelect === editField ? "is-open" : ""
+              } ${errors[editField] ? "up-input-error" : ""}`}
             >
-              <option value="">Select {label}</option>
-              {options.map((option) => (
-                <option key={option} value={option}>
-                  {formatLabel(option)}
-                </option>
-              ))}
-            </select>
+              <button
+                type="button"
+                className="up-custom-select-trigger"
+                onClick={() =>
+                  setOpenProfileSelect((current) =>
+                    current === editField ? null : editField
+                  )
+                }
+              >
+                <span>
+                  {getEditableValue(editField)
+                    ? formatLabel(getEditableValue(editField))
+                    : `Select ${label}`}
+                </span>
+                <ChevronDown size={16} />
+              </button>
+
+              {openProfileSelect === editField && (
+                <div className="up-custom-select-menu">
+                  {options.map((option) => {
+                    const selected = getEditableValue(editField) === option;
+
+                    return (
+                      <button
+                        type="button"
+                        key={option}
+                        className={`up-custom-select-option ${
+                          selected ? "selected" : ""
+                        }`}
+                        onClick={() => {
+                          handleInputChange(editField, option);
+                          setOpenProfileSelect(null);
+                        }}
+                      >
+                        {formatLabel(option)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
             <input
               type={editType}
@@ -538,8 +823,71 @@ const UserProfiles = () => {
 
         <section className="up-profile-header">
           <div className="up-avatar-section">
-            <div className="up-avatar">
-              <span className="up-avatar-text">{getInitials()}</span>
+            <div className="up-photo-wrap">
+              <button
+                type="button"
+                className="up-avatar"
+                onClick={() => profilePhoto && !isPhotoSaving && setPhotoViewerOpen(true)}
+                aria-label={profilePhoto ? "View profile photo" : "Profile initials"}
+              >
+                {isPhotoSaving ? (
+                  <Loader2 size={28} className="spin" />
+                ) : profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt={displayName}
+                    className="up-avatar-img"
+                    onError={(event) => {
+                      if (uploadedPhotoPreview) {
+                        event.currentTarget.src = uploadedPhotoPreview;
+                        return;
+                      }
+                      setPhotoViewerOpen(false);
+                    }}
+                  />
+                ) : (
+                  <span className="up-avatar-text">{getInitials()}</span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="up-photo-camera"
+                onClick={handlePhotoButtonClick}
+                aria-label={profilePhoto ? "Edit profile photo" : "Upload profile photo"}
+                title={profilePhoto ? "Edit photo" : "Upload photo"}
+              >
+                <Camera size={16} />
+              </button>
+            </div>
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png"
+              className="up-photo-input"
+              onChange={handlePhotoChange}
+            />
+
+            <div className="up-photo-actions" aria-label="Profile photo actions">
+              <button type="button" onClick={handlePhotoButtonClick} disabled={isPhotoSaving}>
+                <Upload size={14} />
+                <span>{isPhotoSaving ? "Uploading..." : profilePhoto ? "Edit" : "Upload"}</span>
+              </button>
+
+              {profilePhoto && (
+                <>
+                  <button type="button" onClick={() => setPhotoViewerOpen(true)} disabled={isPhotoSaving}>
+                    <Eye size={14} />
+                    <span>View</span>
+                  </button>
+
+                  <button type="button" className="up-photo-delete" onClick={handleDeletePhoto} disabled={isPhotoSaving}>
+                    <Trash2 size={14} />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -708,12 +1056,35 @@ const UserProfiles = () => {
             </div>
           </section>
         </div>
+
+        {photoViewerOpen && profilePhoto && (
+          <div className="up-photo-viewer" role="dialog" aria-modal="true" aria-label="Profile photo preview">
+            <div className="up-photo-viewer-card">
+              <button
+                type="button"
+                className="up-photo-viewer-close"
+                onClick={() => setPhotoViewerOpen(false)}
+                aria-label="Close profile photo preview"
+              >
+                <X size={18} />
+              </button>
+              <img
+                src={profilePhoto}
+                alt={`${displayName} profile`}
+                onError={(event) => {
+                  if (uploadedPhotoPreview) {
+                    event.currentTarget.src = uploadedPhotoPreview;
+                    return;
+                  }
+                  setPhotoViewerOpen(false);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default UserProfiles;
-
-
-

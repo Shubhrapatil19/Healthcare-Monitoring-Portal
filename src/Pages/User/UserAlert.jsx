@@ -17,6 +17,8 @@ import {
   Bell,
   Plus,
   Megaphone,
+  Trash2,
+  X,
 } from "lucide-react";
 
 // ========================================================
@@ -111,6 +113,36 @@ const normalizeAlert = (alert = {}) => {
   };
 };
 
+const normalizeEmergencyLog = (log = {}) => {
+  const alertDateTime = formatAlertDateTime(log.sentAt || log.createdAt || log.dateTime);
+  const deliveryStatus = String(log.status || "SENT").trim().toUpperCase();
+  const recipientType = String(log.recipientType || log.recipient || "PATIENT")
+    .trim()
+    .replaceAll("_", " ");
+
+  return {
+    ...log,
+    id: log.logId ?? log.id ?? `${log.sentAt || "emergency"}-${log.medicineName || "medicine"}`,
+    type: "emergency",
+    label: "Emergency Alert",
+    medicineName: log.medicineName || "Medicine",
+    message: `${log.eventType || "Emergency"} notification ${
+      deliveryStatus === "FAILED" ? "failed" : "sent"
+    }.`,
+    currentStock: undefined,
+    minimumStock: undefined,
+    isEmergencyLog: true,
+    status: "read",
+    date: alertDateTime.date,
+    time: alertDateTime.time,
+    statusLabel: deliveryStatus === "FAILED" ? "Failed" : "Sent",
+    statusClass: deliveryStatus === "FAILED" ? "failed" : "sent",
+    sentTo: recipientType
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()),
+  };
+};
+
 // ========================================================
 // COMPONENT
 // ========================================================
@@ -118,13 +150,36 @@ const normalizeAlert = (alert = {}) => {
 const UserAlert = ({ onAddMedicine, onViewInventory }) => {
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [emergencyPage, setEmergencyPage] = useState(1);
   const [selectedAlert, setSelectedAlert] = useState(null);
 
   const [alerts, setAlerts] = useState([]);
+  const [selectedAlertIds, setSelectedAlertIds] = useState([]);
+  const [alertDeleteMode, setAlertDeleteMode] = useState(false);
+  const [deletedAlertIds, setDeletedAlertIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("deletedAlertIds") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [deleteAlertModal, setDeleteAlertModal] = useState(null);
+  const [emergencyLogs, setEmergencyLogs] = useState([]);
+  const [selectedEmergencyIds, setSelectedEmergencyIds] = useState([]);
+  const [emergencyDeleteMode, setEmergencyDeleteMode] = useState(false);
+  const [deletedEmergencyIds, setDeletedEmergencyIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("deletedEmergencyAlertIds") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [deleteEmergencyModal, setDeleteEmergencyModal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   const itemsPerPage = 4;
+  const emergencyItemsPerPage = 5;
 
   useEffect(() => {
     let active = true;
@@ -135,19 +190,32 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
       }
 
       try {
-        const response = await api.get("/api/alerts", {
-          params:
-            activeTab === "all"
-              ? undefined
-              : {
-                  type: UI_TYPE_TO_BACKEND[activeTab],
-                },
-        });
-        const nextAlerts = normalizeArray(response.data).map(normalizeAlert);
+        const [alertsResponse, emergencyLogResponse] = await Promise.all([
+          api.get("/api/alerts", {
+            params:
+              activeTab === "all"
+                ? undefined
+                : {
+                    type: UI_TYPE_TO_BACKEND[activeTab],
+                  },
+          }),
+          api.get("/api/alerts/emergency-log"),
+        ]);
+        const nextAlerts = normalizeArray(alertsResponse.data).map(normalizeAlert);
+        const nextEmergencyLogs = normalizeArray(emergencyLogResponse.data).map(
+          normalizeEmergencyLog
+        );
 
         if (!active) return;
 
-        setAlerts(nextAlerts);
+        const hiddenAlertIds = new Set(deletedAlertIds.map(String));
+        setAlerts(
+          nextAlerts.filter((alert) => !hiddenAlertIds.has(String(getAlertId(alert))))
+        );
+        const hiddenIds = new Set(deletedEmergencyIds.map(String));
+        setEmergencyLogs(
+          nextEmergencyLogs.filter((alert) => !hiddenIds.has(String(alert.id)))
+        );
         setSelectedAlert((currentAlert) => {
           if (!currentAlert) return null;
 
@@ -187,7 +255,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
       active = false;
       clearInterval(intervalId);
     };
-  }, [activeTab]);
+  }, [activeTab, deletedAlertIds, deletedEmergencyIds]);
 
   // ========================================================
   // TABS
@@ -213,11 +281,6 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
       id: "missed-dose",
       label: "Missed Dose",
       icon: Bell,
-    },
-    {
-      id: "emergency",
-      label: "Emergency",
-      icon: Megaphone,
     },
   ];
 
@@ -263,11 +326,13 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
   // ========================================================
 
   const filteredAlerts =
-    activeTab === "all"
-      ? alerts
-      : alerts.filter(
-          (alert) => alert.type === activeTab
-        );
+    activeTab === "emergency"
+      ? emergencyLogs
+      : activeTab === "all"
+        ? alerts
+        : alerts.filter(
+            (alert) => alert.type === activeTab
+          );
 
   // ========================================================
   // PAGINATION
@@ -282,14 +347,51 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  const paginatedAlertIds = paginatedAlerts
+    .map((alert) => getAlertId(alert))
+    .filter((id) => id != null)
+    .map(String);
+  const allVisibleAlertsSelected =
+    paginatedAlertIds.length > 0 &&
+    paginatedAlertIds.every((id) => selectedAlertIds.includes(id));
+  const selectedAlertCount = selectedAlertIds.length;
 
   // ========================================================
   // EMERGENCY ALERTS
   // ========================================================
 
-  const emergencyAlerts = alerts.filter(
-    (alert) => alert.type === "emergency"
+  const emergencyAlerts = emergencyLogs;
+  const emergencyTotalPages = Math.max(
+    1,
+    Math.ceil(emergencyAlerts.length / emergencyItemsPerPage)
   );
+  const paginatedEmergencyAlerts = emergencyAlerts.slice(
+    (emergencyPage - 1) * emergencyItemsPerPage,
+    emergencyPage * emergencyItemsPerPage
+  );
+  const paginatedEmergencyIds = paginatedEmergencyAlerts.map((alert) =>
+    String(alert.id)
+  );
+  const allVisibleEmergencySelected =
+    paginatedEmergencyIds.length > 0 &&
+    paginatedEmergencyIds.every((id) => selectedEmergencyIds.includes(id));
+  const selectedEmergencyCount = selectedEmergencyIds.length;
+
+  useEffect(() => {
+    setEmergencyPage((page) => Math.min(page, emergencyTotalPages));
+  }, [emergencyTotalPages]);
+
+  useEffect(() => {
+    const visibleIds = new Set(emergencyAlerts.map((alert) => String(alert.id)));
+    setSelectedEmergencyIds((ids) => ids.filter((id) => visibleIds.has(id)));
+  }, [emergencyAlerts]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "deletedEmergencyAlertIds",
+      JSON.stringify(deletedEmergencyIds)
+    );
+  }, [deletedEmergencyIds]);
 
   // ========================================================
   // STATUS
@@ -320,7 +422,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
     setSelectedAlert(alert);
 
-    if (alertId == null) {
+    if (alertId == null || alert.isEmergencyLog) {
       return;
     }
 
@@ -373,6 +475,141 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
     }
   };
 
+
+  const toggleAlert = (alertId) => {
+    const id = String(alertId);
+    setSelectedAlertIds((ids) =>
+      ids.includes(id)
+        ? ids.filter((selectedId) => selectedId !== id)
+        : [...ids, id]
+    );
+  };
+
+  const toggleAllVisibleAlerts = () => {
+    setSelectedAlertIds((ids) => {
+      if (allVisibleAlertsSelected) {
+        return ids.filter((id) => !paginatedAlertIds.includes(id));
+      }
+
+      return Array.from(new Set([...ids, ...paginatedAlertIds]));
+    });
+  };
+
+  const requestDeleteAlerts = (mode, alertId = null) => {
+    const ids =
+      mode === "selected"
+        ? selectedAlertIds
+        : mode === "single" && alertId != null
+          ? [String(alertId)]
+          : filteredAlerts.map((alert) => String(getAlertId(alert)));
+
+    if (ids.length === 0) {
+      toast.error("No alerts selected.");
+      return;
+    }
+
+    setDeleteAlertModal({ mode, ids });
+  };
+
+  const confirmDeleteAlerts = async () => {
+    if (!deleteAlertModal) return;
+
+    const idsToDelete = deleteAlertModal.ids.map(String);
+
+    setAlerts((items) =>
+      items.filter((alert) => !idsToDelete.includes(String(getAlertId(alert))))
+    );
+    setSelectedAlertIds([]);
+    setDeletedAlertIds((ids) =>
+      Array.from(new Set([...ids.map(String), ...idsToDelete]))
+    );
+    setAlertDeleteMode(false);
+    setDeleteAlertModal(null);
+    setSelectedAlert((currentAlert) =>
+      currentAlert && idsToDelete.includes(String(getAlertId(currentAlert)))
+        ? null
+        : currentAlert
+    );
+
+    // Normal alerts delete API is not available yet; keep this local until backend endpoints are added.
+
+    toast.success(
+      idsToDelete.length === 1 ? "Alert deleted" : "Alerts deleted"
+    );
+  };
+  const toggleEmergencyAlert = (alertId) => {
+    const id = String(alertId);
+    setSelectedEmergencyIds((ids) =>
+      ids.includes(id)
+        ? ids.filter((selectedId) => selectedId !== id)
+        : [...ids, id]
+    );
+  };
+
+  const toggleAllVisibleEmergencyAlerts = () => {
+    setSelectedEmergencyIds((ids) => {
+      if (allVisibleEmergencySelected) {
+        return ids.filter((id) => !paginatedEmergencyIds.includes(id));
+      }
+
+      return Array.from(new Set([...ids, ...paginatedEmergencyIds]));
+    });
+  };
+
+  const requestDeleteEmergencyAlerts = (mode, alertId = null) => {
+    const ids =
+      mode === "selected"
+        ? selectedEmergencyIds
+        : mode === "single" && alertId != null
+          ? [String(alertId)]
+          : emergencyAlerts.map((alert) => String(alert.id));
+
+    if (ids.length === 0) {
+      toast.error("No emergency alerts selected.");
+      return;
+    }
+
+    setDeleteEmergencyModal({ mode, ids });
+  };
+
+  const confirmDeleteEmergencyAlerts = async () => {
+    if (!deleteEmergencyModal) return;
+
+    const idsToDelete = deleteEmergencyModal.ids.map(String);
+
+    setEmergencyLogs((logs) =>
+      logs.filter((alert) => !idsToDelete.includes(String(alert.id)))
+    );
+    setSelectedEmergencyIds((ids) =>
+      ids.filter((id) => !idsToDelete.includes(id))
+    );
+    setDeletedEmergencyIds((ids) =>
+      Array.from(new Set([...ids.map(String), ...idsToDelete]))
+    );
+    setEmergencyDeleteMode(false);
+    setDeleteEmergencyModal(null);
+
+    try {
+      if (deleteEmergencyModal.mode === "all") {
+        await api.delete("/api/alerts/emergency-log");
+      } else {
+        await Promise.allSettled(
+          idsToDelete.map((id) => api.delete(`/api/alerts/emergency-log/${id}`))
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "Emergency alert delete sync failed:",
+        error?.response?.data || error.message
+      );
+    }
+
+    toast.success(
+      idsToDelete.length === 1
+        ? "Emergency alert deleted"
+        : "Emergency alerts deleted"
+    );
+  };
   // ========================================================
   // UI
   // ========================================================
@@ -496,6 +733,39 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
           <div className="al-card">
 
+                        <div className="al-alert-toolbar">
+              <span>{filteredAlerts.length} alerts</span>
+
+              <div className="al-alert-delete-actions">
+                {alertDeleteMode && (
+                  <button
+                    type="button"
+                    className="al-alert-cancel-mode"
+                    onClick={() => {
+                      setAlertDeleteMode(false);
+                      setSelectedAlertIds([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="al-alert-delete-all"
+                  onClick={() => {
+                    if (alertDeleteMode) {
+                      requestDeleteAlerts("all");
+                      return;
+                    }
+                    setAlertDeleteMode(true);
+                  }}
+                >
+                  <Trash2 size={15} />
+                  {alertDeleteMode ? "Confirm All" : "Delete All"}
+                </button>
+              </div>
+            </div>
             <div className="al-table-wrap">
 
               <table className="al-table">
@@ -504,6 +774,17 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
                   <tr>
 
+                    
+                    {alertDeleteMode && (
+                      <th className="al-th al-th-check">
+                        <input
+                          type="checkbox"
+                          checked={allVisibleAlertsSelected}
+                          onChange={toggleAllVisibleAlerts}
+                          aria-label="Select all visible alerts"
+                        />
+                      </th>
+                    )}
                     <th className="al-th al-th-med">
                       Medicine / Alert
                     </th>
@@ -544,6 +825,17 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                         className="al-tr"
                       >
 
+                        
+                        {alertDeleteMode && (
+                          <td className="al-td al-td-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedAlertIds.includes(String(getAlertId(alert)))}
+                              onChange={() => toggleAlert(getAlertId(alert))}
+                              aria-label={`Select ${alert.medicineName || "alert"}`}
+                            />
+                          </td>
+                        )}
                         {/* MEDICINE */}
 
                         <td className="al-td al-td-med">
@@ -631,8 +923,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                               {alert.time}
 
                             </span>
-
-                          </div>
+</div>
 
                         </td>
 
@@ -663,6 +954,14 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                             <Eye size={18} />
 
                           </button>
+                          <button
+                            type="button"
+                            className="al-alert-row-delete"
+                            title="Delete alert"
+                            onClick={() => requestDeleteAlerts("single", getAlertId(alert))}
+                          >
+                            <Trash2 size={16} />
+                          </button>
 
                         </td>
 
@@ -685,28 +984,30 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
           <div className="al-bottom-bar">
 
-            <span className="al-record-count">
+                        <div className="al-record-count">
+              {alertDeleteMode ? (
+                <span>{selectedAlertCount} selected</span>
+              ) : (
+                <span>
+                  Showing{" "}
+                  {(currentPage - 1) * itemsPerPage + 1}{" "}
+                  to{" "}
+                  {Math.min(currentPage * itemsPerPage, filteredAlerts.length)}{" "}
+                  of {filteredAlerts.length} alerts
+                </span>
+              )}
 
-              Showing{" "}
-              {(currentPage - 1) *
-                itemsPerPage +
-                1}{" "}
-              to{" "}
-
-              {Math.min(
-                currentPage *
-                  itemsPerPage,
-
-                filteredAlerts.length
-              )}{" "}
-
-              of{" "}
-
-              {filteredAlerts.length} alerts
-
-            </span>
-
-            <div className="al-pagination">
+              {alertDeleteMode && selectedAlertCount > 0 && (
+                <button
+                  type="button"
+                  className="al-alert-selected-delete"
+                  onClick={() => requestDeleteAlerts("selected")}
+                >
+                  <Trash2 size={14} />
+                  Delete Selected
+                </button>
+              )}
+            </div><div className="al-pagination">
 
               <button
                 className="al-page-btn"
@@ -781,7 +1082,73 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
           </div>
 
-          {/* =================================================
+                    {deleteAlertModal && (
+            <div className="al-delete-modal-backdrop" role="presentation">
+              <div
+                className="al-delete-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="al-main-delete-title"
+              >
+                <button
+                  type="button"
+                  className="al-delete-close"
+                  onClick={() => setDeleteAlertModal(null)}
+                  aria-label="Close delete confirmation"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="al-delete-icon">
+                  <Trash2 size={24} />
+                </div>
+
+                <h4 id="al-main-delete-title">
+                  {deleteAlertModal.mode === "all"
+                    ? "Delete All Alerts?"
+                    : "Delete Alert?"}
+                </h4>
+
+                <p>
+                  Are you sure you want to delete{" "}
+                  {deleteAlertModal.ids.length === 1
+                    ? "this alert"
+                    : `these ${deleteAlertModal.ids.length} alerts`}
+                  ? This action cannot be undone.
+                </p>
+
+                {deleteAlertModal.mode === "all" && (
+                  <div className="al-delete-warning">
+                    <AlertTriangle size={18} />
+                    <span>
+                      All your alerts, including low stock, out of stock and
+                      missed dose alerts, will be permanently deleted.
+                    </span>
+                  </div>
+                )}
+
+                <div className="al-delete-actions">
+                  <button
+                    type="button"
+                    className="al-delete-cancel"
+                    onClick={() => setDeleteAlertModal(null)}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    className="al-delete-confirm"
+                    onClick={confirmDeleteAlerts}
+                  >
+                    <Trash2 size={15} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+{/* =================================================
               DETAILS + EMERGENCY
           ================================================= */}
 
@@ -897,7 +1264,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                       <span className="al-detail-value">
 
                         {selectedAlert.currentStock !==
-                        undefined
+                        undefined && selectedAlert.currentStock !== null
                           ? `${selectedAlert.currentStock} Tablets`
                           : "N/A"}
 
@@ -914,7 +1281,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                       <span className="al-detail-value">
 
                         {selectedAlert.minimumStock !==
-                        undefined
+                        undefined && selectedAlert.minimumStock !== null
                           ? `${selectedAlert.minimumStock} Tablets`
                           : "N/A"}
 
@@ -1005,13 +1372,32 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
             <div className="al-emergency-card">
 
-              <h3 className="al-emergency-heading">
+              <div className="al-emergency-heading">
 
-                <Megaphone size={20} />
+                <span>
+                  <Megaphone size={20} />
 
-                Recent Emergency Alerts
+                  Recent Emergency Alerts
+                </span>
 
-              </h3>
+                <button
+                  type="button"
+                  className="al-emergency-delete-all"
+                  onClick={() => {
+                    if (emergencyDeleteMode) {
+                      requestDeleteEmergencyAlerts("all");
+                      return;
+                    }
+                    setEmergencyDeleteMode(true);
+                  }}
+                  disabled={emergencyAlerts.length === 0}
+                  title="Delete all emergency alerts"
+                >
+                  <Trash2 size={15} />
+                  {emergencyDeleteMode ? "Confirm All" : "Delete All"}
+                </button>
+
+              </div>
 
               {emergencyAlerts.length > 0 ? (
 
@@ -1019,8 +1405,23 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
                   <div className="al-emergency-header">
 
+                    {emergencyDeleteMode && (
+                      <span className="al-ecol al-ecol-check">
+                        <input
+                          type="checkbox"
+                          checked={allVisibleEmergencySelected}
+                          onChange={toggleAllVisibleEmergencyAlerts}
+                          aria-label="Select all visible emergency alerts"
+                        />
+                      </span>
+                    )}
+
                     <span className="al-ecol al-ecol-datetime">
                       Date & Time
+                    </span>
+
+                    <span className="al-ecol al-ecol-medalert">
+                      Medicine / Alert
                     </span>
 
                     <span className="al-ecol al-ecol-status">
@@ -1031,9 +1432,13 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                       Sent To
                     </span>
 
+                    <span className="al-ecol al-ecol-action">
+                      Actions
+                    </span>
+
                   </div>
 
-                  {emergencyAlerts.map(
+                  {paginatedEmergencyAlerts.map(
                     (alert) => (
 
                       <div
@@ -1041,20 +1446,37 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                         className="al-emergency-row"
                       >
 
+                        {emergencyDeleteMode && (
+                          <span className="al-ecol al-ecol-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedEmergencyIds.includes(String(alert.id))}
+                              onChange={() => toggleEmergencyAlert(alert.id)}
+                              aria-label={`Select ${alert.medicineName || "emergency"} alert`}
+                            />
+                          </span>
+                        )}
+
                         <span className="al-ecol al-ecol-datetime">
 
                           {alert.date}{" "}
                           {alert.time}
 
                         </span>
-
+                        <span className="al-ecol al-ecol-medalert">
+                          {alert.medicineName || "Medicine"}
+                        </span>
                         <span className="al-ecol al-ecol-status">
 
-                          <span className="al-status-sent">
+                          <span
+                            className={`al-status-sent ${
+                              alert.statusClass === "failed" ? "al-status-failed" : ""
+                            }`}
+                          >
 
                             <Check size={12} />
 
-                            Sent
+                            {alert.statusLabel || "Sent"}
 
                           </span>
 
@@ -1069,10 +1491,70 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
                         </span>
 
+                        <span className="al-ecol al-ecol-action">
+                          <button
+                            type="button"
+                            className="al-emergency-row-delete"
+                            onClick={() =>
+                              requestDeleteEmergencyAlerts("single", alert.id)
+                            }
+                            title="Delete alert"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </span>
+
                       </div>
 
                     )
                   )}
+
+                  <div className="al-emergency-footer">
+                    <span>{selectedEmergencyCount} selected</span>
+
+                    <div className="al-emergency-footer-actions">
+                      {selectedEmergencyCount > 0 && (
+                        <button
+                          type="button"
+                          className="al-emergency-selected-delete"
+                          onClick={() => requestDeleteEmergencyAlerts("selected")}
+                        >
+                          <Trash2 size={14} />
+                          Delete Selected
+                        </button>
+                      )}
+
+                      <div className="al-emergency-pagination">
+                        <button
+                          type="button"
+                          className="al-emergency-page-btn"
+                          disabled={emergencyPage === 1}
+                          onClick={() =>
+                            setEmergencyPage((page) => Math.max(1, page - 1))
+                          }
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+
+                        <span>
+                          {emergencyPage} / {emergencyTotalPages}
+                        </span>
+
+                        <button
+                          type="button"
+                          className="al-emergency-page-btn"
+                          disabled={emergencyPage === emergencyTotalPages}
+                          onClick={() =>
+                            setEmergencyPage((page) =>
+                              Math.min(emergencyTotalPages, page + 1)
+                            )
+                          }
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                 </div>
 
@@ -1092,6 +1574,62 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
             </div>
 
+            {deleteEmergencyModal && (
+              <div className="al-delete-modal-backdrop" role="presentation">
+                <div
+                  className="al-delete-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="al-delete-title"
+                >
+                  <button
+                    type="button"
+                    className="al-delete-close"
+                    onClick={() => setDeleteEmergencyModal(null)}
+                    aria-label="Close delete confirmation"
+                  >
+                    <X size={20} />
+                  </button>
+
+                  <div className="al-delete-icon">
+                    <Trash2 size={24} />
+                  </div>
+
+                  <h4 id="al-delete-title">
+                    {deleteEmergencyModal.mode === "all"
+                      ? "Delete All Alerts?"
+                      : "Delete Alert?"}
+                  </h4>
+
+                  <p>
+                    Are you sure you want to delete{" "}
+                    {deleteEmergencyModal.ids.length === 1
+                      ? "this emergency alert"
+                      : `these ${deleteEmergencyModal.ids.length} emergency alerts`}
+                    ? This action cannot be undone.
+                  </p>
+
+                  <div className="al-delete-actions">
+                    <button
+                      type="button"
+                      className="al-delete-cancel"
+                      onClick={() => setDeleteEmergencyModal(null)}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      className="al-delete-confirm"
+                      onClick={confirmDeleteEmergencyAlerts}
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
         </>
@@ -1103,6 +1641,13 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 };
 
 export default UserAlert;
+
+
+
+
+
+
+
 
 
 

@@ -95,6 +95,9 @@ const UserManage = () => {
   const [editTimingValues, setEditTimingValues] =
     useState([""]);
 
+  const [openEditTimePicker, setOpenEditTimePicker] =
+    useState(null);
+
   // =========================================================
   // DELETE STATE
   // =========================================================
@@ -826,6 +829,7 @@ const UserManage = () => {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditTimingValues([""]);
+    setOpenEditTimePicker(null);
 
     setEditFormData({
       medicineName: "",
@@ -1417,61 +1421,167 @@ const UserManage = () => {
                                         className="medicine-edit-time-row"
                                         key={`edit-time-${timeIndex}`}
                                       >
-                                        <select
-                                          className="edit-input medicine-edit-time-input"
-                                          value={timeParts.hour}
-                                          onChange={(e) =>
-                                            handleEditTimingChange(
-                                              timeIndex,
-                                              `${e.target.value}:${timeParts.minute}`
-                                            )
-                                          }
-                                          aria-label={`Dose ${timeIndex + 1} hour`}
-                                        >
-                                          {TIME_HOUR_OPTIONS.map((hour) => (
-                                            <option key={hour} value={hour}>
-                                              {hour}
-                                            </option>
-                                          ))}
-                                        </select>
+                                        <div className="medicine-edit-time-picker">
+                                          <input
+                                            className="edit-input medicine-edit-time-input medicine-edit-time-input--combo"
+                                            value={timeParts.hour}
+                                            inputMode="numeric"
+                                            maxLength={2}
+                                            onFocus={() =>
+                                              setOpenEditTimePicker({ index: timeIndex, type: "hour" })
+                                            }
+                                            onChange={(e) => {
+                                              const digits = e.target.value.replace(/\D/g, "").slice(0, 2);
+                                              const nextHour = Math.min(Math.max(Number(digits || 1), 1), 12)
+                                                .toString()
+                                                .padStart(2, "0");
 
-                                        <select
-                                          className="edit-input medicine-edit-time-input"
-                                          value={timeParts.minute}
-                                          onChange={(e) =>
-                                            handleEditTimingChange(
-                                              timeIndex,
-                                              `${timeParts.hour}:${e.target.value}`
-                                            )
-                                          }
-                                          aria-label={`Dose ${timeIndex + 1} minute`}
-                                        >
-                                          {TIME_MINUTE_OPTIONS.map((minuteOption) => (
-                                            <option key={minuteOption} value={minuteOption}>
-                                              {minuteOption}
-                                            </option>
-                                          ))}
-                                        </select>
+                                              handleEditTimingChange(
+                                                timeIndex,
+                                                `${nextHour}:${timeParts.minute}`
+                                              );
+                                            }}
+                                            aria-label={`Dose ${timeIndex + 1} hour`}
+                                          />
 
-                                        <select
-                                          className="edit-input medicine-edit-period-select"
-                                          value={timeParts.period}
-                                          onChange={(e) =>
-                                            handleEditTimingPeriodChange(
-                                              timeIndex,
-                                              e.target.value
-                                            )
-                                          }
-                                          aria-label={`Dose ${timeIndex + 1} AM or PM`}
-                                        >
-                                          <option value="AM">
-                                            AM
-                                          </option>
+                                          <button
+                                            type="button"
+                                            className="medicine-edit-time-caret"
+                                            onClick={() =>
+                                              setOpenEditTimePicker((open) =>
+                                                open?.index === timeIndex && open?.type === "hour"
+                                                  ? null
+                                                  : { index: timeIndex, type: "hour" }
+                                              )
+                                            }
+                                            aria-label={`Open dose ${timeIndex + 1} hour options`}
+                                          >
+                                            <ChevronRight size={11} />
+                                          </button>
 
-                                          <option value="PM">
-                                            PM
-                                          </option>
-                                        </select>
+                                          {openEditTimePicker?.index === timeIndex && openEditTimePicker?.type === "hour" && (
+                                            <div className="medicine-edit-time-menu">
+                                              {TIME_HOUR_OPTIONS.map((hour) => (
+                                                <button
+                                                  type="button"
+                                                  key={hour}
+                                                  className={`medicine-edit-time-option ${timeParts.hour === hour ? "selected" : ""}`}
+                                                  onMouseDown={(event) => event.preventDefault()}
+                                                  onClick={() => {
+                                                    handleEditTimingChange(
+                                                      timeIndex,
+                                                      `${hour}:${timeParts.minute}`
+                                                    );
+                                                    setOpenEditTimePicker(null);
+                                                  }}
+                                                >
+                                                  {hour}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="medicine-edit-time-picker">
+                                          <input
+                                            className="edit-input medicine-edit-time-input medicine-edit-time-input--combo"
+                                            value={timeParts.minute}
+                                            inputMode="numeric"
+                                            maxLength={2}
+                                            onFocus={() =>
+                                              setOpenEditTimePicker({ index: timeIndex, type: "minute" })
+                                            }
+                                            onChange={(e) => {
+                                              const digits = e.target.value.replace(/\D/g, "").slice(0, 2);
+                                              const nextMinute = Math.min(Math.max(Number(digits || 0), 0), 59)
+                                                .toString()
+                                                .padStart(2, "0");
+
+                                              handleEditTimingChange(
+                                                timeIndex,
+                                                `${timeParts.hour}:${nextMinute}`
+                                              );
+                                            }}
+                                            aria-label={`Dose ${timeIndex + 1} minute`}
+                                          />
+
+                                          <button
+                                            type="button"
+                                            className="medicine-edit-time-caret"
+                                            onClick={() =>
+                                              setOpenEditTimePicker((open) =>
+                                                open?.index === timeIndex && open?.type === "minute"
+                                                  ? null
+                                                  : { index: timeIndex, type: "minute" }
+                                              )
+                                            }
+                                            aria-label={`Open dose ${timeIndex + 1} minute options`}
+                                          >
+                                            <ChevronRight size={11} />
+                                          </button>
+
+                                          {openEditTimePicker?.index === timeIndex && openEditTimePicker?.type === "minute" && (
+                                            <div className="medicine-edit-time-menu medicine-edit-time-menu--minutes">
+                                              {TIME_MINUTE_OPTIONS.map((minuteOption) => (
+                                                <button
+                                                  type="button"
+                                                  key={minuteOption}
+                                                  className={`medicine-edit-time-option ${timeParts.minute === minuteOption ? "selected" : ""}`}
+                                                  onMouseDown={(event) => event.preventDefault()}
+                                                  onClick={() => {
+                                                    handleEditTimingChange(
+                                                      timeIndex,
+                                                      `${timeParts.hour}:${minuteOption}`
+                                                    );
+                                                    setOpenEditTimePicker(null);
+                                                  }}
+                                                >
+                                                  {minuteOption}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="medicine-edit-time-picker medicine-edit-time-picker--period">
+                                          <button
+                                            type="button"
+                                            className="medicine-edit-time-trigger medicine-edit-time-trigger--period"
+                                            onClick={() =>
+                                              setOpenEditTimePicker((open) =>
+                                                open?.index === timeIndex && open?.type === "period"
+                                                  ? null
+                                                  : { index: timeIndex, type: "period" }
+                                              )
+                                            }
+                                            aria-label={`Dose ${timeIndex + 1} AM or PM`}
+                                          >
+                                            <span>{timeParts.period}</span>
+                                            <ChevronRight size={11} />
+                                          </button>
+
+                                          {openEditTimePicker?.index === timeIndex && openEditTimePicker?.type === "period" && (
+                                            <div className="medicine-edit-time-menu medicine-edit-time-menu--period">
+                                              {["AM", "PM"].map((periodOption) => (
+                                                <button
+                                                  type="button"
+                                                  key={periodOption}
+                                                  className={`medicine-edit-time-option ${timeParts.period === periodOption ? "selected" : ""}`}
+                                                  onMouseDown={(event) => event.preventDefault()}
+                                                  onClick={() => {
+                                                    handleEditTimingPeriodChange(
+                                                      timeIndex,
+                                                      periodOption
+                                                    );
+                                                    setOpenEditTimePicker(null);
+                                                  }}
+                                                >
+                                                  {periodOption}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     );
                                   }
@@ -1938,6 +2048,10 @@ const UserManage = () => {
 };
 
 export default UserManage;
+
+
+
+
 
 
 

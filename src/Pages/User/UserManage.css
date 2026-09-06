@@ -2326,3 +2326,415 @@
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.16);
   outline: none;
 }
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+  grid-template-columns: minmax(46px, 1fr) minmax(46px, 1fr) 64px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-input,
+.user-manage-card .medicine-list--my-medicine .medicine-edit-period-select {
+  text-align: center;
+  text-align-last: center;
+}
+
+@media (max-width: 640px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 62px;
+  }
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+  grid-template-columns: 56px 56px 72px;
+  justify-content: start;
+  gap: 8px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-input,
+.user-manage-card .medicine-list--my-medicine .medicine-edit-period-select {
+  min-width: 0;
+  padding: 7px 24px 7px 8px;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-period-select {
+  color: #0f172a;
+}
+
+@media (max-width: 640px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+    grid-template-columns: minmax(52px, 1fr) minmax(52px, 1fr) 70px;
+  }
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-row .medicine-edit-time-input {
+  appearance: none;
+  background-image: none;
+  padding: 7px 8px;
+  color: #0f172a;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-row .medicine-edit-time-input::-ms-expand {
+  display: none;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-period-select {
+  padding: 7px 24px 7px 8px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+  grid-template-columns: 54px 54px 84px;
+}
+
+.user-manage-card .medicine-list--my-medicine .medicine-edit-period-select {
+  min-width: 84px;
+  padding: 7px 30px 7px 10px;
+  text-align: center;
+  text-align-last: center;
+}
+
+@media (max-width: 640px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-row {
+    grid-template-columns: minmax(50px, 1fr) minmax(50px, 1fr) 82px;
+  }
+}
+
+/* Final edit-row containment: keep 12-hour time picker separate from frequency. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing {
+    grid-template-columns: minmax(108px, 1fr) minmax(62px, 0.5fr) minmax(212px, 1.18fr) minmax(154px, 0.82fr) 64px !important;
+    column-gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-value {
+    justify-self: stretch !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 50px 50px 78px !important;
+    width: 194px !important;
+    max-width: 100% !important;
+    justify-content: start !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    min-width: 78px !important;
+    padding: 7px 28px 7px 9px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-frequency-value--editing {
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 164px !important;
+  }
+}
+
+/* Align edit inputs with the table headers while keeping the 12-hour picker contained. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing {
+    grid-template-columns: minmax(112px, 1.2fr) minmax(64px, 0.52fr) minmax(108px, 0.85fr) minmax(96px, 0.72fr) 64px !important;
+    column-gap: 6px !important;
+    overflow: hidden !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 48px 48px 74px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 182px !important;
+    justify-content: center !important;
+    margin-inline: auto !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-input,
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+    font-size: 12px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-input {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    padding-left: 8px !important;
+    padding-right: 24px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-frequency-value--editing {
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Compact timing controls in edit mode so the row stays aligned with headers. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 42px 42px 62px !important;
+    gap: 5px !important;
+    max-width: 156px !important;
+    justify-content: center !important;
+    margin-inline: auto !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-input,
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    min-height: 34px !important;
+    height: 34px !important;
+    border-radius: 7px !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-input {
+    padding: 6px 5px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    min-width: 62px !important;
+    padding: 6px 20px 6px 7px !important;
+  }
+}
+
+/* Keep AM/PM text fully visible in compact edit timing picker. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 40px 40px 72px !important;
+    max-width: 162px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-period-select {
+    min-width: 72px !important;
+    padding: 6px 18px 6px 8px !important;
+    text-align: left !important;
+    text-align-last: left !important;
+  }
+}
+
+/* Show a proper time separator between hour and minute in edit mode. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 40px 8px 40px 72px !important;
+    gap: 4px !important;
+    max-width: 172px !important;
+    align-items: center !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-separator {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #0f172a !important;
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+}
+
+/* Revert edit timing picker to three controls without colon separator. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 40px 40px 72px !important;
+    gap: 5px !important;
+    max-width: 162px !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-separator {
+    display: none !important;
+  }
+}
+
+/* Stylish compact frequency select in edit mode. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-frequency-value--editing {
+    justify-self: center !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-frequency-select {
+    width: 136px !important;
+    min-width: 136px !important;
+    max-width: 136px !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 6px 28px 6px 12px !important;
+    border-radius: 999px !important;
+    border-color: #d9ccff !important;
+    background-color: #f7f3ff !important;
+    color: #6d4dd8 !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-frequency-select:hover {
+    border-color: #a78bfa !important;
+    background-color: #f1ebff !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-frequency-select:focus {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14) !important;
+  }
+}
+
+/* Custom compact time dropdowns for edit mode, replacing the tall native list. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing,
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-value,
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-list {
+    overflow: visible !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-row {
+    grid-template-columns: 40px 40px 72px !important;
+    gap: 5px !important;
+    max-width: 162px !important;
+    overflow: visible !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-picker {
+    position: relative;
+    min-width: 0;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-trigger {
+    width: 100%;
+    height: 34px;
+    border: 1px solid #d7e4ef;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #0f172a;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-trigger:hover,
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-trigger:focus-visible {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
+    outline: none;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-trigger--period {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 0 8px;
+    color: #0f172a;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-trigger--period svg {
+    flex: none;
+    transform: rotate(90deg);
+    color: #475569;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-menu {
+    position: absolute;
+    z-index: 80;
+    top: calc(100% + 4px);
+    left: 50%;
+    width: 56px;
+    max-height: 156px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid #ccefe9;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16);
+    transform: translateX(-50%);
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-menu--minutes {
+    max-height: 164px;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-menu--period {
+    width: 72px;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-option {
+    width: 100%;
+    min-height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #334155;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-option:hover,
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-option.selected {
+    background: #ccfbf1;
+    color: #0f766e;
+  }
+}
+
+/* Typeable compact time controls with custom dropdown buttons. */
+@media (min-width: 769px) {
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-picker {
+    position: relative !important;
+    min-width: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-item.editing .medicine-edit-time-input--combo {
+    width: 100% !important;
+    height: 34px !important;
+    padding: 6px 16px 6px 5px !important;
+    border: 1px solid #d7e4ef !important;
+    border-radius: 7px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-caret {
+    position: absolute !important;
+    top: 1px !important;
+    right: 1px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 16px !important;
+    height: 32px !important;
+    border: 0 !important;
+    border-radius: 0 6px 6px 0 !important;
+    background: transparent !important;
+    color: #475569 !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-caret svg {
+    transform: rotate(90deg) !important;
+  }
+
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-input--combo:focus,
+  .user-manage-card .medicine-list--my-medicine .medicine-edit-time-picker:focus-within .medicine-edit-time-input--combo {
+    border-color: #14b8a6 !important;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12) !important;
+    outline: none !important;
+  }
+}
