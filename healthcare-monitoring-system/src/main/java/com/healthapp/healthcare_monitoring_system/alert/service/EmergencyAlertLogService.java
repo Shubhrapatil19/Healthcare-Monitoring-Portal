@@ -15,11 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Records every reminder/missed-dose-alert that goes out (to the patient OR to an
- * emergency contact) so the "Recent Emergency Alerts" panel has something to show.
- * Standalone within the alert module — ReminderService and AlertService both call into this.
- */
 @Service
 @Transactional
 public class EmergencyAlertLogService {
@@ -74,6 +69,29 @@ public class EmergencyAlertLogService {
                         entry.getMedicineName()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    /** Deletes a single emergency alert log entry, only if it belongs to the logged-in user. */
+    public void deleteAlert(Long logId) {
+
+        RegisterEntity user = getLoggedInUser();
+
+        EmergencyAlertLogEntity entry = logRepository.findById(logId)
+                .orElseThrow(() -> new IllegalArgumentException("Emergency alert log entry not found."));
+
+        if (!entry.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Emergency alert log entry not found.");
+        }
+
+        logRepository.delete(entry);
+    }
+
+    /** Deletes every emergency alert log entry belonging to the logged-in user. */
+    public void deleteAllAlerts() {
+
+        RegisterEntity user = getLoggedInUser();
+
+        logRepository.deleteByUserId(user.getId());
     }
 
     private RegisterEntity getLoggedInUser() {

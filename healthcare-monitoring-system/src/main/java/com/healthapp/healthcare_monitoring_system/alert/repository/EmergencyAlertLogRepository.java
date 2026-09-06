@@ -8,4 +8,6 @@ import java.util.List;
 public interface EmergencyAlertLogRepository extends JpaRepository<EmergencyAlertLogEntity, Long> {
 
     List<EmergencyAlertLogEntity> findByUserIdOrderBySentAtDesc(Long userId);
+
+    void deleteByUserId(Long userId);
 }

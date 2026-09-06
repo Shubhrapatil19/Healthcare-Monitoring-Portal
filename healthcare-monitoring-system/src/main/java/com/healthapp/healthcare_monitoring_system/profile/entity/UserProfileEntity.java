@@ -31,6 +31,9 @@ public class UserProfileEntity {
     @Column(name = "disease_condition", length = 255)
     private String diseaseCondition;
 
+    @Column(name = "profile_photo_path", length = 500)
+    private String profilePhotoPath;
+
     @Column(name = "contact1_relation", length = 50)
     private String contact1Relation;
 

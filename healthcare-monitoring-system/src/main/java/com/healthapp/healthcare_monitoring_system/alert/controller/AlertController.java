@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -93,5 +94,35 @@ public class AlertController {
     @GetMapping("/emergency-log")
     public List<EmergencyAlertLogResponseDto> getRecentEmergencyAlerts() {
         return emergencyAlertLogService.getRecentEmergencyAlerts();
+    }
+
+    @Operation(
+            summary = "Delete one emergency alert log entry",
+            description = "Removes a single row from the emergency notification history."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "404", description = "Entry not found, or doesn't belong to this user")
+    })
+    @DeleteMapping("/emergency-log/{logId}")
+    public ResponseEntity<Void> deleteEmergencyAlert(
+            @Parameter(description = "ID of the emergency alert log entry to delete") @PathVariable Long logId) {
+        emergencyAlertLogService.deleteAlert(logId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "Delete all emergency alert log entries",
+            description = "Clears the entire emergency notification history for the logged-in patient. This cannot be undone."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "All entries deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token")
+    })
+    @DeleteMapping("/emergency-log")
+    public ResponseEntity<Void> deleteAllEmergencyAlerts() {
+        emergencyAlertLogService.deleteAllAlerts();
+        return ResponseEntity.noContent().build();
     }
 }

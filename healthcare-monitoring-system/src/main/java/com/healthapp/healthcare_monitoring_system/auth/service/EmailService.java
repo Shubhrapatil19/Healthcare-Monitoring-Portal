@@ -194,7 +194,7 @@ public class EmailService {
                 fullName,
                 "You missed your scheduled dose of <strong>" + medicineName + "</strong>. "
                         + "Please confirm you're okay by clicking below.",
-                "Confirm You're Okay",
+                "Okay",
                 ackLink,
                 "",
                 "If this was a mistake, please take your medicine as soon as possible."

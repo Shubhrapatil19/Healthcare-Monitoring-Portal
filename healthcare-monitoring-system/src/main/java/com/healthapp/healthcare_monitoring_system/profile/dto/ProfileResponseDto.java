@@ -1,4 +1,3 @@
-
 package com.healthapp.healthcare_monitoring_system.profile.dto;
 
 public class ProfileResponseDto {
@@ -7,6 +6,7 @@ public class ProfileResponseDto {
     private String fullName;
     private String email;
     private String mobile;
+    private String profilePhotoUrl;
     private Integer age;
     private String gender;
     private String diseaseCondition;
@@ -19,14 +19,15 @@ public class ProfileResponseDto {
     public ProfileResponseDto() {
     }
 
-    public ProfileResponseDto(Long userId, String fullName, String email, String mobile, Integer age,
-                              String gender, String diseaseCondition, String contact1Relation,
+    public ProfileResponseDto(Long userId, String fullName, String email, String mobile, String profilePhotoUrl,
+                              Integer age, String gender, String diseaseCondition, String contact1Relation,
                               String contact1Phone, String contact2Relation, String contact2Phone,
                               int completionPercentage) {
         this.userId = userId;
         this.fullName = fullName;
         this.email = email;
         this.mobile = mobile;
+        this.profilePhotoUrl = profilePhotoUrl;
         this.age = age;
         this.gender = gender;
         this.diseaseCondition = diseaseCondition;
@@ -48,6 +49,9 @@ public class ProfileResponseDto {
 
     public String getMobile() { return mobile; }
     public void setMobile(String mobile) { this.mobile = mobile; }
+
+    public String getProfilePhotoUrl() { return profilePhotoUrl; }
+    public void setProfilePhotoUrl(String profilePhotoUrl) { this.profilePhotoUrl = profilePhotoUrl; }
 
     public Integer getAge() { return age; }
     public void setAge(Integer age) { this.age = age; }

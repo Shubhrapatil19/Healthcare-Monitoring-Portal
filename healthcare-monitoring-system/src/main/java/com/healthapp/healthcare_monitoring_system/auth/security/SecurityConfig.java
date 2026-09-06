@@ -74,6 +74,11 @@ public class SecurityConfig {
                                 "/api/actions/**"
                         ).permitAll()
 
+                        // Uploaded profile photos — served as plain static files, need to load in <img> tags without JWT
+                        .requestMatchers(
+                                "/uploads/**"
+                        ).permitAll()
+
                         // Everything else
                         .anyRequest().authenticated()
                 )

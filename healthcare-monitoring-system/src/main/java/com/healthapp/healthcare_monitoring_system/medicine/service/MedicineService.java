@@ -10,6 +10,7 @@ import com.healthapp.healthcare_monitoring_system.medicine.enums.MedicineFrequen
 import com.healthapp.healthcare_monitoring_system.medicine.repository.MedicineRepository;
 import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
 import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
+import com.healthapp.healthcare_monitoring_system.dose.service.DoseService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,15 +31,18 @@ public class MedicineService {
     private final MedicineRepository medicineRepository;
     private final RegisterRepository registerRepository;
     private final NotificationService notificationService;
+    private final DoseService doseService;
 
     public MedicineService(
             MedicineRepository medicineRepository,
             RegisterRepository registerRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            DoseService doseService
     ) {
         this.medicineRepository = medicineRepository;
         this.registerRepository = registerRepository;
         this.notificationService = notificationService;
+        this.doseService = doseService;
     }
 
     /**
@@ -54,7 +58,8 @@ public class MedicineService {
                 request.getFrequency(),
                 request.getDoseTimes(),
                 request.getStartDate(),
-                request.getEndDate()
+                request.getEndDate(),
+                true // adding a new medicine — start date must be today or later
         );
 
         MedicineEntity medicine = new MedicineEntity();
@@ -83,6 +88,21 @@ public class MedicineService {
 
         MedicineEntity savedMedicine =
                 medicineRepository.save(medicine);
+
+        /*
+         * Without this, today's dose-log (and therefore its reminder) would only
+         * get created by tonight's midnight cron job, or whenever the user happens
+         * to open the "Today's Schedule" page. If the medicine is added mid-day
+         * with a dose time still coming up today, generate today's dose-log for it
+         * right now so the reminder pipeline picks it up immediately.
+         */
+        LocalDate today = LocalDate.now();
+
+        if (!savedMedicine.getStartDate().isAfter(today)
+                && !savedMedicine.getEndDate().isBefore(today)) {
+
+            doseService.generateDosesForDate(today);
+        }
 
         notificationService.notify(
                 user,
@@ -152,7 +172,8 @@ public class MedicineService {
                 request.getFrequency(),
                 request.getDoseTimes(),
                 request.getStartDate(),
-                request.getEndDate()
+                request.getEndDate(),
+                false // editing an existing medicine — its original start date is allowed to be in the past
         );
 
         medicine.setMedicineName(request.getMedicineName().trim());
@@ -211,12 +232,17 @@ public class MedicineService {
 
     /**
      * Validate frequency, dose times and dates.
+     *
+     * @param enforceFutureStartDate true when adding a NEW medicine (start date must be today or later);
+     *                               false when updating an EXISTING medicine, since its original start
+     *                               date is legitimately in the past once the medicine has already begun.
      */
     private void validateMedicineRequest(
             MedicineFrequency frequency,
             List<LocalTime> doseTimes,
             LocalDate startDate,
-            LocalDate endDate
+            LocalDate endDate,
+            boolean enforceFutureStartDate
     ) {
 
         if (frequency == null) {
@@ -231,16 +257,18 @@ public class MedicineService {
             );
         }
 
-        /*
-         * Start date cannot be in the past.
-         */
         if (startDate == null) {
             throw new IllegalArgumentException(
                     "Start date is required"
             );
         }
 
-        if (startDate.isBefore(LocalDate.now())) {
+        /*
+         * Start date cannot be in the past — but ONLY when adding a brand-new medicine.
+         * When editing an existing one, its original start date is expected to already
+         * be in the past (that's normal — the medicine has been running since then).
+         */
+        if (enforceFutureStartDate && startDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
                     "Start date cannot be in the past. Please select current or future date."
             );
