@@ -4,6 +4,7 @@ import com.healthapp.healthcare_monitoring_system.alert.enums.AlertStatus;
 import com.healthapp.healthcare_monitoring_system.alert.enums.AlertType;
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity;
+import com.healthapp.healthcare_monitoring_system.notification.entity.NotificationEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,6 +61,12 @@ public class AlertEntity {
 
     @Column(name = "escalation_level", nullable = false)
     private int escalationLevel = 0;
+
+    // Nullable — links this alert to the bell-icon notification row that was raised
+    // for the same event, purely so read/unread status can be kept in sync both ways.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_id")
+    private NotificationEntity notification;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

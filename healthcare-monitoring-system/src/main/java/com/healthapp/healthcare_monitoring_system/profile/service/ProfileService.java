@@ -8,6 +8,7 @@ import com.healthapp.healthcare_monitoring_system.notification.service.Notificat
 import com.healthapp.healthcare_monitoring_system.profile.dto.ProfileResponseDto;
 import com.healthapp.healthcare_monitoring_system.profile.dto.UpdateProfileRequestDto;
 import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
+import com.healthapp.healthcare_monitoring_system.profile.enums.DiseaseCondition;
 import com.healthapp.healthcare_monitoring_system.profile.repository.UserProfileRepository;
 
 import com.healthapp.healthcare_monitoring_system.common.util.IndianMobileNumberUtil;
@@ -23,8 +24,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -37,6 +42,12 @@ public class ProfileService {
     // fullName + email + mobile (always present) + age + gender + diseaseCondition
     // + contact1Relation + contact1Phone + contact2Relation + contact2Phone
     private static final int TOTAL_FIELDS = 10;
+
+    // ---- "Other" medical condition free-text rules ----
+    // Kept short on purpose: this is a condition NAME, not a description, so a
+    // patient can't paste a paragraph in here.
+    private static final int OTHER_CONDITION_MAX_WORDS = 6;
+    private static final int OTHER_CONDITION_MAX_LENGTH = 60;
 
     // ---- Profile photo rules ----
     private static final long MAX_PHOTO_SIZE_BYTES = 5L * 1024 * 1024; // 5 MB
@@ -79,7 +90,16 @@ public class ProfileService {
         // extended profile fields
         profile.setAge(request.getAge());
         profile.setGender(request.getGender());
-        profile.setDiseaseCondition(blankToNull(request.getDiseaseCondition()));
+
+        String storedConditions = buildDiseaseConditionValue(
+                request.getDiseaseConditions(),
+                request.getDiseaseConditionOther()
+        );
+        profile.setDiseaseCondition(storedConditions);
+        profile.setDiseaseConditionOther(
+                containsOther(storedConditions) ? request.getDiseaseConditionOther().trim() : null
+        );
+
         profile.setContact1Relation(blankToNull(request.getContact1Relation()));
         profile.setContact1Phone(
                 request.getContact1Phone() == null || request.getContact1Phone().trim().isEmpty()
@@ -204,6 +224,96 @@ public class ProfileService {
     }
 
     // =========================================================
+    // MEDICAL CONDITION — multi-select + "Other" free text
+    // =========================================================
+
+    /**
+     * Validates the selected condition codes and returns the value to persist
+     * (comma-separated codes, e.g. "DIABETES,HYPERTENSION"), or null if nothing selected.
+     *
+     * Rules enforced here (mirrors the frontend, but the backend is the source of truth):
+     *  - every code must be one of DiseaseCondition.ALLOWED_CODES
+     *  - "NONE" cannot be combined with anything else
+     *  - "OTHER" requires diseaseConditionOther, capped at a few words so patients
+     *    can't paste a paragraph in there
+     */
+    private String buildDiseaseConditionValue(List<String> diseaseConditions, String otherText) {
+
+        if (diseaseConditions == null || diseaseConditions.isEmpty()) {
+            return null;
+        }
+
+        List<String> codes = diseaseConditions.stream()
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> c.trim().toUpperCase())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (codes.isEmpty()) {
+            return null;
+        }
+
+        for (String code : codes) {
+            if (!DiseaseCondition.ALLOWED_CODES.contains(code)) {
+                throw new BadRequestException("Invalid medical condition: " + code);
+            }
+        }
+
+        if (codes.contains(DiseaseCondition.NONE.name()) && codes.size() > 1) {
+            throw new BadRequestException(
+                    "\"No Medical Condition / None\" cannot be selected together with other conditions."
+            );
+        }
+
+        if (codes.contains(DiseaseCondition.OTHER.name())) {
+            validateOtherConditionText(otherText);
+        }
+
+        return String.join(",", codes);
+    }
+
+    private void validateOtherConditionText(String otherText) {
+
+        if (otherText == null || otherText.trim().isEmpty()) {
+            throw new BadRequestException("Please specify your medical condition in the \"Other\" field.");
+        }
+
+        String trimmed = otherText.trim();
+
+        if (trimmed.contains("\n") || trimmed.contains("\r")) {
+            throw new BadRequestException("Medical condition must be a single line, not a paragraph.");
+        }
+
+        if (trimmed.length() > OTHER_CONDITION_MAX_LENGTH) {
+            throw new BadRequestException(
+                    "Medical condition must not exceed " + OTHER_CONDITION_MAX_LENGTH + " characters."
+            );
+        }
+
+        int wordCount = trimmed.split("\\s+").length;
+        if (wordCount > OTHER_CONDITION_MAX_WORDS) {
+            throw new BadRequestException(
+                    "Medical condition must not exceed " + OTHER_CONDITION_MAX_WORDS + " words."
+            );
+        }
+    }
+
+    private boolean containsOther(String storedConditions) {
+        return storedConditions != null
+                && Arrays.asList(storedConditions.split(",")).contains(DiseaseCondition.OTHER.name());
+    }
+
+    /** Turns the stored "DIABETES,HYPERTENSION" string back into a list for the API response. */
+    private List<String> parseDiseaseConditions(String storedConditions) {
+        if (storedConditions == null || storedConditions.isBlank()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(storedConditions.split(","))
+                .filter(c -> !c.isBlank())
+                .collect(Collectors.toList());
+    }
+
+    // =========================================================
 
     private UserProfileEntity getOrCreateProfile(RegisterEntity user) {
 
@@ -274,7 +384,8 @@ public class ProfileService {
                 photoUrl,
                 profile.getAge(),
                 profile.getGender() != null ? profile.getGender() : "Not specified",
-                profile.getDiseaseCondition() != null ? profile.getDiseaseCondition() : "Other",
+                parseDiseaseConditions(profile.getDiseaseCondition()),
+                profile.getDiseaseConditionOther(),
                 profile.getContact1Relation(),
                 profile.getContact1Phone(),
                 profile.getContact2Relation(),
@@ -283,3 +394,4 @@ public class ProfileService {
         );
     }
 }
+

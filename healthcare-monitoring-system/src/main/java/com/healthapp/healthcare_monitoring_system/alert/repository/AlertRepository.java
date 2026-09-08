@@ -26,4 +26,14 @@ public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
     // are still unacknowledged and haven't already escalated all the way to contact 2
     List<AlertEntity> findByAlertTypeAndAcknowledgedFalseAndEscalationLevelLessThanAndSmsSentAtIsNotNull(
             AlertType alertType, int escalationLevel);
+
+    // used by NotificationService to find the paired alert (if any) when a notification
+    // is marked read, so the alert's read status can be kept in sync
+    Optional<AlertEntity> findByNotificationId(Long notificationId);
+
+    // bulk version, used by "mark all notifications as read"
+    List<AlertEntity> findByNotificationIdIn(List<Long> notificationIds);
+
+    // used by "delete all alerts"
+    void deleteByUserId(Long userId);
 }

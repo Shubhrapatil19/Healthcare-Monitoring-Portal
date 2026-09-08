@@ -28,8 +28,13 @@ public class UserProfileEntity {
     @Column(name = "gender", length = 20)
     private String gender;
 
-    @Column(name = "disease_condition", length = 255)
+    // Comma-separated list of DiseaseCondition codes, e.g. "DIABETES,HYPERTENSION" or "NONE" or "OTHER"
+    @Column(name = "disease_condition", length = 500)
     private String diseaseCondition;
+
+    // Only populated when diseaseCondition includes OTHER — the patient's free-text description
+    @Column(name = "disease_condition_other", length = 150)
+    private String diseaseConditionOther;
 
     @Column(name = "profile_photo_path", length = 500)
     private String profilePhotoPath;

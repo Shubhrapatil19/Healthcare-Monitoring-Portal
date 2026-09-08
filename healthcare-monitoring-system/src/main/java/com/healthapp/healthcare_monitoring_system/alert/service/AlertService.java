@@ -11,6 +11,7 @@ import com.healthapp.healthcare_monitoring_system.dose.entity.MedicineDoseLogEnt
 import com.healthapp.healthcare_monitoring_system.inventory.entity.MedicineInventoryEntity;
 import com.healthapp.healthcare_monitoring_system.medicine.entity.MedicineEntity;
 import com.healthapp.healthcare_monitoring_system.alert.enums.RecipientType;
+import com.healthapp.healthcare_monitoring_system.notification.entity.NotificationEntity;
 import com.healthapp.healthcare_monitoring_system.notification.enums.NotificationType;
 import com.healthapp.healthcare_monitoring_system.notification.service.NotificationService;
 import com.healthapp.healthcare_monitoring_system.profile.entity.UserProfileEntity;
@@ -101,6 +102,15 @@ public class AlertService {
         alert.setAlertTime(LocalDateTime.now());
 
         AlertEntity saved = alertRepository.save(alert);
+
+        NotificationEntity notification = notificationService.notify(
+                doseLog.getUser(),
+                NotificationType.CRITICAL,
+                "Missed Medicine",
+                "You missed your " + doseLog.getMedicine().getMedicineName() + " dose."
+        );
+        saved.setNotification(notification);
+        alertRepository.save(saved);
 
         sendMissedDoseSms(saved, doseLog);
     }
@@ -223,9 +233,9 @@ public class AlertService {
         alert.setStatus(AlertStatus.UNREAD);
         alert.setAlertTime(LocalDateTime.now());
 
-        alertRepository.save(alert);
+        AlertEntity saved = alertRepository.save(alert);
 
-        notificationService.notify(
+        NotificationEntity notification = notificationService.notify(
                 user,
                 type == AlertType.OUT_OF_STOCK ? NotificationType.CRITICAL : NotificationType.WARNING,
                 type == AlertType.OUT_OF_STOCK ? "Out of Stock" : "Low Stock Alert",
@@ -233,6 +243,8 @@ public class AlertService {
                         ? " is out of stock."
                         : " stock is running low.")
         );
+        saved.setNotification(notification);
+        alertRepository.save(saved);
     }
 
     /** All alerts for logged-in user (optionally filtered by type), newest first. */
@@ -268,7 +280,43 @@ public class AlertService {
 
         alert.setStatus(AlertStatus.READ);
 
-        return convertToResponse(alertRepository.save(alert));
+        AlertResponseDto response = convertToResponse(alertRepository.save(alert));
+
+        syncNotificationReadStatus(alert);
+
+        return response;
+    }
+
+    /**
+     * Keeps the linked Notification row (if any) in sync when its paired alert is marked read.
+     * Only ever moves a notification UNREAD -> READ; never re-opens one.
+     */
+    private void syncNotificationReadStatus(AlertEntity alert) {
+
+        NotificationEntity notification = alert.getNotification();
+
+        if (notification != null) {
+            notificationService.markAsReadInternal(notification);
+        }
+    }
+
+    /** Deletes a single alert belonging to the logged-in user. */
+    public void deleteAlert(Long alertId) {
+
+        RegisterEntity user = getLoggedInUser();
+
+        AlertEntity alert = alertRepository.findByIdAndUserId(alertId, user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Alert not found."));
+
+        alertRepository.delete(alert);
+    }
+
+    /** Deletes every alert belonging to the logged-in user. */
+    public void deleteAllAlerts() {
+
+        RegisterEntity user = getLoggedInUser();
+
+        alertRepository.deleteByUserId(user.getId());
     }
 
     /**

@@ -82,6 +82,36 @@ public class AlertController {
     }
 
     @Operation(
+            summary = "Delete a single alert",
+            description = "Deletes one alert belonging to the logged-in patient. Does not affect the linked notification, if any."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
+            @ApiResponse(responseCode = "404", description = "Alert not found, or doesn't belong to this user")
+    })
+    @DeleteMapping("/{alertId}")
+    public ResponseEntity<Void> deleteAlert(
+            @Parameter(description = "ID of the alert to delete") @PathVariable Long alertId) {
+        alertService.deleteAlert(alertId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "Delete all alerts",
+            description = "Clears every alert for the logged-in patient. This cannot be undone."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "All alerts deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token")
+    })
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAllAlerts() {
+        alertService.deleteAllAlerts();
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
             summary = "Recent emergency notification history",
             description = "Returns the log of every reminder/missed-dose email that was sent (or attempted), " +
                     "with date/time, delivery status (Sent/Failed), and the recipient (currently the patient's own email; " +

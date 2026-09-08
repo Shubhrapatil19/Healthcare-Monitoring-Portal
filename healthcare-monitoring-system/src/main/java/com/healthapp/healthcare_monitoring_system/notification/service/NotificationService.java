@@ -1,5 +1,8 @@
 package com.healthapp.healthcare_monitoring_system.notification.service;
 
+import com.healthapp.healthcare_monitoring_system.alert.entity.AlertEntity;
+import com.healthapp.healthcare_monitoring_system.alert.enums.AlertStatus;
+import com.healthapp.healthcare_monitoring_system.alert.repository.AlertRepository;
 import com.healthapp.healthcare_monitoring_system.auth.entity.RegisterEntity;
 import com.healthapp.healthcare_monitoring_system.auth.repository.RegisterRepository;
 import com.healthapp.healthcare_monitoring_system.notification.dto.NotificationListResponseDto;
@@ -36,16 +39,23 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final RegisterRepository registerRepository;
+    private final AlertRepository alertRepository;
 
-    public NotificationService(NotificationRepository notificationRepository, RegisterRepository registerRepository) {
+    public NotificationService(NotificationRepository notificationRepository, RegisterRepository registerRepository,
+                               AlertRepository alertRepository) {
         this.notificationRepository = notificationRepository;
         this.registerRepository = registerRepository;
+        this.alertRepository = alertRepository;
     }
 
     // ---------- creation (called by other services) ----------
 
-    /** Always creates a new notification row. Use for direct user actions (taken, added, updated...). */
-    public void notify(RegisterEntity user, NotificationType type, String title, String message) {
+    /**
+     * Always creates a new notification row. Use for direct user actions (taken, added, updated...).
+     * Returns the saved entity so a caller (e.g. AlertService) can link an Alert row to it
+     * for read-status syncing.
+     */
+    public NotificationEntity notify(RegisterEntity user, NotificationType type, String title, String message) {
 
         NotificationEntity notification = new NotificationEntity();
         notification.setUser(user);
@@ -54,25 +64,26 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setStatus(NotificationStatus.UNREAD);
 
-        notificationRepository.save(notification);
+        return notificationRepository.save(notification);
     }
 
     /**
      * Creates a notification only if an identical one (same title + message) wasn't
      * already raised for this user within `dedupeWindowMinutes`. Use for scheduled /
      * repeatedly-checked events (reminder due, expiring soon) to avoid spamming duplicates.
+     * Returns null if it was skipped as a duplicate.
      */
-    public void notifyOnce(RegisterEntity user, NotificationType type, String title, String message,
-                           int dedupeWindowMinutes) {
+    public NotificationEntity notifyOnce(RegisterEntity user, NotificationType type, String title, String message,
+                                         int dedupeWindowMinutes) {
 
         boolean alreadySent = notificationRepository.existsByUserIdAndTitleAndMessageAndCreatedAtAfter(
                 user.getId(), title, message, LocalDateTime.now().minusMinutes(dedupeWindowMinutes));
 
         if (alreadySent) {
-            return;
+            return null;
         }
 
-        notify(user, type, title, message);
+        return notify(user, type, title, message);
     }
 
     // ---------- read / search ----------
@@ -122,7 +133,11 @@ public class NotificationService {
 
         notification.setStatus(NotificationStatus.READ);
 
-        return convertToResponse(notificationRepository.save(notification));
+        NotificationResponseDto response = convertToResponse(notificationRepository.save(notification));
+
+        syncAlertReadStatus(notification.getId());
+
+        return response;
     }
 
     public void markAllAsRead() {
@@ -137,6 +152,53 @@ public class NotificationService {
         }
 
         notificationRepository.saveAll(unread);
+
+        List<Long> notificationIds = unread.stream().map(NotificationEntity::getId).collect(Collectors.toList());
+        syncAlertReadStatus(notificationIds);
+    }
+
+    /**
+     * Keeps the linked Alert row (if any) in sync when its paired notification is marked read.
+     * Only ever moves an alert UNREAD -> READ; never re-opens one.
+     */
+    private void syncAlertReadStatus(Long notificationId) {
+
+        alertRepository.findByNotificationId(notificationId).ifPresent(alert -> {
+            if (alert.getStatus() != AlertStatus.READ) {
+                alert.setStatus(AlertStatus.READ);
+                alertRepository.save(alert);
+            }
+        });
+    }
+
+    private void syncAlertReadStatus(List<Long> notificationIds) {
+
+        if (notificationIds.isEmpty()) {
+            return;
+        }
+
+        List<AlertEntity> linkedAlerts = alertRepository.findByNotificationIdIn(notificationIds);
+
+        for (AlertEntity alert : linkedAlerts) {
+            if (alert.getStatus() != AlertStatus.READ) {
+                alert.setStatus(AlertStatus.READ);
+            }
+        }
+
+        alertRepository.saveAll(linkedAlerts);
+    }
+
+    /**
+     * Marks a specific notification entity as read directly, bypassing the logged-in-user
+     * lookup. Used by AlertService to sync a notification when its paired alert is marked
+     * read (the alert service has already verified ownership).
+     */
+    public void markAsReadInternal(NotificationEntity notification) {
+
+        if (notification.getStatus() != NotificationStatus.READ) {
+            notification.setStatus(NotificationStatus.READ);
+            notificationRepository.save(notification);
+        }
     }
 
     public void deleteNotification(Long notificationId) {

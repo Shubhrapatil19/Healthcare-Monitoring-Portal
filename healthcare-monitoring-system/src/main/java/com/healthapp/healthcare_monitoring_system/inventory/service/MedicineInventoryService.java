@@ -187,8 +187,15 @@ public class MedicineInventoryService {
 
     private void validateStock(int currentStock, int minimumStock) {
 
-        if (minimumStock > currentStock) {
-            throw new IllegalArgumentException("minimum stock is greater then current stock");
+        // NOTE: current_stock is allowed to go below (or equal to) minimum_stock —
+        // that's exactly what triggers the LOW_STOCK / OUT_OF_STOCK alerts. Only
+        // guard against outright invalid (negative) numbers here.
+        if (currentStock < 0) {
+            throw new IllegalArgumentException("Current stock cannot be negative.");
+        }
+
+        if (minimumStock < 0) {
+            throw new IllegalArgumentException("Minimum stock cannot be negative.");
         }
     }
 

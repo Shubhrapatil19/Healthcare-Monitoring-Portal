@@ -122,14 +122,9 @@ public class DoseService {
                 reminderRepository.save(reminder);
             });
 
+            // AlertService creates both the alert and its paired notification here
+            // (and keeps them linked so read status stays in sync both ways).
             alertService.createMissedDoseAlert(dose);
-
-            notificationService.notify(
-                    dose.getUser(),
-                    NotificationType.CRITICAL,
-                    "Missed Medicine",
-                    "You missed your " + dose.getMedicine().getMedicineName() + " dose."
-            );
         }
     }
 

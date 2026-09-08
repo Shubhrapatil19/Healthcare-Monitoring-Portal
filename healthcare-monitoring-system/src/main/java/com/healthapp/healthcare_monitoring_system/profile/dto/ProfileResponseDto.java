@@ -1,5 +1,7 @@
 package com.healthapp.healthcare_monitoring_system.profile.dto;
 
+import java.util.List;
+
 public class ProfileResponseDto {
 
     private Long userId;
@@ -9,7 +11,8 @@ public class ProfileResponseDto {
     private String profilePhotoUrl;
     private Integer age;
     private String gender;
-    private String diseaseCondition;
+    private List<String> diseaseConditions;
+    private String diseaseConditionOther;
     private String contact1Relation;
     private String contact1Phone;
     private String contact2Relation;
@@ -20,7 +23,8 @@ public class ProfileResponseDto {
     }
 
     public ProfileResponseDto(Long userId, String fullName, String email, String mobile, String profilePhotoUrl,
-                              Integer age, String gender, String diseaseCondition, String contact1Relation,
+                              Integer age, String gender, List<String> diseaseConditions, String diseaseConditionOther,
+                              String contact1Relation,
                               String contact1Phone, String contact2Relation, String contact2Phone,
                               int completionPercentage) {
         this.userId = userId;
@@ -30,7 +34,8 @@ public class ProfileResponseDto {
         this.profilePhotoUrl = profilePhotoUrl;
         this.age = age;
         this.gender = gender;
-        this.diseaseCondition = diseaseCondition;
+        this.diseaseConditions = diseaseConditions;
+        this.diseaseConditionOther = diseaseConditionOther;
         this.contact1Relation = contact1Relation;
         this.contact1Phone = contact1Phone;
         this.contact2Relation = contact2Relation;
@@ -59,8 +64,11 @@ public class ProfileResponseDto {
     public String getGender() { return gender; }
     public void setGender(String gender) { this.gender = gender; }
 
-    public String getDiseaseCondition() { return diseaseCondition; }
-    public void setDiseaseCondition(String diseaseCondition) { this.diseaseCondition = diseaseCondition; }
+    public List<String> getDiseaseConditions() { return diseaseConditions; }
+    public void setDiseaseConditions(List<String> diseaseConditions) { this.diseaseConditions = diseaseConditions; }
+
+    public String getDiseaseConditionOther() { return diseaseConditionOther; }
+    public void setDiseaseConditionOther(String diseaseConditionOther) { this.diseaseConditionOther = diseaseConditionOther; }
 
     public String getContact1Relation() { return contact1Relation; }
     public void setContact1Relation(String contact1Relation) { this.contact1Relation = contact1Relation; }
