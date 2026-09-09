@@ -898,3 +898,236 @@
   opacity: 0.65;
   transform: none;
 }
+/* Medical condition editor */
+.up-disease-edit-item {
+  align-items: flex-start;
+}
+
+.up-disease-edit-item .up-icon {
+  margin-top: 4px;
+}
+
+.up-info-item:has(.up-medical-select.is-open) {
+  position: relative;
+  z-index: 35;
+}
+
+.up-medical-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.up-medical-trigger {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid #b7e4ea;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.up-medical-trigger:hover,
+.up-medical-trigger:focus-visible,
+.up-medical-select.is-open .up-medical-trigger {
+  border-color: #0f766e;
+  background: #f8fffe;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.up-medical-select.up-input-error .up-medical-trigger {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.up-medical-trigger svg {
+  flex: none;
+  color: #0f766e;
+  transition: transform 0.18s ease;
+}
+
+.up-medical-select.is-open .up-medical-trigger > svg {
+  transform: rotate(180deg);
+}
+
+.up-medical-trigger-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.up-medical-placeholder {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.up-medical-chip {
+  max-width: 100%;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  background: #d8f7f7;
+  color: #0f4f4a;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  padding: 4px 6px;
+}
+
+.up-chip-remove {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #0f766e;
+  cursor: pointer;
+}
+
+.up-chip-remove:hover,
+.up-chip-remove:focus-visible {
+  background: rgba(15, 118, 110, 0.14);
+  outline: none;
+}
+
+.up-medical-menu {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 8px;
+  border: 1px solid #bfeee7;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.up-medical-search {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  padding: 0 9px;
+  border: 1px solid #d8eef0;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.up-medical-search svg {
+  color: #64748b;
+  flex: none;
+}
+
+.up-medical-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #172033;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.up-medical-options {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.up-medical-option {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: left;
+}
+
+.up-medical-option:hover,
+.up-medical-option.selected {
+  background: #d8f7f7;
+  color: #0f766e;
+}
+
+.up-medical-check {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 1px solid #8ca3af;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #ffffff;
+}
+
+.up-medical-option.selected .up-medical-check {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.up-other-condition {
+  margin-top: 8px;
+}
+
+.up-other-condition label {
+  display: block;
+  margin-bottom: 5px;
+  color: #66788f;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.up-other-condition label span {
+  color: #dc2626;
+}
+
+.up-other-condition input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #63c6cb;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.up-other-condition input:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+

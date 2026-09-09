@@ -1808,3 +1808,328 @@
     grid-template-columns: 1fr;
   }
 }
+/* Mobile alert list styled like the compact reference table */
+.al-mobile-alert-search {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .al-page {
+    padding: 12px 10px 88px;
+    background: #f8fbff;
+  }
+
+  .al-header-section {
+    margin-bottom: 12px;
+  }
+
+  .al-heading,
+  .al-subtitle,
+  .al-tabs,
+  .al-bottom-bar,
+  .al-table thead,
+  .al-med-desc,
+  .al-td-status {
+    display: none;
+  }
+
+  .al-card:has(.al-alert-toolbar) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .al-card:has(.al-alert-toolbar) .al-table-wrap {
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+
+  .al-alert-toolbar {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .al-alert-toolbar > span {
+    display: none;
+  }
+
+  .al-alert-delete-actions {
+    display: contents;
+  }
+  .al-mobile-alert-search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+  }
+
+  .al-mobile-search-field {
+    height: 48px;
+    min-width: 0;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #e4edf7;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    color: #6f86a3;
+  }
+
+  .al-mobile-search-field input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #1e2f52;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .al-mobile-search-field input::placeholder {
+    color: #7d8ea8;
+    opacity: 1;
+  }
+
+  .al-mobile-filter-btn {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #315d83;
+    background: #eff6ff;
+    box-shadow: 0 2px 9px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+  }
+
+  .al-table,
+  .al-table tbody,
+  .al-tr,
+  .al-td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .al-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+  }
+
+  .al-tr {
+    position: relative;
+    min-height: 84px;
+    padding: 12px 92px 12px 54px;
+    border-bottom: 1px solid #e9f0f8;
+    background: transparent !important;
+    box-sizing: border-box;
+  }
+
+  .al-tr:hover {
+    background: transparent !important;
+  }
+
+  .al-td {
+    padding: 0;
+  }
+
+  .al-td-med,
+  .al-td-type,
+  .al-td-datetime,
+  .al-td-action {
+    width: auto;
+    text-align: left;
+  }
+
+  .al-med-cell {
+    display: block;
+  }
+
+  .al-med-icon {
+    position: absolute;
+    left: 0;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .al-tr:hover .al-med-icon {
+    transform: none;
+  }
+
+  .al-med-info {
+    min-width: 0;
+  }
+
+  .al-med-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1e2f52;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .al-td-type {
+    position: absolute;
+    left: 128px;
+    top: 12px;
+    right: 92px;
+  }
+
+  .al-type-badge {
+    max-width: 100%;
+    height: 28px;
+    padding: 0 12px;
+    gap: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  .al-type-dot {
+    display: none;
+  }
+
+  .al-datetime-cell {
+    margin-top: 8px;
+    display: block;
+  }
+
+  .al-date-row {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 6px;
+    color: #70819b;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .al-time-row {
+    display: inline;
+    color: #70819b;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .al-time-row svg {
+    display: none;
+  }
+
+  .al-date-row svg {
+    color: #738aa6;
+    opacity: 1;
+  }
+
+  .al-table .al-td-action {
+    position: absolute;
+    top: 14px;
+    right: 0;
+    min-width: 82px;
+    padding: 0;
+    display: block;
+    text-align: right;
+  }
+
+  .al-alert-action-group {
+    width: auto;
+    min-height: 40px;
+    gap: 8px;
+  }
+
+  .al-alert-action-group .al-view-btn,
+  .al-alert-action-group .al-alert-row-delete {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  .al-view-btn {
+    background: #e8fbf5;
+    color: #2bafa3;
+  }
+
+  .al-alert-row-delete {
+    background: #ffecef;
+    color: #fb4b69;
+  }
+
+  .al-alert-delete-all {
+    position: fixed;
+    right: 18px;
+    bottom: 22px;
+    z-index: 20;
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #ff3655;
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(255, 54, 85, 0.35);
+  }
+
+  .al-alert-delete-all svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .al-alert-delete-all:not(.al-alert-cancel-mode) {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .al-alert-cancel-mode,
+  .al-alert-selected-delete {
+    position: fixed;
+    left: 18px;
+    bottom: 32px;
+    z-index: 20;
+  }
+
+  .al-td-check {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    width: 20px;
+  }
+
+  .al-tr:has(.al-td-check) {
+    padding-left: 78px;
+  }
+
+  .al-tr:has(.al-td-check) .al-med-icon {
+    left: 30px;
+  }
+}

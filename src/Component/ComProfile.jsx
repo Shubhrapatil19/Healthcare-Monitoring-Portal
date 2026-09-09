@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import api from "../api/axiosInstance";
 
@@ -9,10 +9,18 @@ import {
   Stethoscope,
   ChevronDown,
   Calendar,
+  Check,
+  Search,
+  X,
 } from "lucide-react";
 import "./ComProfile.css";
 
 // Backend accepts these exact disease values
+const NO_DISEASE_OPTION = {
+  label: "No Medical Condition / None",
+  value: "NO_MEDICAL_CONDITION_NONE",
+};
+
 const DISEASE_OPTIONS = [
   { label: "Diabetes", value: "DIABETES" },
   { label: "Hypertension", value: "HYPERTENSION" },
@@ -25,6 +33,8 @@ const DISEASE_OPTIONS = [
   { label: "Alzheimer's", value: "ALZHEIMERS" },
   { label: "Other", value: "OTHER" },
 ];
+
+const MEDICAL_CONDITION_OPTIONS = [NO_DISEASE_OPTION, ...DISEASE_OPTIONS];
 
 // Backend accepts these exact relation values (max 2 emergency contacts)
 const RELATION_OPTIONS = [
@@ -53,18 +63,40 @@ const normalizeGender = (value) => {
   return String(value).trim().toUpperCase();
 };
 
+const getDiseaseValues = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const getDiseaseLabel = (value) =>
+  MEDICAL_CONDITION_OPTIONS.find((option) => option.value === value)?.label ||
+  String(value || "")
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const getRequiredProfileFields = (profile) => [
+  profile?.fullName,
+  profile?.mobile,
+  profile?.age,
+  profile?.gender,
+  profile?.diseaseCondition,
+  profile?.contact1Relation,
+  profile?.contact1Phone,
+  profile?.contact2Relation,
+  profile?.contact2Phone,
+];
+
+const getProfileCompletionPercent = (profile) => {
+  const requiredFields = getRequiredProfileFields(profile);
+  const completedFields = requiredFields.filter(Boolean).length;
+  return Math.round((completedFields / requiredFields.length) * 100);
+};
+
 const isProfileComplete = (profile) =>
-  Boolean(
-    profile?.fullName &&
-      profile?.mobile &&
-      profile?.age &&
-      profile?.gender &&
-      profile?.diseaseCondition &&
-      profile?.contact1Relation &&
-      profile?.contact1Phone &&
-      profile?.contact2Relation &&
-      profile?.contact2Phone
-  );
+  getProfileCompletionPercent(profile) >= 100;
 
 const normalizeProfile = (data = {}) => {
   const normalized = {
@@ -77,18 +109,20 @@ const normalizeProfile = (data = {}) => {
     contact2Phone: data.contact2Phone || data.familyContacts?.[1]?.phoneNumber || "",
   };
 
-  normalized.completed =
-    Number(normalized.completionPercentage) >= 100 || isProfileComplete(normalized);
+  normalized.completionPercentage = getProfileCompletionPercent(normalized);
+  normalized.completed = isProfileComplete(normalized);
 
   return normalized;
 };
 
 const ComProfile = ({ onComplete }) => {
+  const diseaseDropdownRef = useRef(null);
 
   const [formData, setFormData] = useState({
     age: "",
     gender: "",
     disease: "",
+    diseaseOther: "",
 
     relation1: "",
     contact1: "",
@@ -99,6 +133,38 @@ const ComProfile = ({ onComplete }) => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [isDiseaseOpen, setIsDiseaseOpen] = useState(false);
+  const [diseaseSearch, setDiseaseSearch] = useState("");
+
+  const selectedDiseaseValues = useMemo(
+    () => getDiseaseValues(formData.disease),
+    [formData.disease]
+  );
+
+  const isOtherDiseaseSelected = selectedDiseaseValues.includes("OTHER");
+  const selectedDiseaseLabels = selectedDiseaseValues.map((value) =>
+    value === "OTHER" && formData.diseaseOther.trim()
+      ? formData.diseaseOther.trim()
+      : getDiseaseLabel(value)
+  );
+
+  const filteredDiseaseOptions = MEDICAL_CONDITION_OPTIONS.filter((option) =>
+    option.label.toLowerCase().includes(diseaseSearch.trim().toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!diseaseDropdownRef.current?.contains(event.target)) {
+        setIsDiseaseOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
 
   // --------------------------
   // Handle Input Change
@@ -123,6 +189,62 @@ const ComProfile = ({ onComplete }) => {
     }));
   };
 
+  const updateDiseaseSelection = (nextValues, diseaseOther = formData.diseaseOther) => {
+    setFormData((prev) => ({
+      ...prev,
+      disease: nextValues.join(","),
+      diseaseOther,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      disease: "",
+      diseaseOther: "",
+    }));
+  };
+
+  const handleDiseaseOptionClick = (value) => {
+    if (value === NO_DISEASE_OPTION.value) {
+      updateDiseaseSelection([value], "");
+      setIsDiseaseOpen(false);
+      return;
+    }
+
+    if (value === "OTHER") {
+      updateDiseaseSelection(["OTHER"], "");
+      setIsDiseaseOpen(false);
+      return;
+    }
+
+    const currentValues = selectedDiseaseValues.filter(
+      (item) => item !== NO_DISEASE_OPTION.value && item !== "OTHER"
+    );
+    const nextValues = currentValues.includes(value)
+      ? currentValues.filter((item) => item !== value)
+      : [...currentValues, value];
+
+    updateDiseaseSelection(nextValues, "");
+  };
+
+  const handleDiseaseChipRemove = (value) => {
+    updateDiseaseSelection(
+      selectedDiseaseValues.filter((item) => item !== value),
+      value === "OTHER" ? "" : formData.diseaseOther
+    );
+  };
+
+  const handleOtherDiseaseChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      diseaseOther: value,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      diseaseOther: "",
+    }));
+  };
+
   // --------------------------
   // Validation
   // --------------------------
@@ -138,10 +260,6 @@ const ComProfile = ({ onComplete }) => {
 
     if (!formData.gender) {
       newErrors.gender = "Please select gender";
-    }
-
-    if (!formData.disease) {
-      newErrors.disease = "Select medical condition";
     }
 
     // Contact 1
@@ -211,7 +329,9 @@ const ComProfile = ({ onComplete }) => {
           "",
         age: Number(formData.age),
         gender: normalizeGender(formData.gender),
-        diseaseCondition: formData.disease,
+        diseaseCondition: isOtherDiseaseSelected
+          ? formData.diseaseOther.trim()
+          : formData.disease,
         contact1Relation: formData.relation1,
         contact1Phone: formData.contact1,
         contact2Relation: formData.relation2,
@@ -349,29 +469,121 @@ const ComProfile = ({ onComplete }) => {
 
               <label>Disease / Medical Condition</label>
 
-              <div className="cp-select">
-
-                <Stethoscope size={18} />
-
-                <select
-                  name="disease"
-                  value={formData.disease}
-                  onChange={handleChange}
+              <div
+                ref={diseaseDropdownRef}
+                className={`cp-medical-select ${
+                  isDiseaseOpen ? "is-open" : ""
+                } ${errors.disease ? "has-error" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="cp-medical-trigger"
+                  onClick={() => setIsDiseaseOpen((current) => !current)}
+                  aria-expanded={isDiseaseOpen}
                 >
-                  <option value="">Select medical condition</option>
-                  {DISEASE_OPTIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                  <Stethoscope size={18} />
 
+                  <span className="cp-medical-trigger-content">
+                    {selectedDiseaseLabels.length ? (
+                      selectedDiseaseLabels.map((label, index) => (
+                        <span
+                          key={`${selectedDiseaseValues[index]}-${label}`}
+                          className="cp-medical-chip"
+                        >
+                          {label}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="cp-chip-remove"
+                            aria-label={`Remove ${label}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDiseaseChipRemove(selectedDiseaseValues[index]);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleDiseaseChipRemove(selectedDiseaseValues[index]);
+                              }
+                            }}
+                          >
+                            <X size={12} />
+                          </span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="cp-medical-placeholder">
+                        Select disease / condition
+                      </span>
+                    )}
+                  </span>
+
+                  <ChevronDown size={18} className="cp-medical-caret" />
+                </button>
+
+                {isDiseaseOpen && (
+                  <div className="cp-medical-menu">
+                    <div className="cp-medical-search">
+                      <Search size={14} />
+                      <input
+                        type="text"
+                        value={diseaseSearch}
+                        placeholder="Search disease / condition..."
+                        onChange={(event) => setDiseaseSearch(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="cp-medical-options">
+                      {filteredDiseaseOptions.map((option) => {
+                        const selected = selectedDiseaseValues.includes(option.value);
+
+                        return (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={`cp-medical-option ${
+                              selected ? "selected" : ""
+                            }`}
+                            onClick={() => handleDiseaseOptionClick(option.value)}
+                          >
+                            <span className="cp-medical-check">
+                              {selected && <Check size={13} />}
+                            </span>
+                            <span>{option.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {errors.disease && (
                 <span className="cp-error">
                   {errors.disease}
                 </span>
+              )}
+
+              {isOtherDiseaseSelected && (
+                <div className="cp-other-condition">
+                  <label>
+                    Specify Medical Condition
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.diseaseOther}
+                    placeholder="PCOS"
+                    onChange={(event) =>
+                      handleOtherDiseaseChange(event.target.value)
+                    }
+                  />
+                  {errors.diseaseOther && (
+                    <span className="cp-error">
+                      {errors.diseaseOther}
+                    </span>
+                  )}
+                </div>
               )}
 
             </div>
@@ -532,4 +744,3 @@ const ComProfile = ({ onComplete }) => {
 };
 
 export default ComProfile;
-

@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Camera,
   Calendar,
+  Check,
   CheckCircle,
   ChevronDown,
   Edit2,
@@ -12,6 +13,7 @@ import {
   Mail,
   Phone,
   Save,
+  Search,
   Shield,
   Stethoscope,
   Trash2,
@@ -39,18 +41,25 @@ const RELATIONS = [
   "OTHER",
 ];
 
-const DISEASES = [
-  "ARTHRITIS",
-  "HEART_DISEASE",
-  "HYPERTENSION",
-  "KIDNEY_DISEASE",
-  "ASTHMA",
-  "THYROID",
-  "CANCER",
-  "DIABETES",
-  "ALZHEIMERS",
-  "OTHER",
+const NO_DISEASE_OPTION = {
+  label: "No Medical Condition / None",
+  value: "NO_MEDICAL_CONDITION_NONE",
+};
+
+const DISEASE_OPTIONS = [
+  { label: "Diabetes", value: "DIABETES" },
+  { label: "Hypertension", value: "HYPERTENSION" },
+  { label: "Heart Disease", value: "HEART_DISEASE" },
+  { label: "Asthma", value: "ASTHMA" },
+  { label: "Arthritis", value: "ARTHRITIS" },
+  { label: "Kidney Disease", value: "KIDNEY_DISEASE" },
+  { label: "Thyroid", value: "THYROID" },
+  { label: "Cancer", value: "CANCER" },
+  { label: "Alzheimer's", value: "ALZHEIMERS" },
+  { label: "Other", value: "OTHER" },
 ];
+
+const MEDICAL_CONDITION_OPTIONS = [NO_DISEASE_OPTION, ...DISEASE_OPTIONS];
 const PROFILE_PHOTO_MAX_SIZE = 5 * 1024 * 1024;
 const PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
 const PROFILE_PHOTO_URL_KEY = "profilePhotoUrl";
@@ -140,6 +149,44 @@ const formatLabel = (value) => {
     .join(" ");
 };
 
+const getDiseaseValues = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const getDiseaseLabel = (value) =>
+  MEDICAL_CONDITION_OPTIONS.find((option) => option.value === value)?.label ||
+  formatLabel(value);
+
+const getEditableDisease = (value) => {
+  const values = getDiseaseValues(value);
+
+  if (!values.length) {
+    return { disease: "", diseaseOther: "" };
+  }
+
+  const knownValues = new Set(MEDICAL_CONDITION_OPTIONS.map((option) => option.value));
+  const allKnown = values.every((item) => knownValues.has(item));
+
+  if (allKnown) {
+    return { disease: values.join(","), diseaseOther: "" };
+  }
+
+  return { disease: "OTHER", diseaseOther: String(value || "") };
+};
+
+const formatDiseaseDisplay = (value) => {
+  const editableDisease = getEditableDisease(value);
+
+  if (editableDisease.disease === "OTHER" && editableDisease.diseaseOther) {
+    return editableDisease.diseaseOther;
+  }
+
+  const labels = getDiseaseValues(editableDisease.disease).map(getDiseaseLabel);
+  return labels.length ? labels.join(", ") : "Not specified";
+};
+
 const getProfileValue = (profileData, registeredUser, keys) => {
   for (const key of keys) {
     const value = profileData?.[key] || registeredUser?.[key];
@@ -154,7 +201,30 @@ const normalizeGender = (value) => {
   return String(value).trim().toUpperCase();
 };
 
+const getRequiredProfileFields = (profile) => [
+  profile?.fullName,
+  profile?.email,
+  profile?.mobile,
+  profile?.age,
+  profile?.gender,
+  profile?.diseaseCondition,
+  getProfilePhotoUrl(profile),
+  profile?.contact1Relation,
+  profile?.contact1Phone,
+  profile?.contact2Relation,
+  profile?.contact2Phone,
+];
+
+const getProfileCompletionPercent = (profile) => {
+  const requiredFields = getRequiredProfileFields(profile);
+  const completedFields = requiredFields.filter(Boolean).length;
+  return Math.round((completedFields / requiredFields.length) * 100);
+};
+
 const isProfileComplete = (profile) =>
+  getProfileCompletionPercent(profile) >= 100;
+
+const isDashboardProfileReady = (profile) =>
   Boolean(
     profile?.fullName &&
       profile?.email &&
@@ -183,8 +253,8 @@ const normalizeProfile = (data = {}) => {
       data.contact2Phone || data.familyContacts?.[1]?.phoneNumber || "",
   };
 
-  normalized.completed =
-    Number(normalized.completionPercentage) >= 100 || isProfileComplete(normalized);
+  normalized.completionPercentage = getProfileCompletionPercent(normalized);
+  normalized.completed = isProfileComplete(normalized);
 
   return normalized;
 };
@@ -210,6 +280,7 @@ const UserProfiles = () => {
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [isPhotoSaving, setIsPhotoSaving] = useState(false);
   const [openProfileSelect, setOpenProfileSelect] = useState(null);
+  const [diseaseSearch, setDiseaseSearch] = useState("");
   const photoInputRef = useRef(null);
   const profilePhotoObjectUrlRef = useRef("");
   const [editFormData, setEditFormData] = useState({
@@ -219,6 +290,7 @@ const UserProfiles = () => {
     age: "",
     gender: "",
     disease: "",
+    diseaseOther: "",
     relation1: "",
     contact1: "",
     relation2: "",
@@ -237,27 +309,33 @@ const UserProfiles = () => {
     ]) || "Not specified";
   const displayAge = profileData?.age || "Not specified";
   const displayGender = formatLabel(profileData?.gender);
-  const displayDisease = formatLabel(profileData?.diseaseCondition);
+  const displayDisease = formatDiseaseDisplay(profileData?.diseaseCondition);
 
-  const completionItems = useMemo(
-    () => [
-      Boolean(displayName && displayName !== "User"),
-      Boolean(displayEmail && displayEmail !== "Not specified"),
-      Boolean(displayMobile && displayMobile !== "Not specified"),
-      Boolean(profileData?.age),
-      Boolean(profileData?.gender),
-      Boolean(profileData?.contact1Phone),
-      Boolean(profileData?.contact2Phone),
-    ],
-    [displayEmail, displayMobile, displayName, profileData]
+  const selectedDiseaseValues = useMemo(
+    () => getDiseaseValues(editFormData.disease),
+    [editFormData.disease]
+  );
+  const isOtherDiseaseSelected = selectedDiseaseValues.includes("OTHER");
+  const selectedDiseaseLabels = selectedDiseaseValues.map((value) =>
+    value === "OTHER" && editFormData.diseaseOther.trim()
+      ? editFormData.diseaseOther.trim()
+      : getDiseaseLabel(value)
+  );
+  const filteredDiseaseOptions = MEDICAL_CONDITION_OPTIONS.filter((option) =>
+    option.label.toLowerCase().includes(diseaseSearch.trim().toLowerCase())
   );
 
-  const calculatedCompletionPercent = Math.round(
-    (completionItems.filter(Boolean).length / completionItems.length) * 100
+  const completionPercent = useMemo(
+    () =>
+      getProfileCompletionPercent({
+        ...profileData,
+        fullName: displayName !== "User" ? displayName : "",
+        email: displayEmail !== "Not specified" ? displayEmail : "",
+        mobile: displayMobile !== "Not specified" ? displayMobile : "",
+        profilePhotoUrl: getProfilePhotoUrl(profileData) || profilePhoto || "",
+      }),
+    [displayEmail, displayMobile, displayName, profileData, profilePhoto]
   );
-  const completionPercent = Number.isFinite(Number(profileData?.completionPercentage))
-    ? Number(profileData?.completionPercentage)
-    : calculatedCompletionPercent;
 
   const clearProfilePhotoObjectUrl = useCallback(() => {
     if (profilePhotoObjectUrlRef.current) {
@@ -341,7 +419,7 @@ const UserProfiles = () => {
           localStorage.setItem(PROFILE_PHOTO_URL_KEY, getProfilePhotoUrl(data));
         }
         localStorage.setItem("profileData", JSON.stringify(data));
-        localStorage.setItem("profileCompleted", data.completed ? "true" : "false");
+        localStorage.setItem("profileCompleted", isDashboardProfileReady(data) ? "true" : "false");
 
         setRegisteredUser((previousUser) => {
           const basicUserData = {
@@ -485,13 +563,16 @@ const UserProfiles = () => {
   const getEditableValue = (field) => editFormData[field] || "";
 
   const resetEditForm = () => {
+    const editableDisease = getEditableDisease(profileData?.diseaseCondition);
+
     setEditFormData({
       fullName: displayName !== "User" ? displayName : "",
       email: displayEmail !== "Not specified" ? displayEmail : "",
       mobile: displayMobile !== "Not specified" ? displayMobile : "",
       age: profileData?.age ?? "",
       gender: profileData?.gender ?? "",
-      disease: profileData?.diseaseCondition ?? "",
+      disease: editableDisease.disease,
+      diseaseOther: editableDisease.diseaseOther,
       relation1: profileData?.contact1Relation ?? "",
       contact1: profileData?.contact1Phone ?? "",
       relation2: profileData?.contact2Relation ?? "",
@@ -518,6 +599,64 @@ const UserProfiles = () => {
       setErrors((prev) => ({
         ...prev,
         [field]: "",
+      }));
+    }
+  };
+
+  const updateDiseaseSelection = (nextValues, diseaseOther = editFormData.diseaseOther) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      disease: nextValues.join(","),
+      diseaseOther,
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      disease: "",
+      diseaseOther: "",
+    }));
+  };
+
+  const handleDiseaseOptionClick = (value) => {
+    if (value === NO_DISEASE_OPTION.value) {
+      updateDiseaseSelection([value], "");
+      setOpenProfileSelect(null);
+      return;
+    }
+
+    if (value === "OTHER") {
+      updateDiseaseSelection(["OTHER"], "");
+      setOpenProfileSelect(null);
+      return;
+    }
+
+    const currentValues = selectedDiseaseValues.filter(
+      (item) => item !== NO_DISEASE_OPTION.value && item !== "OTHER"
+    );
+    const nextValues = currentValues.includes(value)
+      ? currentValues.filter((item) => item !== value)
+      : [...currentValues, value];
+
+    updateDiseaseSelection(nextValues, "");
+  };
+
+  const handleDiseaseChipRemove = (value) => {
+    updateDiseaseSelection(
+      selectedDiseaseValues.filter((item) => item !== value),
+      value === "OTHER" ? "" : editFormData.diseaseOther
+    );
+  };
+
+  const handleOtherDiseaseChange = (value) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      diseaseOther: value,
+    }));
+
+    if (errors.diseaseOther) {
+      setErrors((prev) => ({
+        ...prev,
+        diseaseOther: "",
       }));
     }
   };
@@ -606,7 +745,9 @@ const UserProfiles = () => {
       mobile: editFormData.mobile,
       age: Number(editFormData.age),
       gender: normalizeGender(editFormData.gender),
-      diseaseCondition: editFormData.disease,
+      diseaseCondition: isOtherDiseaseSelected
+        ? editFormData.diseaseOther.trim()
+        : editFormData.disease,
       contact1Relation: editFormData.relation1,
       contact1Phone: editFormData.contact1,
       contact2Relation: editFormData.relation2,
@@ -645,7 +786,7 @@ const UserProfiles = () => {
       };
       setRegisteredUser(nextRegisteredUser);
       localStorage.setItem("registeredUser", JSON.stringify(nextRegisteredUser));
-      localStorage.setItem("profileCompleted", nextProfile.completed ? "true" : "false");
+      localStorage.setItem("profileCompleted", isDashboardProfileReady(nextProfile) ? "true" : "false");
       setOpenProfileSelect(null);
       setIsEditing(false);
       setSaveSuccess("Profile updated successfully!");
@@ -669,6 +810,128 @@ const UserProfiles = () => {
     setOpenProfileSelect(null);
     setIsEditing(false);
   };
+
+  const renderDiseaseField = () => (
+    <div className="up-info-item up-disease-edit-item">
+      <div className="up-icon">
+        <Stethoscope size={20} />
+      </div>
+      <div className="up-info-content">
+        <label>Disease / Condition</label>
+
+        {isEditing ? (
+          <>
+            <div
+              className={`up-medical-select ${
+                openProfileSelect === "disease" ? "is-open" : ""
+              } ${errors.disease ? "up-input-error" : ""}`}
+            >
+              <button
+                type="button"
+                className="up-medical-trigger"
+                onClick={() =>
+                  setOpenProfileSelect((current) =>
+                    current === "disease" ? null : "disease"
+                  )
+                }
+              >
+                <span className="up-medical-trigger-content">
+                  {selectedDiseaseLabels.length ? (
+                    selectedDiseaseLabels.map((label, index) => (
+                      <span
+                        key={`${selectedDiseaseValues[index]}-${label}`}
+                        className="up-medical-chip"
+                      >
+                        {label}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className="up-chip-remove"
+                          aria-label={`Remove ${label}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDiseaseChipRemove(selectedDiseaseValues[index]);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              handleDiseaseChipRemove(selectedDiseaseValues[index]);
+                            }
+                          }}
+                        >
+                          <X size={12} />
+                        </span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="up-medical-placeholder">
+                      Select disease / condition
+                    </span>
+                  )}
+                </span>
+                <ChevronDown size={16} />
+              </button>
+
+              {openProfileSelect === "disease" && (
+                <div className="up-medical-menu">
+                  <div className="up-medical-search">
+                    <Search size={14} />
+                    <input
+                      type="text"
+                      value={diseaseSearch}
+                      placeholder="Search disease / condition..."
+                      onChange={(event) => setDiseaseSearch(event.target.value)}
+                    />
+                  </div>
+
+                  <div className="up-medical-options">
+                    {filteredDiseaseOptions.map((option) => {
+                      const selected = selectedDiseaseValues.includes(option.value);
+
+                      return (
+                        <button
+                          type="button"
+                          key={option.value}
+                          className={`up-medical-option ${
+                            selected ? "selected" : ""
+                          }`}
+                          onClick={() => handleDiseaseOptionClick(option.value)}
+                        >
+                          <span className="up-medical-check">
+                            {selected && <Check size={13} />}
+                          </span>
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {isOtherDiseaseSelected && (
+              <div className="up-other-condition">
+                <label>
+                  Specify Medical Condition
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.diseaseOther}
+                  placeholder="PCOS"
+                  onChange={(event) => handleOtherDiseaseChange(event.target.value)}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="up-value">{displayDisease}</p>
+        )}
+
+        {errors.disease && <span className="up-error">{errors.disease}</span>}
+      </div>
+    </div>
+  );
 
   const renderEditableField = (
     label,
@@ -988,14 +1251,7 @@ const UserProfiles = () => {
             </div>
 
             <div className="up-info-grid up-info-grid--full">
-              {renderEditableField(
-                "Disease / Condition",
-                displayDisease,
-                <Stethoscope size={20} />,
-                "disease",
-                "select",
-                DISEASES
-              )}
+              {renderDiseaseField()}
             </div>
           </section>
 

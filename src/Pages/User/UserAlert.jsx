@@ -19,6 +19,8 @@ import {
   Megaphone,
   Trash2,
   X,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 
 // ========================================================
@@ -177,6 +179,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
   const [deleteEmergencyModal, setDeleteEmergencyModal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [alertSearch, setAlertSearch] = useState("");
 
   const itemsPerPage = 4;
   const emergencyItemsPerPage = 5;
@@ -325,7 +328,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
   // FILTER ALERTS
   // ========================================================
 
-  const filteredAlerts =
+  const tabFilteredAlerts =
     activeTab === "emergency"
       ? emergencyLogs
       : activeTab === "all"
@@ -333,6 +336,28 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
         : alerts.filter(
             (alert) => alert.type === activeTab
           );
+
+  const normalizedAlertSearch = alertSearch.trim().toLowerCase();
+  const filteredAlerts = normalizedAlertSearch
+    ? tabFilteredAlerts.filter((alert) =>
+        [
+          alert.medicineName,
+          alert.message,
+          alert.label,
+          alert.date,
+          alert.time,
+          alert.status,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedAlertSearch)
+      )
+    : tabFilteredAlerts;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [alertSearch]);
 
   // ========================================================
   // PAGINATION
@@ -766,6 +791,26 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                 </button>
               </div>
             </div>
+            <div className="al-mobile-alert-search">
+              <label className="al-mobile-search-field">
+                <Search size={18} />
+                <input
+                  type="search"
+                  value={alertSearch}
+                  onChange={(event) => setAlertSearch(event.target.value)}
+                  placeholder="Search alerts..."
+                  aria-label="Search alerts"
+                />
+              </label>
+
+              <button
+                type="button"
+                className="al-mobile-filter-btn"
+                aria-label="Show alert filters"
+              >
+                <SlidersHorizontal size={18} />
+              </button>
+            </div>
             <div className="al-table-wrap">
 
               <table className="al-table">
@@ -941,6 +986,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
 
                         <td className="al-td al-td-action">
 
+                          <div className="al-alert-action-group">
                           <button
                             className="al-view-btn"
                             title="View Details"
@@ -962,6 +1008,7 @@ const UserAlert = ({ onAddMedicine, onViewInventory }) => {
                           >
                             <Trash2 size={16} />
                           </button>
+                          </div>
 
                         </td>
 
